@@ -6,7 +6,7 @@ En mode administrateur, l’application mobile doit pouvoir faire tout ce que l�
 
 ## Schéma Supabase obligatoire
 
-Tous les objets métier IziCard NFC (tables, vues, types et fonctions/RPC) doivent être lus et utilisés dans le schéma PostgreSQL `nfc`, jamais via `public` en repli. Exemple : `nfc.nfc_profiles`, `nfc.nfc_batches` et les RPC du schéma `nfc`. Le code mobile et le Web doivent viser ce même schéma et le backend commun. Adapter d’abord les migrations, permissions, RLS, fonctions et exposition du schéma Supabase ; cette migration n’est pas encore terminée.
+Tous les objets métier IziCard NFC (tables, vues, types et fonctions/RPC) doivent être lus et utilisés dans le schéma PostgreSQL `nfc`, jamais via `public` en repli. Exemple : `nfc.nfc_profiles`, `nfc.nfc_batches` et les RPC du schéma `nfc`. Le code mobile et le Web visent ce même schéma et le backend commun. La migration Supabase vers `nfc` est maintenant confirmée comme déployée (2026-10-25). Le script historique `001_nfc.sql` du dépôt Web emploie encore `public` et doit être réaligné pour les installations futures ; les droits, RLS et RPC restent à confirmer avant les tests fonctionnels.
 
 Le mobile doit charger le profil et le rôle depuis `nfc.nfc_profiles`, puis présenter un accueil et une navigation adaptés au rôle et à l’état d’accès. La sécurité est appliquée côté backend par RLS/fonctions, pas seulement par masquage des écrans. L’interface doit suivre la charte IziCard et offrir une UX professionnelle, intuitive et accessible : boutons retour cohérents, états de chargement/erreur/vide et confirmations lorsque nécessaire. Les tests de connexion sont différés pour le moment.
 

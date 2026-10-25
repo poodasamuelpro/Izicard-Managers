@@ -46,7 +46,7 @@ Le même principe peut être appliqué au template de confirmation si la confirm
 
 ## 5. Schéma métier NFC
 
-Après la migration planifiée, toutes les tables, types, vues et fonctions métier NFC doivent être dans le schéma `nfc` et les clients doivent appeler les objets qualifiés de ce schéma. Mettre à jour migrations, références SQL, privilèges, RLS et exposition des fonctions en cohérence ; ne pas utiliser `public` en repli. Web et mobile partagent ce schéma et cette API. Les tests de connexion restent différés.
+La migration Supabase vers le schéma `nfc` est confirmée comme déployée (2026-10-25, selon le propriétaire). Toutes les tables, types, vues et fonctions métier NFC doivent être lues/appelées dans `nfc`, sans repli vers `public`. Le script SQL historique du dépôt Web utilise encore `public` et doit être réaligné pour les futures installations. Web et mobile partagent ce schéma et cette API ; les tests de connexion restent différés.
 
 ## 6. Redirection et sécurité
 

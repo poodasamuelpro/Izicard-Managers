@@ -209,3 +209,22 @@ Les écrans de destination sont des squelettes de navigation : clients, dossiers
 ### Commit
 
 Modifications locales, commit à renseigner s’il est créé.
+
+
+## Migration Supabase `nfc` confirmée — 2026-10-25 09:40:00 UTC
+
+### Terminé
+
+Le propriétaire confirme que la migration des objets Supabase vers le schéma `nfc` est maintenant déployée. Le client Flutter est configuré pour utiliser `nfc` et le chargement du profil le cible explicitement.
+
+### Partiel / non terminé
+
+Le script historique du dépôt Web `supabase/migrations/001_nfc.sql` utilise encore `public` et doit être réaligné pour les installations futures. Aucun test de connexion n’a été lancé.
+
+### Reste à faire
+
+Poursuivre les écrans et raccordements métier mobile décrits dans l’entrée précédente ; vérifier RLS/exposition et tester les parcours lorsque cela sera autorisé.
+
+### Commit
+
+Mise à jour de suivi liée au travail Web, commit à renseigner s’il est créé.
