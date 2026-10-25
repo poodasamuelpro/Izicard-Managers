@@ -4,6 +4,12 @@ Application Android d’encodage NFC en série et interface de l’écosystème 
 
 En mode administrateur, l’application mobile doit pouvoir faire tout ce que l’espace admin Web permet, notamment gérer les clients et accès, créer et suivre les dossiers, gérer les imports et exports et utiliser les autres opérations métier disponibles. Les deux interfaces appellent les mêmes opérations côté serveur ; seule la présentation et l’intégration du NFC peuvent être propres à chaque plateforme. Toute fonction métier doit être partagée plutôt que réimplémentée séparément.
 
+## Schéma Supabase obligatoire
+
+Tous les objets métier IziCard NFC (tables, vues, types et fonctions/RPC) doivent être lus et utilisés dans le schéma PostgreSQL `nfc`, jamais via `public` en repli. Exemple : `nfc.nfc_profiles`, `nfc.nfc_batches` et les RPC du schéma `nfc`. Le code mobile et le Web doivent viser ce même schéma et le backend commun. Adapter d’abord les migrations, permissions, RLS, fonctions et exposition du schéma Supabase ; cette migration n’est pas encore terminée.
+
+Le mobile doit charger le profil et le rôle depuis `nfc.nfc_profiles`, puis présenter un accueil et une navigation adaptés au rôle et à l’état d’accès. La sécurité est appliquée côté backend par RLS/fonctions, pas seulement par masquage des écrans. L’interface doit suivre la charte IziCard et offrir une UX professionnelle, intuitive et accessible : boutons retour cohérents, états de chargement/erreur/vide et confirmations lorsque nécessaire. Les tests de connexion sont différés pour le moment.
+
 ## Règle obligatoire de suivi
 
 Toute modification, correction ou fonctionnalité doit être reportée dans [`PROJECT_PROGRESS.md`](PROJECT_PROGRESS.md) avec la date et l’heure UTC, le périmètre modifié, ce qui est terminé, ce qui reste partiel ou non terminé, les prochaines étapes et le commit Git correspondant. Cette mise à jour doit accompagner chaque changement avant de le considérer comme terminé.

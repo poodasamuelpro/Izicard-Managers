@@ -4,6 +4,14 @@ Objectif : fournir une application Android d’encodage NFC en série (100+) et 
 
 En mode administrateur, le mobile doit pouvoir réaliser les opérations disponibles dans l’espace admin Web : gestion des clients et accès, création et suivi des dossiers, import/export et autres opérations métier. Toute logique métier partagée réside côté backend et est appelée par les deux interfaces ; elle ne doit pas être dupliquée dans Flutter. Les différences sont limitées à l’interface et aux intégrations natives, notamment le NFC Android.
 
+## Schéma Supabase et sécurité
+Toutes les données et opérations métier NFC doivent utiliser le schéma `nfc` du projet Supabase commun (`nfc.nfc_profiles`, `nfc.nfc_batches`, fonctions RPC qualifiées dans `nfc`, etc.). Ne jamais supposer `public` ni basculer silencieusement vers ce schéma. La migration existante est encore en `public` et doit être adaptée avant les appels de production : tables/types/vues/fonctions, références SQL, RLS, privilèges et exposition PostgREST/RPC. Aucun test de connexion n’est requis à cette étape.
+
+Charger le profil/ rôle depuis `nfc.nfc_profiles` et traiter côté serveur les statuts actif/révoqué et les permissions. L’accueil et les routes reflètent le rôle, mais seul le backend/RLS autorise les données et mutations. Ne jamais embarquer `service_role` ou un secret serveur.
+
+## Exigences d’interface
+UI/UX de qualité professionnelle, alignée sur la charte IziCard (cyan `#01A3CA`, bleu `#0299E2`, blanc), claire et intuitive. Prévoir un accueil distinct selon le rôle, une navigation cohérente avec bouton retour sur les écrans secondaires où nécessaire, et des états de chargement, erreur, liste vide et accès révoqué. Demander confirmation avant une action sensible (par exemple verrouillage définitif), donner un retour visible après chaque action et respecter lisibilité, tailles tactiles et accessibilité.
+
 ## Principes
 - **Android uniquement** (pas d'iOS, pas de web dans ce dépôt).
 - **Supabase Auth** : connexion par adresse email + mot de passe. Le mot de passe oublié envoie un code de récupération email de 8 chiffres ; les droits sont appliqués par la base (RLS). Aucune clé service_role dans l'app.

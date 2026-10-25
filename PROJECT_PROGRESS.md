@@ -166,3 +166,22 @@ Construire les écrans admin mobiles manquants, les relier aux mêmes opération
 ### Commit
 
 Modifications locales, commit à renseigner s’il est créé.
+
+
+## Rôles, UX et schéma `nfc` — 2026-10-25 09:22:00 UTC
+
+### Terminé
+
+La documentation mobile et le guide Supabase exigent l’usage du schéma PostgreSQL `nfc` pour toutes les données et RPC NFC, un profil/rôle chargé depuis `nfc.nfc_profiles`, un accueil adapté au rôle et des autorisations appliquées par le backend/RLS. Les critères UX/UI professionnels et sécurisés sont précisés. Le template Recovery demandé, avec code cyan `#01A3CA`, est documenté. Les tests de connexion sont explicitement différés.
+
+### Partiel / non terminé
+
+Le code mobile n’a actuellement pas de chargement effectif du profil/rôle : les fichiers remote/profile sont des squelettes et `AuthGate` envoie tout utilisateur connecté vers un accueil générique. La migration des objets métier depuis `public` vers `nfc` n’est pas faite.
+
+### Reste à faire
+
+Migrer/qualifier les objets backend dans le schéma `nfc`, puis implémenter profil/rôle, garde d’accès, accueil et navigation par rôle, écrans admin/client et appels à l’API partagée. Appliquer les critères UX/UI sans lancer les tests de connexion avant demande.
+
+### Commit
+
+Commit documentaire à renseigner s’il est créé.
