@@ -1,0 +1,1 @@
+Dossier généré par `flutter create --platforms=android .` (ou par la CI). Ajouter ensuite dans AndroidManifest.xml : permission android.permission.NFC et uses-feature android.hardware.nfc (required=true). Clé de signature via secrets GitHub.

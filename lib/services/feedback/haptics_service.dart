@@ -1,0 +1,1 @@
+// Vibrations succès / erreur

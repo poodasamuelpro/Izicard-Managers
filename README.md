@@ -1,15 +1,4 @@
-# Izicard Managers
+# IziCard NFC Encoder — app Android (Flutter)
 
-Socle minimal d’une application mobile Flutter pour la gestion Izicard.
+App mobile d'encodage NFC en série. Le serveur (Supabase + API web) est dans le dépôt izicard-nfc-encoder. Voir MOBILE_ARCHITECTURE.md.
 
-## Démarrage
-
-```bash
-flutter pub get
-flutter run
-```
-
-## Structure
-
-- `lib/main.dart` : point d’entrée et écran d’accueil minimal
-- `test/widget_test.dart` : test de fumée

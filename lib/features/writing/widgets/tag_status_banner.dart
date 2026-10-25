@@ -1,0 +1,1 @@
+// Bandeau d'état géant
