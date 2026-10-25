@@ -291,4 +291,4 @@ La fonction d’invitation et le patch SQL admin-only sont écrits dans le dép�
 
 ### Commit
 
-À renseigner après commit/push de cette étape.
+`08a42f7` — poussé sur `master`.
