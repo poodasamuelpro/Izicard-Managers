@@ -48,10 +48,11 @@ class _BatchCreateScreenState extends State<BatchCreateScreen> {
   }
 
   Future<_FormOptions> _loadOptions() async {
+    if (widget.profile.role != NfcRole.admin) {
+      return const _FormOptions(clients: [], formats: []);
+    }
     final formats = await widget.repository.listActiveFormats();
-    final clients = widget.profile.role == NfcRole.admin
-        ? await widget.repository.listClients()
-        : <NfcClient>[];
+    final clients = await widget.repository.listClients();
     return _FormOptions(clients: clients, formats: formats);
   }
 
@@ -63,11 +64,15 @@ class _BatchCreateScreenState extends State<BatchCreateScreen> {
   }
 
   Future<void> _submit() async {
+    if (widget.profile.role != NfcRole.admin) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Seul un administrateur peut créer un dossier.')),
+      );
+      return;
+    }
     if (_saving || !_formKey.currentState!.validate()) return;
     final format = _selectedFormat;
-    final clientId = widget.profile.role == NfcRole.admin
-        ? _selectedClientId
-        : widget.profile.clientId;
+    final clientId = _selectedClientId;
     if (format == null || clientId == null) return;
 
     setState(() => _saving = true);
@@ -98,7 +103,25 @@ class _BatchCreateScreenState extends State<BatchCreateScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
+  Widget build(BuildContext context) {
+    if (widget.profile.role != NfcRole.admin) {
+      return Scaffold(
+        appBar: AppBar(title: const Text('Créer un dossier')),
+        body: const SafeArea(
+          child: Center(
+            child: Padding(
+              padding: EdgeInsets.all(28),
+              child: Text(
+                'Seul un administrateur peut créer un dossier.',
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
+    return Scaffold(
         appBar: AppBar(title: const Text('Créer un dossier')),
         body: SafeArea(
           child: FutureBuilder<_FormOptions>(
@@ -269,6 +292,7 @@ class _BatchCreateScreenState extends State<BatchCreateScreen> {
           ),
         ),
       );
+  }
 }
 
 class _FormOptions {

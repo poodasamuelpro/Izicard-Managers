@@ -84,7 +84,6 @@ class HomeScreen extends StatelessWidget {
             NfcDestination.settings,
           ]
         : <NfcDestination>[
-            if (profile.canCreateBatches) NfcDestination.createBatch,
             NfcDestination.batches,
             NfcDestination.write,
             NfcDestination.verify,

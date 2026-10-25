@@ -255,3 +255,40 @@ Les fonctions Import Excel, liste et écriture/rélecture physique des tags NFC,
 ### Commit
 
 `3737ff2` — poussé sur `master`.
+
+## Création de dossiers réservée aux admins — 2026-10-25 10:01:00 UTC
+
+### Terminé
+
+- Le contrôle Flutter mobile réserve désormais la destination et les commandes de création de dossiers au rôle `admin` uniquement. L’ancien indicateur client `can_create_batches` n’accorde plus ce droit.
+- Le formulaire vérifie lui-même le rôle admin avant de charger ses options ou de soumettre une création ; un profil non-admin ne voit pas les champs de création.
+
+### Partiel / non terminé
+
+- Le contrôle serveur de la RPC `nfc_create_batch` doit également être mis à jour par une migration SQL afin que l’autorisation admin-only soit imposée côté backend (y compris pour les appels Web/API). Cette migration n’est pas réalisée dans ce dépôt Flutter.
+- Aucun test de connexion n’a été effectué. Aucun test/build Flutter n’a été lancé (Flutter absent).
+
+### Reste à faire
+
+Créer et déployer la migration SQL mettant à jour la RPC, puis vérifier les autorisations côté serveur et effectuer les validations Flutter/connexion uniquement quand l’environnement et l’autorisation seront disponibles.
+
+### Commit
+
+Aucun commit créé, conformément à la demande.
+
+
+## Invitation administrée et dossiers attribués — 2026-10-25 10:10:30 UTC
+
+### Terminé / alignement
+
+- Le propriétaire confirme le parcours : IziCard Admin crée manuellement le client et l’invite par email ; l’utilisateur accepte l’invitation, définit son mot de passe et peut ensuite se connecter sur Web ou Android. Aucun parcours d’auto-inscription client n’est autorisé.
+- Le Web prépare la fonction Supabase partagée `create-client-user`, qui crée le profil `client` et relie son `client_id`. Le mobile réutilisera cette même fonction pour une future création/invitation Admin depuis l’app, sans clé `service_role` dans Flutter.
+- L’Admin est seul à créer un dossier ; le formulaire Admin choisit le client afin qu’à la connexion le client voie ses dossiers attribués via les RLS.
+
+### Non vérifié / reste
+
+La fonction d’invitation et le patch SQL admin-only sont écrits dans le dépôt Web, mais ne sont pas déployés/appliqués à Supabase. Aucun compte ni email n’a été créé ou envoyé. Le parcours d’invitation mobile reste à implémenter. Aucun test de connexion, analyse ou build Flutter n’a été exécuté (Flutter absent).
+
+### Commit
+
+À renseigner après commit/push de cette étape.

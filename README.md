@@ -2,7 +2,7 @@
 
 Application Android d’encodage NFC en série et interface de l’écosystème IziCard. L’application mobile et l’espace admin Web doivent proposer les mêmes fonctions métier et utiliser un backend/API unique : même projet Supabase, mêmes données, mêmes fonctions serveur/RPC et mêmes règles d’accès. Le mobile n’a pas son propre backend ni ses propres règles métier.
 
-En mode administrateur, l’application mobile doit pouvoir faire tout ce que l’espace admin Web permet, notamment gérer les clients et accès, créer et suivre les dossiers, gérer les imports et exports et utiliser les autres opérations métier disponibles. Les deux interfaces appellent les mêmes opérations côté serveur ; seule la présentation et l’intégration du NFC peuvent être propres à chaque plateforme. Toute fonction métier doit être partagée plutôt que réimplémentée séparément.
+En mode administrateur, l’application mobile doit pouvoir faire tout ce que l’espace admin Web permet, notamment gérer les clients et accès, créer et suivre les dossiers, gérer les imports et exports et utiliser les autres opérations métier disponibles. Seul l’Admin peut créer un client et un dossier ; le client reçoit une invitation email, se connecte sur Web ou Android et ne voit que les dossiers associés à son profil. L’auto-inscription client est interdite. Les deux interfaces appellent les mêmes opérations côté serveur ; seule la présentation et l’intégration du NFC peuvent être propres à chaque plateforme. Toute fonction métier doit être partagée plutôt que réimplémentée séparément.
 
 ## Schéma Supabase obligatoire
 
@@ -16,7 +16,7 @@ Toute modification, correction ou fonctionnalité doit être reportée dans [`PR
 
 ## Supabase et authentification
 
-Le mobile utilise Supabase Auth pour la connexion par adresse email et mot de passe, la déconnexion et la réinitialisation. Le mot de passe oublié reçoit un code email de 8 chiffres avant la définition du nouveau mot de passe. L’URL Supabase et la clé anon peuvent être utilisées côté client ; aucune clé `service_role` ne doit être embarquée dans l’application. Les permissions fonctionnelles seront imposées par les politiques RLS et les fonctions SQL côté Supabase.
+Le mobile utilise Supabase Auth pour la connexion par adresse email et mot de passe, la déconnexion et la réinitialisation. Le mot de passe oublié reçoit un code email de 8 chiffres avant la définition du nouveau mot de passe. Les comptes client sont invités uniquement par l’Admin via la fonction Supabase partagée ; aucun parcours d’auto-inscription n’est exposé. L’URL Supabase et la clé anon peuvent être utilisées côté client ; aucune clé `service_role` ne doit être embarquée dans l’application. Les permissions fonctionnelles seront imposées par les politiques RLS et les fonctions SQL côté Supabase.
 
 Les emails nécessaires sont celui de récupération avec code OTP et, si activée, la confirmation de compte. Les messages seront envoyés par Supabase Auth via SMTP Resend configuré dans le tableau de bord Supabase. La clé API Resend ne sera jamais stockée dans Flutter.
 

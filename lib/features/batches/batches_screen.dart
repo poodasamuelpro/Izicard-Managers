@@ -41,10 +41,10 @@ class _BatchesScreenState extends State<BatchesScreen> {
     }
   }
 
-  bool get _canCreate =>
-      widget.profile.role == NfcRole.admin || widget.profile.canCreateBatches;
+  bool get _canCreate => widget.profile.role == NfcRole.admin;
 
   void _openCreate() {
+    if (!_canCreate) return;
     Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
         builder: (_) => BatchCreateScreen(

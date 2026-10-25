@@ -59,8 +59,7 @@ extension NfcDestinationDetails on NfcDestination {
         NfcDestination.clients ||
         NfcDestination.imports ||
         NfcDestination.export => profile.role == NfcRole.admin,
-        NfcDestination.createBatch =>
-          profile.role == NfcRole.admin || profile.canCreateBatches,
+        NfcDestination.createBatch => profile.role == NfcRole.admin,
         NfcDestination.batches ||
         NfcDestination.write ||
         NfcDestination.verify ||
