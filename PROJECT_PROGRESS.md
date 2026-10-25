@@ -147,3 +147,22 @@ Tester connexion, déconnexion et récupération de mot de passe avec un utilisa
 ### Commit
 
 Commit : 63f31d0
+
+
+## Backend unique et parité admin Web/mobile — 2026-10-25 09:19:00 UTC
+
+### Terminé
+
+Les README et documents d’architecture précisent que l’application mobile et l’espace admin Web partagent un backend/API unique, le même projet Supabase, les mêmes tables, fonctions serveur/RPC et règles RLS. La parité des fonctions admin est requise, notamment gestion des clients et accès, création/suivi des dossiers, import/export et autres opérations métier. Les règles métier doivent être centralisées côté backend, et non recodées indépendamment en Flutter.
+
+### Partiel / non terminé
+
+La documentation décrit l’architecture cible ; elle ne confirme pas que les écrans mobiles couvrent déjà toutes les opérations Web. Les tests fonctionnels non indispensables sont reportés.
+
+### Reste à faire
+
+Construire les écrans admin mobiles manquants, les relier aux mêmes opérations du backend/API que le Web et vérifier les fonctions nécessitant un test.
+
+### Commit
+
+Modifications locales, commit à renseigner s’il est créé.

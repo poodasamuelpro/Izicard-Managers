@@ -1,6 +1,8 @@
 # IziCard NFC Encoder — application Android Flutter
 
-Application mobile Android d’encodage NFC en série. Le dépôt web porte l’administration, les clients, les dossiers, l’import et l’API ; le mobile utilise les mêmes données, la même API Supabase et les mêmes règles métier pour charger les dossiers et écrire les tags sur le terrain.
+Application Android d’encodage NFC en série et interface de l’écosystème IziCard. L’application mobile et l’espace admin Web doivent proposer les mêmes fonctions métier et utiliser un backend/API unique : même projet Supabase, mêmes données, mêmes fonctions serveur/RPC et mêmes règles d’accès. Le mobile n’a pas son propre backend ni ses propres règles métier.
+
+En mode administrateur, l’application mobile doit pouvoir faire tout ce que l’espace admin Web permet, notamment gérer les clients et accès, créer et suivre les dossiers, gérer les imports et exports et utiliser les autres opérations métier disponibles. Les deux interfaces appellent les mêmes opérations côté serveur ; seule la présentation et l’intégration du NFC peuvent être propres à chaque plateforme. Toute fonction métier doit être partagée plutôt que réimplémentée séparément.
 
 ## Règle obligatoire de suivi
 

@@ -1,6 +1,8 @@
 # IziCard NFC Encoder — App Android (Flutter)
 
-Objectif : encoder des cartes/tags NFC en série (100+), depuis un téléphone Android, avec les mêmes dossiers, clients et règles que la plateforme web. Même base Supabase (tables nfc_), mêmes fonctions : nfc_create_batch, nfc_import_rows, nfc_mark_written, nfc_set_access.
+Objectif : fournir une application Android d’encodage NFC en série (100+) et une interface mobile complète de l’écosystème IziCard. L’application et l’espace admin Web ont la même parité fonctionnelle métier et utilisent un backend/API unique : même projet Supabase, mêmes tables `nfc_`, mêmes fonctions serveur/RPC (dont `nfc_create_batch`, `nfc_import_rows`, `nfc_mark_written`, `nfc_set_access`) et mêmes politiques RLS. Il n’existe pas de backend métier mobile distinct.
+
+En mode administrateur, le mobile doit pouvoir réaliser les opérations disponibles dans l’espace admin Web : gestion des clients et accès, création et suivi des dossiers, import/export et autres opérations métier. Toute logique métier partagée réside côté backend et est appelée par les deux interfaces ; elle ne doit pas être dupliquée dans Flutter. Les différences sont limitées à l’interface et aux intégrations natives, notamment le NFC Android.
 
 ## Principes
 - **Android uniquement** (pas d'iOS, pas de web dans ce dépôt).
