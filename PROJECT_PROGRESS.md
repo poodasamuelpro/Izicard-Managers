@@ -208,7 +208,7 @@ Les écrans de destination sont des squelettes de navigation : clients, dossiers
 
 ### Commit
 
-Modifications locales, commit à renseigner s’il est créé.
+`7a999ce` — poussé sur `master`.
 
 
 ## Migration Supabase `nfc` confirmée — 2026-10-25 09:40:00 UTC
@@ -227,4 +227,4 @@ Poursuivre les écrans et raccordements métier mobile décrits dans l’entrée
 
 ### Commit
 
-Mise à jour de suivi liée au travail Web, commit à renseigner s’il est créé.
+`061afd3` — poussé sur `master`.
