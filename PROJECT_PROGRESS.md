@@ -254,4 +254,4 @@ Les fonctions Import Excel, liste et écriture/rélecture physique des tags NFC,
 
 ### Commit
 
-À renseigner après commit/push de cette étape.
+`3737ff2` — poussé sur `master`.
