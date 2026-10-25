@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../data/repositories/auth_repository.dart';
-import 'otp_screen.dart';
+import 'password_reset_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key, required this.repository});
@@ -14,30 +14,26 @@ class LoginScreen extends StatefulWidget {
 
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _loading = false;
+  bool _obscurePassword = true;
   String? _error;
 
-  Future<void> _sendCode() async {
+  Future<void> _signIn() async {
     final email = _emailController.text.trim();
-    if (!email.contains('@')) {
-      setState(() => _error = 'Saisis une adresse email valide.');
+    final password = _passwordController.text;
+    if (!email.contains('@') || password.isEmpty) {
+      setState(() => _error = 'Saisis ton email et ton mot de passe.');
       return;
     }
-
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      await widget.repository.sendOtp(email);
-      if (!mounted) return;
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => OtpScreen(email: email, repository: widget.repository),
-        ),
-      );
+      await widget.repository.signIn(email: email, password: password);
     } catch (_) {
-      setState(() => _error = 'Impossible d’envoyer le code. Réessaie.');
+      setState(() => _error = 'Email ou mot de passe incorrect.');
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -46,6 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   void dispose() {
     _emailController.dispose();
+    _passwordController.dispose();
     super.dispose();
   }
 
@@ -65,27 +62,48 @@ class _LoginScreenState extends State<LoginScreen> {
                   const SizedBox(height: 32),
                   Text('Connexion', style: Theme.of(context).textTheme.headlineMedium),
                   const SizedBox(height: 8),
-                  const Text('Reçois un code de connexion à 8 chiffres par email.'),
+                  const Text('Connecte-toi avec ton adresse email et ton mot de passe.'),
                   const SizedBox(height: 24),
                   TextField(
                     controller: _emailController,
                     keyboardType: TextInputType.emailAddress,
                     decoration: const InputDecoration(labelText: 'Adresse email'),
                   ),
-                  if (_error != null) ...[
-                    const SizedBox(height: 12),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: _passwordController,
+                    obscureText: _obscurePassword,
+                    decoration: InputDecoration(
+                      labelText: 'Mot de passe',
+                      suffixIcon: IconButton(
+                        onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                        icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off),
+                      ),
+                    ),
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => PasswordResetScreen(repository: widget.repository),
+                        ),
+                      ),
+                      child: const Text('Mot de passe oublié ?'),
+                    ),
+                  ),
+                  if (_error != null)
                     Text(_error!, style: const TextStyle(color: Color(0xFFC62828))),
-                  ],
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 12),
                   FilledButton(
-                    onPressed: _loading ? null : _sendCode,
+                    onPressed: _loading ? null : _signIn,
                     child: _loading
                         ? const SizedBox(
                             height: 20,
                             width: 20,
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
-                        : const Text('Recevoir le code'),
+                        : const Text('Se connecter'),
                   ),
                 ],
               ),

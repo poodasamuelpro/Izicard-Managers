@@ -14,7 +14,7 @@ Future<void> main() async {
 
   await Supabase.initialize(
     url: AppEnv.supabaseUrl,
-    anonKey: AppEnv.supabasePublishableKey,
+    anonKey: AppEnv.supabaseAnonKey,
   );
 
   runApp(const IzicardApp());

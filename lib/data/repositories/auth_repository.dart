@@ -9,22 +9,30 @@ class AuthRepository {
 
   User? get currentUser => _client.auth.currentUser;
 
-  Future<void> sendOtp(String email) async {
-    await _client.auth.signInWithOtp(
+  Future<void> signIn({required String email, required String password}) async {
+    await _client.auth.signInWithPassword(
       email: email.trim(),
-      shouldCreateUser: false,
+      password: password,
     );
   }
 
-  Future<AuthResponse> verifyOtp({
+  Future<void> requestPasswordReset(String email) {
+    return _client.auth.resetPasswordForEmail(email.trim());
+  }
+
+  Future<void> verifyRecoveryCode({
     required String email,
     required String token,
-  }) {
-    return _client.auth.verifyOTP(
+  }) async {
+    await _client.auth.verifyOTP(
       email: email.trim(),
       token: token.trim(),
-      type: OtpType.email,
+      type: OtpType.recovery,
     );
+  }
+
+  Future<void> updatePassword(String password) async {
+    await _client.auth.updateUser(UserAttributes(password: password));
   }
 
   Future<void> signOut() => _client.auth.signOut();

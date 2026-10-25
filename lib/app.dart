@@ -3,7 +3,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'data/repositories/auth_repository.dart';
 import 'features/auth/login_screen.dart';
-import 'features/auth/otp_screen.dart';
 import 'features/home/home_screen.dart';
 
 class IzicardApp extends StatelessWidget {
@@ -48,7 +47,7 @@ class ConfigurationErrorScreen extends StatelessWidget {
           padding: EdgeInsets.all(24),
           child: Text(
             'Configuration Supabase manquante. Lancez l’application avec '
-            'SUPABASE_URL et SUPABASE_PUBLISHABLE_KEY.',
+            'SUPABASE_URL et SUPABASE_ANON_KEY.',
             textAlign: TextAlign.center,
           ),
         ),
@@ -76,17 +75,5 @@ class AuthGate extends StatelessWidget {
             : HomeScreen(repository: repository);
       },
     );
-  }
-}
-
-class OtpRoute extends StatelessWidget {
-  const OtpRoute({super.key, required this.email, required this.repository});
-
-  final String email;
-  final AuthRepository repository;
-
-  @override
-  Widget build(BuildContext context) {
-    return OtpScreen(email: email, repository: repository);
   }
 }

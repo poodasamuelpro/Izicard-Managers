@@ -33,7 +33,7 @@ Aucune modification ne doit être considérée comme terminée sans cette mise �
 - Déconnexion implémentée côté application.
 - Le parcours de réinitialisation par mot de passe est volontairement exclu de cette phase.
 - Écrans UI/UX finaux non implémentés.
-- Configuration Brevo non effectuée côté Supabase.
+- Configuration Resend non effectuée côté Supabase.
 - Aucun secret serveur ou clé `service_role` ne doit être ajouté au dépôt.
 
 ### Prochaine étape validée
@@ -47,26 +47,26 @@ Finaliser et valider le socle OTP Supabase côté mobile :
 5. déconnexion et nettoyage local ;
 6. tests et mise à jour de ce fichier.
 
-## Plan Supabase et Brevo
+## Plan Supabase et Resend
 
 - L’application utilisera uniquement l’URL Supabase et la clé publishable/anon côté client.
 - La clé `service_role` restera exclusivement côté serveur et ne sera jamais embarquée dans Flutter.
 - Les règles RLS et les fonctions SQL resteront l’autorité pour les droits d’accès.
 - Supabase Auth gérera les sessions, la connexion, la déconnexion et les tokens.
 - Le parcours retenu est un accès par code OTP ; aucune réinitialisation par mot de passe n’est prévue dans cette phase.
-- Brevo sera utilisé uniquement comme fournisseur d’envoi SMTP de Supabase Auth pour le code OTP et, si activée, la confirmation de compte.
-- Aucune clé API Brevo ne sera stockée dans l’application mobile.
+- Resend sera utilisé uniquement comme fournisseur d’envoi SMTP de Supabase Auth pour le code OTP et, si activée, la confirmation de compte.
+- Aucune clé API Resend ne sera stockée dans l’application mobile.
 - Les clés publishable fournies seront injectées via configuration de build ou fichier local ignoré par Git, jamais via une clé serveur.
 
 ## Documentation et suivi — 2026-10-25 08:47:09 UTC
 
 ### Terminé
 
-Le fichier de suivi racine a été créé. Le README documente désormais la règle de traçabilité, la séparation des responsabilités web/mobile, la configuration Supabase côté client et l’usage minimal de Brevo. Le fichier `.env.example` contient uniquement des placeholders pour l’URL et la clé publishable Supabase.
+Le fichier de suivi racine a été créé. Le README documente désormais la règle de traçabilité, la séparation des responsabilités web/mobile, la configuration Supabase côté client et l’usage minimal de Resend. Le fichier `.env.example` contient uniquement des placeholders pour l’URL et la clé publishable Supabase.
 
 ### Partiel / non terminé
 
-La configuration SMTP Brevo doit être effectuée dans le projet Supabase, sans ajouter de clé Brevo au dépôt. La longueur de 8 chiffres doit être configurée et vérifiée côté Supabase ; l’application refuse tout code qui ne comporte pas exactement 8 chiffres.
+La configuration SMTP Resend doit être effectuée dans le projet Supabase, sans ajouter de clé Resend au dépôt. La longueur de 8 chiffres doit être configurée et vérifiée côté Supabase ; l’application refuse tout code qui ne comporte pas exactement 8 chiffres.
 
 ### Reste à faire
 
@@ -80,7 +80,7 @@ Commit : à renseigner après le commit de l’implémentation OTP.
 
 ### Terminé
 
-Supabase Flutter natif est initialisé via `SUPABASE_URL` et `SUPABASE_PUBLISHABLE_KEY`. Le flux comprend la saisie d’email, l’envoi d’un OTP, la saisie et validation d’un code de 8 chiffres, la persistance de session via Supabase Auth, la déconnexion et l’écran d’accueil de session. Le logo et la charte IziCard sont utilisés par les écrans de connexion et d’accueil.
+Supabase Flutter natif est initialisé via `SUPABASE_URL` et `SUPABASE_ANON_KEY`. Le flux comprend la saisie d’email, l’envoi d’un OTP, la saisie et validation d’un code de 8 chiffres, la persistance de session via Supabase Auth, la déconnexion et l’écran d’accueil de session. Le logo et la charte IziCard sont utilisés par les écrans de connexion et d’accueil.
 
 ### Partiel / non terminé
 
@@ -106,8 +106,44 @@ Flutter n’est pas installé dans cet environnement : aucun `flutter pub get`, 
 
 ### Reste à faire
 
-Configurer Supabase Auth et SMTP Brevo, vérifier la longueur réelle de l’OTP côté serveur, tester le parcours sur Android, puis ajouter la gestion des rôles et des écrans dossiers/NFC.
+Configurer Supabase Auth et SMTP Resend, vérifier la longueur réelle de l’OTP côté serveur, tester le parcours sur Android, puis ajouter la gestion des rôles et des écrans dossiers/NFC.
 
 ### Commit
 
 Commit : 001c266
+
+## Correction Auth et fournisseur email — 2026-10-25 08:57:57 UTC
+
+### Terminé
+
+Le parcours mobile a été corrigé pour utiliser la clé Supabase `anon`, la connexion email + mot de passe et la déconnexion. Le mot de passe oublié demande l’email, vérifie un code de récupération de 8 chiffres, puis permet de définir un nouveau mot de passe. L’ancien prototype OTP-only a été retiré. Toutes les instructions email utilisent désormais Resend, configuré uniquement côté Supabase.
+
+### Partiel / non terminé
+
+La configuration Resend dans Supabase doit encore être vérifiée manuellement. Flutter n’est pas installé dans cet environnement, donc `flutter pub get`, l’analyse et le test Android restent à effectuer.
+
+### Reste à faire
+
+Configurer Resend dans **Authentication > SMTP Settings**, régler `mailer_otp_length` à `8`, appliquer le template Recovery IziCard, tester la récupération sur Android, puis terminer l’authentification web et les contrôles de rôle.
+
+### Commit
+
+À renseigner après le commit de cette correction.
+
+## Réalignement demandé — 2026-10-25 08:58:37 UTC
+
+### Terminé
+
+La configuration client Flutter utilise maintenant `SUPABASE_ANON_KEY`. Le parcours mobile utilise `signInWithPassword` pour la connexion, `signOut` pour la déconnexion, `resetPasswordForEmail` pour demander la récupération, `verifyOTP` de type recovery pour le code de 8 chiffres et `updateUser` pour enregistrer le nouveau mot de passe. Le fournisseur email documenté et retenu est Resend uniquement. Le guide Supabase/Resend est présent dans `SUPABASE_SETUP.md`.
+
+### Partiel / non terminé
+
+La longueur OTP doit être réglée à 8 dans la configuration Auth Supabase et le template Recovery doit afficher `{{ .Token }}`. Resend doit être vérifié manuellement dans **Authentication > SMTP Settings**. Flutter n’est pas installé ici, donc l’analyse et le build Android restent à exécuter.
+
+### Reste à faire
+
+Tester connexion, déconnexion et récupération de mot de passe avec un utilisateur Supabase réel, puis poursuivre les écrans de dossiers et d’encodage NFC.
+
+### Commit
+
+Commit : 63f31d0
