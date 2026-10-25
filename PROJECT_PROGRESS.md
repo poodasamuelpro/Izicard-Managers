@@ -319,3 +319,24 @@ Les écrans mobiles Import, Export, Écriture NFC, Vérification, Synchronisatio
 ### Commit
 
 `8349d67` — `feat(admin): invite clients from mobile`
+
+
+## Activation client sur Android — 2026-10-25 10:31:30 UTC
+
+### Terminé dans le code
+
+- Écran mobile `PasswordSetupScreen` créé avec validation du mot de passe et confirmation.
+- L’écran est affiché sur l’événement Supabase `passwordRecovery`, enregistre le mot de passe puis ferme la session pour permettre une reconnexion normale.
+- Le parcours rappelle que le même mot de passe est utilisable sur Web et Android.
+
+### Partiel / non vérifié
+
+Flutter n’est pas installé : aucun analyseur, test ou build n’a pu être exécuté. Le deep link Android d’invitation doit encore être déclaré dans Auth URL et dans le manifeste avant distribution. Le parcours Web `set-password.html` est le fallback officiellement documenté.
+
+### Reste à faire
+
+Configurer la redirection réelle vers la page d’activation, ajouter le deep link Android si souhaité, puis tester une invitation réelle avec le même compte sur Web et mobile.
+
+### Commit
+
+`ec5b8c0` — `feat(auth): add mobile password activation`

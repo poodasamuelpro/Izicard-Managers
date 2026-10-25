@@ -9,6 +9,7 @@ import 'data/models/nfc_profile.dart';
 import 'data/repositories/auth_repository.dart';
 import 'features/auth/access_revoked_screen.dart';
 import 'features/auth/login_screen.dart';
+import 'features/auth/password_setup_screen.dart';
 
 class IzicardApp extends StatelessWidget {
   const IzicardApp({super.key, this.configurationError = false});
@@ -76,6 +77,7 @@ class _AuthGateState extends State<AuthGate> {
   StreamSubscription<AuthState>? _authSubscription;
   User? _user;
   Future<NfcProfile?>? _profileFuture;
+  bool _passwordSetup = false;
 
   @override
   void initState() {
@@ -90,6 +92,11 @@ class _AuthGateState extends State<AuthGate> {
       user == null ? null : _repository.loadProfile(user.id);
 
   void _onAuthChanged(AuthState state) {
+    if (state.event == AuthChangeEvent.passwordRecovery) {
+      if (!mounted) return;
+      setState(() => _passwordSetup = true);
+      return;
+    }
     final nextUser = state.session?.user ?? _repository.currentUser;
     if (nextUser?.id == _user?.id) return;
     if (!mounted) return;
@@ -115,6 +122,10 @@ class _AuthGateState extends State<AuthGate> {
   Widget build(BuildContext context) {
     final user = _user;
     if (user == null) return LoginScreen(repository: _repository);
+
+    if (_passwordSetup) {
+      return PasswordSetupScreen(repository: _repository);
+    }
 
     final future = _profileFuture;
     if (future == null) return LoginScreen(repository: _repository);
