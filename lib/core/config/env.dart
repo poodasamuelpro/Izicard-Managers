@@ -1,1 +1,10 @@
-// Lecture de SUPABASE_URL / SUPABASE_ANON_KEY
+class AppEnv {
+  const AppEnv._();
+
+  static const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
+  static const supabasePublishableKey =
+      String.fromEnvironment('SUPABASE_PUBLISHABLE_KEY');
+
+  static bool get isConfigured =>
+      supabaseUrl.isNotEmpty && supabasePublishableKey.isNotEmpty;
+}

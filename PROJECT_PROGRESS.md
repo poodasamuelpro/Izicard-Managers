@@ -28,25 +28,24 @@ Aucune modification ne doit être considérée comme terminée sans cette mise �
 
 ### Partiel / non terminé
 
-- Supabase n’est pas encore initialisé dans le code Flutter.
-- Connexion utilisateur non implémentée.
-- Déconnexion non implémentée.
-- Réinitialisation de mot de passe non implémentée.
+- Supabase est maintenant initialisé nativement dans le code Flutter.
+- Connexion par email + code OTP implémentée côté application.
+- Déconnexion implémentée côté application.
+- Le parcours de réinitialisation par mot de passe est volontairement exclu de cette phase.
 - Écrans UI/UX finaux non implémentés.
 - Configuration Brevo non effectuée côté Supabase.
 - Aucun secret serveur ou clé `service_role` ne doit être ajouté au dépôt.
 
 ### Prochaine étape validée
 
-Mettre en place le socle Supabase côté mobile :
+Finaliser et valider le socle OTP Supabase côté mobile :
 
 1. configuration par variables de build ;
 2. initialisation du client Supabase ;
-3. connexion email/mot de passe ;
-4. déconnexion et nettoyage local ;
-5. demande de réinitialisation de mot de passe ;
-6. écrans de connexion, oubli du mot de passe et accès révoqué ;
-7. tests et mise à jour de ce fichier.
+3. envoi du code OTP par email ;
+4. validation d’un code à 8 chiffres ;
+5. déconnexion et nettoyage local ;
+6. tests et mise à jour de ce fichier.
 
 ## Plan Supabase et Brevo
 
@@ -54,8 +53,8 @@ Mettre en place le socle Supabase côté mobile :
 - La clé `service_role` restera exclusivement côté serveur et ne sera jamais embarquée dans Flutter.
 - Les règles RLS et les fonctions SQL resteront l’autorité pour les droits d’accès.
 - Supabase Auth gérera les sessions, la connexion, la déconnexion et les tokens.
-- La réinitialisation appellera `resetPasswordForEmail` avec une URL de redirection mobile contrôlée.
-- Brevo sera utilisé uniquement comme fournisseur d’envoi SMTP de Supabase Auth pour les emails nécessaires : confirmation de compte, réinitialisation de mot de passe et éventuellement changement d’email.
+- Le parcours retenu est un accès par code OTP ; aucune réinitialisation par mot de passe n’est prévue dans cette phase.
+- Brevo sera utilisé uniquement comme fournisseur d’envoi SMTP de Supabase Auth pour le code OTP et, si activée, la confirmation de compte.
 - Aucune clé API Brevo ne sera stockée dans l’application mobile.
 - Les clés publishable fournies seront injectées via configuration de build ou fichier local ignoré par Git, jamais via une clé serveur.
 
@@ -67,12 +66,48 @@ Le fichier de suivi racine a été créé. Le README documente désormais la rè
 
 ### Partiel / non terminé
 
-L’authentification Flutter et les écrans associés ne sont pas encore codés. La configuration SMTP Brevo doit être effectuée dans le projet Supabase, sans ajouter de clé Brevo au dépôt.
+La configuration SMTP Brevo doit être effectuée dans le projet Supabase, sans ajouter de clé Brevo au dépôt. La longueur de 8 chiffres doit être configurée et vérifiée côté Supabase ; l’application refuse tout code qui ne comporte pas exactement 8 chiffres.
 
 ### Reste à faire
 
-Implémenter puis tester le socle Auth Supabase : connexion, déconnexion, réinitialisation du mot de passe, gestion de session et écrans UI/UX correspondants.
+Tester sur un appareil Android le socle Auth Supabase : envoi OTP, validation, session, déconnexion et gestion des erreurs.
 
 ### Commit
 
-Commit : 292eb4e
+Commit : à renseigner après le commit de l’implémentation OTP.
+
+## Authentification OTP — 2026-10-25 08:50:30 UTC
+
+### Terminé
+
+Supabase Flutter natif est initialisé via `SUPABASE_URL` et `SUPABASE_PUBLISHABLE_KEY`. Le flux comprend la saisie d’email, l’envoi d’un OTP, la saisie et validation d’un code de 8 chiffres, la persistance de session via Supabase Auth, la déconnexion et l’écran d’accueil de session. Le logo et la charte IziCard sont utilisés par les écrans de connexion et d’accueil.
+
+### Partiel / non terminé
+
+Flutter n’est pas installé dans cet environnement, donc l’analyse statique et l’exécution sur Android n’ont pas encore été réalisées. Le serveur Supabase doit être configuré pour envoyer les emails et accepter le format OTP de 8 chiffres. La connexion est limitée aux utilisateurs déjà créés (`shouldCreateUser: false`).
+
+### Reste à faire
+
+Configurer et tester l’OTP côté Supabase, installer/valider Flutter, ajouter les tests Auth, puis construire les écrans dossiers et NFC.
+
+### Commit
+
+Commit : 001c266
+
+## Socle Supabase OTP — 2026-10-25 08:51:30 UTC
+
+### Terminé
+
+L’application initialise Supabase avec `supabase_flutter`. Le parcours de connexion demande une adresse email, envoie un OTP via `signInWithOtp`, vérifie un code composé exactement de 8 chiffres via `verifyOTP`, conserve la session Supabase et propose la déconnexion. Les écrans utilisent le logo IziCard et la palette cyan/bleu. Aucun parcours de réinitialisation par mot de passe n’a été ajouté.
+
+### Partiel / non terminé
+
+Flutter n’est pas installé dans cet environnement : aucun `flutter pub get`, `flutter analyze` ou build Android n’a pu être exécuté. L’instance Supabase doit être configurée pour l’envoi des emails et le format OTP de 8 chiffres. Le code n’autorise pas l’inscription automatique (`shouldCreateUser: false`) : les comptes doivent exister côté Supabase.
+
+### Reste à faire
+
+Configurer Supabase Auth et SMTP Brevo, vérifier la longueur réelle de l’OTP côté serveur, tester le parcours sur Android, puis ajouter la gestion des rôles et des écrans dossiers/NFC.
+
+### Commit
+
+Commit : 001c266

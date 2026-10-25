@@ -4,7 +4,7 @@ Objectif : encoder des cartes/tags NFC en série (100+), depuis un téléphone A
 
 ## Principes
 - **Android uniquement** (pas d'iOS, pas de web dans ce dépôt).
-- **Supabase Auth** : connexion email + mot de passe. Les droits sont appliqués par la base (RLS). Aucune clé service_role dans l'app.
+- **Supabase Auth** : connexion par adresse email et code OTP de 8 chiffres, sans mot de passe dans le parcours mobile. Les droits sont appliqués par la base (RLS). Aucune clé service_role dans l'app.
 - **Hors-ligne d'abord** : le dossier est téléchargé sur le téléphone ; chaque résultat d'écriture est enregistré localement puis envoyé dès que le réseau revient.
 - **Deux modes** (comme le web) : lien vers un profil, ou données réelles écrites directement.
 - Charte IziCard : cyan #01A3CA, bleu #0299E2, blanc.
