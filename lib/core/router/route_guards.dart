@@ -2,12 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/models/nfc_profile.dart';
+import '../../data/local/app_database.dart';
 import '../../data/repositories/batch_repository.dart';
 import '../../data/repositories/client_repository.dart';
+import '../../data/repositories/sync_repository.dart';
+import '../../data/remote/tags_remote.dart';
 import '../../features/admin/batches/batch_create_screen.dart';
 import '../../features/admin/clients/clients_screen.dart';
 import '../../features/batches/batches_screen.dart';
 import '../../features/home/module_screen.dart';
+import '../../features/sync/sync_status_screen.dart';
 
 enum NfcDestination {
   clients,
@@ -103,6 +107,12 @@ class NfcRouteGuard {
             ),
           NfcDestination.clients => ClientsScreen(
               repository: ClientRepository(client),
+            ),
+          NfcDestination.sync => SyncStatusScreen(
+              repository: SyncRepository(
+                database: AppDatabase(),
+                remote: TagsRemote(client),
+              ),
             ),
           _ => NfcModuleScreen(
               destination: destination,

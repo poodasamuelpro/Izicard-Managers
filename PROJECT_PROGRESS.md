@@ -385,3 +385,31 @@ La reconnaissance utilise les alias définis dans `field_schema` : par exemple `
 La RPC commune est `nfc_import_rows(p_batch, p_rows, p_filename, p_mapping)`. Elle remplit d’abord les cartes vierges, crée les cartes supplémentaires, conserve les erreurs par numéro de ligne et ne bloque pas toutes les lignes lorsqu’une ligne échoue.
 
 Le code Flutter de lecture/mapping/aperçu reste toutefois à implémenter : ces règles sont actuellement dans la migration et l’architecture, pas encore dans les écrans mobiles squelettes.
+
+
+## Socle hors-ligne et écran de synchronisation — 2026-10-25 11:03:00 UTC
+
+### Terminé dans le code
+
+- Dépendances ajoutées pour SQLite, le chemin de base locale et la connectivité.
+- `AppDatabase` crée les tables locales `offline_batches` et `pending_writes`, avec index et fermeture propre.
+- `PendingWritesDao` permet d’ajouter, compter, lire, marquer une tentative et supprimer les résultats synchronisés.
+- `TagsRemote` appelle la RPC commune `nfc_mark_written`.
+- `SyncRepository` envoie la file séquentiellement, supprime uniquement les opérations confirmées et conserve la file lorsqu’une erreur réseau ou backend survient.
+- `ConnectivityService` détecte le retour réseau.
+- `SyncWorker` lance une synchronisation au retour en ligne.
+- `SyncStatusScreen` affiche l’état, les opérations en attente et un bouton de synchronisation manuelle. La route mobile Synchronisation ouvre maintenant cet écran réel.
+
+### Partiel / non terminé
+
+Le socle est prêt mais le contrôleur d’écriture NFC n’est pas encore raccordé pour appeler automatiquement `enqueueWrite` après chaque écriture/relecture. Le téléchargement local complet des dossiers et des tags reste à brancher. Flutter n’est pas installé dans cet environnement, donc aucun `flutter pub get`, analyse, test ou build n’a été exécuté.
+
+Les autres modules Import, Export, Écriture, Vérification et Réglages restent à finaliser. L’harmonisation visuelle est engagée par les thèmes/états communs, mais la parité fonctionnelle complète Web/mobile n’est pas encore atteinte.
+
+### Reste à faire
+
+Raccorder la file au contrôleur NFC, persister les dossiers/tags téléchargés, gérer les conflits et l’accès révoqué, puis exécuter les tests et vérifier le rendu sur plusieurs tailles Android.
+
+### Commit
+
+`f4082e4` — `feat(offline): add local write queue and sync screen`

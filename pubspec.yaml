@@ -1,5 +1,5 @@
 name: izicard_nfc_app
-description: Application mobile Android d'encodage NFC en série pour IziCard.
+description: Application Android d'encodage NFC en série pour IziCard.
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -11,6 +11,9 @@ dependencies:
   flutter:
     sdk: flutter
   supabase_flutter: ^2.8.0
+  connectivity_plus: ^6.1.0
+  path: ^1.9.0
+  sqflite: ^2.4.1
 
 dev_dependencies:
   flutter_test:
