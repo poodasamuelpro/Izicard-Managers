@@ -413,3 +413,31 @@ Raccorder la file au contrôleur NFC, persister les dossiers/tags téléchargés
 ### Commit
 
 `f4082e4` — `feat(offline): add local write queue and sync screen`
+
+
+## Audit déconnexion et sécurité mobile — 2026-10-25 11:23:00 UTC
+
+### Terminé dans le code
+
+La déconnexion mobile efface désormais les dossiers et opérations hors ligne locales (`offline_batches` et `pending_writes`) après la fermeture de session Supabase. Cela empêche qu’un autre compte utilisant le même appareil récupère la file d’un compte précédent. La validation du rôle, de l’état actif et de l’expiration du profil reste effectuée au chargement depuis le schéma `nfc`.
+
+### Partiel / non vérifié
+
+Flutter et Dart ne sont pas installés dans cet environnement : l’analyse, les tests et le build Android ne peuvent pas encore confirmer la compilation. Les données locales ne sont pas encore cloisonnées par `user_id`; elles sont donc volontairement purgées à chaque déconnexion.
+
+### Reste à faire
+
+Raccorder et démarrer le `SyncWorker` au cycle de vie authentifié, associer si nécessaire les caches à l’utilisateur courant, puis tester la déconnexion, le changement de compte, la révocation d’accès et le retour réseau sur appareil Android.
+
+### Commit
+
+À renseigner après le commit de l’audit.
+
+
+### Complément cycle de vie — 2026-10-25 11:24:39 UTC
+
+`AuthGate` partage maintenant une instance de `AppDatabase` avec `AuthRepository`, et la ferme à sa destruction. La purge de la file locale est donc appliquée par le même chemin de déconnexion depuis l’accueil, l’écran d’accès révoqué et l’activation du mot de passe.
+
+### Commit
+
+À renseigner après le commit de l’audit.
