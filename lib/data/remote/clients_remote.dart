@@ -31,4 +31,31 @@ class ClientsRemote {
       },
     );
   }
+
+  Future<Map<String, dynamic>> inviteClient({
+    required String fullName,
+    required String email,
+    required String clientName,
+    String? contactName,
+    String? phone,
+  }) async {
+    final response = await _client.functions.invoke(
+      'create-client-user',
+      body: {
+        'full_name': fullName.trim(),
+        'email': email.trim(),
+        'client_name': clientName.trim(),
+        'contact_name': contactName?.trim() ?? '',
+        'phone': phone?.trim() ?? '',
+      },
+    );
+
+    final payload = response.data is Map
+        ? Map<String, dynamic>.from(response.data as Map)
+        : <String, dynamic>{};
+    if (response.status < 200 || response.status >= 300 || payload['error'] != null) {
+      throw Exception(payload['error']?.toString() ?? 'Invitation impossible.');
+    }
+    return payload;
+  }
 }

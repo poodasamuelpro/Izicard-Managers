@@ -22,4 +22,20 @@ class ClientRepository {
       expiresAt: expiresAt,
     );
   }
+
+  Future<Map<String, dynamic>> inviteClient({
+    required String fullName,
+    required String email,
+    required String clientName,
+    String? contactName,
+    String? phone,
+  }) {
+    return _remote.inviteClient(
+      fullName: fullName,
+      email: email,
+      clientName: clientName,
+      contactName: contactName,
+      phone: phone,
+    );
+  }
 }

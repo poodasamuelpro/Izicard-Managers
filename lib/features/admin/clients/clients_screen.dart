@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../../core/theme/izicard_colors.dart';
 import '../../../data/models/nfc_client.dart';
 import '../../../data/repositories/client_repository.dart';
+import 'client_form_screen.dart';
 
 class ClientsScreen extends StatefulWidget {
   const ClientsScreen({super.key, required this.repository});
@@ -26,6 +27,15 @@ class _ClientsScreenState extends State<ClientsScreen> {
     final next = widget.repository.listClients();
     setState(() => _clients = next);
     await next;
+  }
+
+  Future<void> _openInvite() async {
+    final created = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => ClientFormScreen(repository: widget.repository),
+      ),
+    );
+    if (created == true && mounted) await _refresh();
   }
 
   Future<void> _manageAccess(NfcClient client) async {
@@ -129,6 +139,11 @@ class _ClientsScreenState extends State<ClientsScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
         appBar: AppBar(title: const Text('Clients et accès')),
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: _openInvite,
+          icon: const Icon(Icons.person_add_alt_1_rounded),
+          label: const Text('Inviter un client'),
+        ),
         body: SafeArea(
           child: FutureBuilder<List<NfcClient>>(
             future: _clients,

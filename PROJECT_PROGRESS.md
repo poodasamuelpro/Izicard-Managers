@@ -292,3 +292,30 @@ La fonction d’invitation et le patch SQL admin-only sont écrits dans le dép�
 ### Commit
 
 `08a42f7` — poussé sur `master`.
+
+
+## Invitation Admin depuis Android — 2026-10-25 10:23:50 UTC
+
+### Terminé
+
+- L’écran mobile Admin « Clients et accès » permet maintenant d’ouvrir un vrai formulaire « Inviter un client ».
+- Le formulaire valide le nom, l’email, le nom de l’organisation et les coordonnées facultatives.
+- Le mobile appelle la même Edge Function Supabase `create-client-user` que le Web via `functions.invoke` ; aucun `service_role` n’est embarqué.
+- Le compte Auth, le client `nfc_clients` et le profil `nfc_profiles` restent créés côté serveur avec le rôle `client` et le même `client_id`.
+- Après succès, la liste mobile est rafraîchie. La gestion d’accès existante reste disponible.
+
+### Partiel / non vérifié
+
+Flutter/Dart n’est pas installé dans cet environnement : aucun `flutter analyze`, test Android ou build n’a pu être exécuté. Le déploiement de la fonction Edge, SMTP Resend et le test réel d’envoi restent à faire dans Supabase.
+
+Les écrans mobiles Import, Export, Écriture NFC, Vérification, Synchronisation et Réglages restent des modules de présentation non raccordés, contrairement aux écrans Clients, Dossiers et Création de dossier.
+
+### Reste à faire
+
+1. Déployer et tester `create-client-user` avec SMTP Resend et un compte Admin réel.
+2. Raccorder les modules Import/Export/Écriture/Vérification/Synchronisation/Réglages au backend partagé.
+3. Installer Flutter ou utiliser GitHub Actions pour exécuter l’analyse, les tests et le build Android.
+
+### Commit
+
+`8349d67` — `feat(admin): invite clients from mobile`
