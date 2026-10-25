@@ -228,3 +228,30 @@ Poursuivre les écrans et raccordements métier mobile décrits dans l’entrée
 ### Commit
 
 `061afd3` — poussé sur `master`.
+
+
+## Dossiers et gestion des accès clients dans l’app — 2026-10-25 09:54:00 UTC
+
+### Terminé
+
+- Remplacement des squelettes de modèles/remote/repository pour les clients, formats et dossiers par des lectures ciblant explicitement le schéma `nfc`.
+- Écran Dossiers relié à `nfc.nfc_batch_stats`, avec filtres, compteurs, progression, états vide/erreur/chargement et détail de dossier.
+- Création d’un dossier depuis l’app reliée à la RPC Supabase `nfc_create_batch`, avec sélection du client (admin), format actif, type de données, quantité et option de verrouillage ; les rôles/droits existants restent contrôlés par l’UI et la fonction serveur.
+- Écran Admin Clients relié à `nfc.nfc_clients` ; activation/révocation et expiration utilisent la RPC existante `nfc_set_access`.
+- Le routeur par rôle ouvre désormais ces vrais écrans pour les destinations Dossiers, Créer un dossier et Clients. Aucun serveur intermédiaire/Edge Function n’a été ajouté.
+
+### Partiel / non terminé
+
+Les fonctions Import Excel, liste et écriture/rélecture physique des tags NFC, vérification, export, synchronisation hors-ligne et réglages restent à raccorder. L’ajout d’un client et la création/liaison de son compte Supabase Auth ne sont pas inclus ; aucune clé privilégiée n’est embarquée. La connexion réelle et la compilation Flutter n’ont pas été testées. Flutter/Dart ne sont pas installés dans l’environnement.
+
+### Reste à faire
+
+1. Terminer la gestion du cycle de vie client/profil sans clé `service_role` dans l’application.
+2. Implémenter l’import (choix/lecture du fichier, aperçu/correspondance) puis appeler `nfc_import_rows` avec limites et traitement d’erreurs.
+3. Implémenter l’écriture/rélecture NFC Android, appeler `nfc_mark_written` après chaque résultat et gérer les erreurs/synchronisations sans contourner les RLS.
+4. Compléter export, progression temps réel ou rafraîchie, UX hors-ligne si requise et réglages.
+5. Plus tard, effectuer l’analyse/build Android et les vérifications de connexion autorisées.
+
+### Commit
+
+À renseigner après commit/push de cette étape.

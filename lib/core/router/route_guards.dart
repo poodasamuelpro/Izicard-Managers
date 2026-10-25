@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/models/nfc_profile.dart';
+import '../../data/repositories/batch_repository.dart';
+import '../../data/repositories/client_repository.dart';
+import '../../features/admin/batches/batch_create_screen.dart';
+import '../../features/admin/clients/clients_screen.dart';
+import '../../features/batches/batches_screen.dart';
 import '../../features/home/module_screen.dart';
 
 enum NfcDestination {
@@ -84,12 +90,26 @@ class NfcRouteGuard {
       return;
     }
 
+    final client = Supabase.instance.client;
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
-        builder: (_) => NfcModuleScreen(
-          destination: destination,
-          profile: profile,
-        ),
+        builder: (_) => switch (destination) {
+          NfcDestination.batches => BatchesScreen(
+              profile: profile,
+              repository: BatchRepository(client),
+            ),
+          NfcDestination.createBatch => BatchCreateScreen(
+              profile: profile,
+              repository: BatchRepository(client),
+            ),
+          NfcDestination.clients => ClientsScreen(
+              repository: ClientRepository(client),
+            ),
+          _ => NfcModuleScreen(
+              destination: destination,
+              profile: profile,
+            ),
+        },
       ),
     );
   }
