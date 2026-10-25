@@ -456,3 +456,33 @@ Démarrer `SyncWorker` au cycle de vie authentifié, conserver les données en a
 ### Commit
 
 À renseigner après le commit de cette correction.
+
+
+## Cache profil et autorisations hors connexion — 2026-10-25 11:32:30 UTC
+
+### Terminé dans le code
+
+Le profil métier et l’autorisation associée sont maintenant mis en cache dans SQLite, indexés par `user_id`, après une lecture Supabase réussie. En cas d’erreur réseau au démarrage, `AuthRepository` relit uniquement le cache du même utilisateur Supabase actuellement authentifié. Le cache expire après 31 jours ; un profil expiré n’est pas utilisé. La session Supabase persistée reste la condition d’accès au cache, et la perte réseau ne déclenche pas de déconnexion.
+
+La table `cached_profiles` est créée pour les nouvelles bases et ajoutée par migration SQLite pour les bases existantes. La file `pending_writes` et les dossiers hors ligne ne sont pas supprimés lors de la déconnexion.
+
+### Partiel / non vérifié
+
+Flutter/Dart n’est pas installé ici : aucune analyse, compilation ou exécution Android n’a pu être faite. Une révocation serveur survenue pendant une période hors ligne ne peut être connue qu’au prochain retour réseau ; la durée maximale de 31 jours limite ce risque mais ne remplace pas une validation en ligne.
+
+### Reste à faire
+
+Démarrer `SyncWorker` au cycle de vie authentifié, tester les pertes réseau prolongées, vérifier le renouvellement de session Supabase sur appareil Android et associer aussi les dossiers/tags hors ligne au `user_id` lorsque leur cache sera implémenté.
+
+### Commit
+
+À renseigner après le commit de cette modification.
+
+
+### Invalidation après vérification en ligne — 2026-10-25 11:33:05 UTC
+
+Lorsqu’une lecture Supabase réussie confirme qu’aucun profil n’existe pour l’utilisateur courant, le cache correspondant est maintenant supprimé. Une révocation connue en ligne ne pourra donc pas être réutilisée hors connexion ; le fallback cache ne s’applique qu’en cas d’échec de lecture réseau.
+
+### Commit
+
+À renseigner après le commit de cette modification.

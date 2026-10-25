@@ -1,12 +1,14 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config/constants.dart';
+import '../local/app_database.dart';
 import '../models/nfc_profile.dart';
 
 class AuthRepository {
-  AuthRepository(this._client);
+  AuthRepository(this._client, {AppDatabase? database}) : _database = database;
 
   final SupabaseClient _client;
+  final AppDatabase? _database;
 
   Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;
 
@@ -19,9 +21,31 @@ class AuthRepository {
     );
   }
 
-  /// Lit le profil métier dans le schéma `nfc` après authentification.
-  /// L’absence de profil signifie aucun accès métier.
+  /// Lit le profil en ligne puis le met en cache pour les démarrages hors ligne.
   Future<NfcProfile?> loadProfile(String userId) async {
+    try {
+      final profile = await _loadRemoteProfile(userId);
+      if (profile != null) {
+        try {
+          await _database?.cacheProfile(
+            userId: userId,
+            payload: profile.$1,
+          );
+        } catch (_) {
+          // Le cache est un secours : il ne doit pas bloquer l’accès en ligne.
+        }
+      } else {
+        await _database?.deleteCachedProfile(userId);
+      }
+      return profile?.$2;
+    } catch (_) {
+      return _loadCachedProfile(userId);
+    }
+  }
+
+  Future<(Map<String, dynamic>, NfcProfile)?> _loadRemoteProfile(
+    String userId,
+  ) async {
     final profileRow = await _client
         .schema(AppConstants.nfcSchema)
         .from('nfc_profiles')
@@ -48,7 +72,22 @@ class AuthRepository {
       if (result != null) clientRow = Map<String, dynamic>.from(result);
     }
 
-    return NfcProfile.fromMap(row, client: clientRow);
+    return (
+      <String, dynamic>{'profile': row, 'client': clientRow},
+      NfcProfile.fromMap(row, client: clientRow),
+    );
+  }
+
+  Future<NfcProfile?> _loadCachedProfile(String userId) async {
+    final cached = await _database?.readCachedProfile(userId);
+    if (cached == null) return null;
+    final profile = cached['profile'];
+    final client = cached['client'];
+    if (profile is! Map) return null;
+    return NfcProfile.fromMap(
+      Map<String, dynamic>.from(profile),
+      client: client is Map ? Map<String, dynamic>.from(client) : null,
+    );
   }
 
   Future<void> requestPasswordReset(String email) {

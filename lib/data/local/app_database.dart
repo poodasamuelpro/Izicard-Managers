@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
@@ -11,7 +13,7 @@ class AppDatabase {
     final existing = _database;
     if (existing != null) return existing;
     final path = p.join(await getDatabasesPath(), _databaseName);
-    _database = await openDatabase(path, version: 1, onCreate: (db, _) async {
+    _database = await openDatabase(path, version: 2, onCreate: (db, _) async {
       await db.execute('''
         CREATE TABLE offline_batches (
           id TEXT PRIMARY KEY,
@@ -35,8 +37,68 @@ class AppDatabase {
         )
       ''');
       await db.execute('CREATE INDEX pending_writes_created_idx ON pending_writes(created_at)');
+      await db.execute('''
+        CREATE TABLE cached_profiles (
+          user_id TEXT PRIMARY KEY,
+          payload_json TEXT NOT NULL,
+          cached_at TEXT NOT NULL
+        )
+      ''');
+    }, onUpgrade: (db, oldVersion, newVersion) async {
+      if (oldVersion < 2) {
+        await db.execute('''
+          CREATE TABLE cached_profiles (
+            user_id TEXT PRIMARY KEY,
+            payload_json TEXT NOT NULL,
+            cached_at TEXT NOT NULL
+          )
+        ''');
+      }
     });
     return _database!;
+  }
+
+  Future<void> cacheProfile({
+    required String userId,
+    required Map<String, dynamic> payload,
+  }) async {
+    final db = await instance;
+    await db.insert(
+      'cached_profiles',
+      {
+        'user_id': userId,
+        'payload_json': jsonEncode(payload),
+        'cached_at': DateTime.now().toUtc().toIso8601String(),
+      },
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  Future<Map<String, dynamic>?> readCachedProfile(
+    String userId, {
+    Duration maxAge = const Duration(days: 31),
+  }) async {
+    final db = await instance;
+    final rows = await db.query(
+      'cached_profiles',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+      limit: 1,
+    );
+    if (rows.isEmpty) return null;
+    final row = rows.single;
+    final cachedAt = DateTime.tryParse(row['cached_at'] as String)?.toUtc();
+    if (cachedAt == null || DateTime.now().toUtc().difference(cachedAt) > maxAge) {
+      await db.delete('cached_profiles', where: 'user_id = ?', whereArgs: [userId]);
+      return null;
+    }
+    final decoded = jsonDecode(row['payload_json'] as String);
+    return decoded is Map ? Map<String, dynamic>.from(decoded) : null;
+  }
+
+  Future<void> deleteCachedProfile(String userId) async {
+    final db = await instance;
+    await db.delete('cached_profiles', where: 'user_id = ?', whereArgs: [userId]);
   }
 
   Future<void> close() async {
