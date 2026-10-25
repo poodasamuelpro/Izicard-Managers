@@ -372,3 +372,16 @@ Implémenter le lecteur `.xlsx/.xls/.csv`, la correspondance automatique/modifia
 ### Commit
 
 Modification documentaire uniquement ; commit à renseigner s’il est créé.
+
+
+## Précision fonctionnelle Excel — champs partagés du backend — 2026-10-25 10:38:50 UTC
+
+La description précédente était trop générique. L’Excel ne sert pas seulement à fournir des colonnes : chaque ligne devient une carte et les cellules sont mappées vers le `field_schema` du format sélectionné, exactement comme dans la migration SQL et le Web.
+
+Les formats partagés prévoient notamment : IziCare (`full_name`, `birth_date`, `blood_group`, `allergies`, `conditions`, `medications`, contacts d’urgence et `ref`), IziPro (`full_name`, `title`, `org`, `phone`, `email`, `website`, `linkedin`, `ref`), IziID (`full_name`, `birth_date`, `blood_group`, `address`, contacts d’urgence et `ref`), lien personnalisé (`_payload`, `ref`), texte personnalisé (`_payload`, `ref`), vCard (`full_name`, `phone`, `email`, `org`, `title`, `website`) et téléphone (`phone`, `ref`). Les champs obligatoires sont définis par format, pas arbitrairement par l’interface.
+
+La reconnaissance utilise les alias définis dans `field_schema` : par exemple `nom`, `nom complet`, `nom et prenom`, `name` et `beneficiaire` peuvent correspondre à `full_name`; `telephone`, `tel`, `mobile`, `portable` et `whatsapp` à `phone`. Les clés `_payload` et `_type` sont spéciales. Le type du dossier détermine le mode lien/direct, le payload NDEF est généré côté RPC, les cellules vides sont retirées et la capacité de la puce est contrôlée.
+
+La RPC commune est `nfc_import_rows(p_batch, p_rows, p_filename, p_mapping)`. Elle remplit d’abord les cartes vierges, crée les cartes supplémentaires, conserve les erreurs par numéro de ligne et ne bloque pas toutes les lignes lorsqu’une ligne échoue.
+
+Le code Flutter de lecture/mapping/aperçu reste toutefois à implémenter : ces règles sont actuellement dans la migration et l’architecture, pas encore dans les écrans mobiles squelettes.
