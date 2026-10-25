@@ -1,1 +1,13 @@
-# Dépendances et assets (liste candidate dans MOBILE_ARCHITECTURE.md, versions à valider à la construction)
+name: izicard_nfc_app
+description: Application mobile d'encodage NFC en série pour Izicard.
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+  flutter: '>=3.10.0'
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/logo.jpg
