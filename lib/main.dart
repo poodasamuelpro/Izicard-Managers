@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
+import 'core/config/constants.dart';
 import 'core/config/env.dart';
 
 Future<void> main() async {
@@ -15,6 +16,9 @@ Future<void> main() async {
   await Supabase.initialize(
     url: AppEnv.supabaseUrl,
     anonKey: AppEnv.supabaseAnonKey,
+    postgrestOptions: PostgrestClientOptions(
+      schema: AppConstants.nfcSchema,
+    ),
   );
 
   runApp(const IzicardApp());

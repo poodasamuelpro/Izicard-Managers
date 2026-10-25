@@ -185,3 +185,27 @@ Migrer/qualifier les objets backend dans le schéma `nfc`, puis implémenter pro
 ### Commit
 
 Commit documentaire à renseigner s’il est créé.
+
+
+## Routage par rôle et socle UI mobile — 2026-10-25 09:30:00 UTC
+
+### Terminé
+
+- Le client PostgREST mobile utilise `nfc` comme schéma par défaut ; les requêtes de profil/client utilisent explicitement `.schema(AppConstants.nfcSchema)`.
+- Après authentification, `AuthGate` charge `nfc.nfc_profiles`, vérifie le rôle, les statuts actif/expiration et l’accès du client via `nfc.nfc_clients`.
+- Le routage distingue les accueils Admin et Client. Les destinations contrôlent les rôles et le droit `can_create_batches`; les profils absents, expirés, révoqués ou en erreur ont des états dédiés.
+- Première refonte UI/UX : thème Material 3 IziCard, écran de connexion accessible, tableaux de bord par rôle, navigation retour et écrans de destination transparents sur l’avancement.
+
+### Partiel / non terminé
+
+Les écrans de destination sont des squelettes de navigation : clients, dossiers, création, import/export, NFC, vérification, synchronisation et réglages ne sont pas encore reliés aux fonctions métier. Le SQL partagé du dépôt Web crée encore les objets dans `public`; le chargement profil en `nfc` ne fonctionnera qu’après migration/exposition du schéma et application des RLS/grants correspondants. Aucun test de connexion n’a été lancé, conformément à la demande. Flutter et Dart ne sont pas installés dans cet environnement ; aucun `flutter analyze`, formatage Dart ou build Android n’a donc été exécuté.
+
+### Reste à faire
+
+1. Migrer les objets SQL partagés et leurs fonctions/types/RLS vers le schéma `nfc` puis l’exposer dans Supabase.
+2. Raccorder chaque écran aux opérations serveur partagées et construire les fonctions admin/client complètes, sans logique métier dupliquée.
+3. Vérifier ultérieurement le rendu, la compilation et les parcours fonctionnels quand Flutter/environnement et autorisation de test seront disponibles.
+
+### Commit
+
+Modifications locales, commit à renseigner s’il est créé.

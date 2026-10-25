@@ -1,5 +1,8 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/config/constants.dart';
+import '../models/nfc_profile.dart';
+
 class AuthRepository {
   AuthRepository(this._client);
 
@@ -14,6 +17,38 @@ class AuthRepository {
       email: email.trim(),
       password: password,
     );
+  }
+
+  /// Lit le profil métier dans le schéma `nfc` après authentification.
+  /// L’absence de profil signifie aucun accès métier.
+  Future<NfcProfile?> loadProfile(String userId) async {
+    final profileRow = await _client
+        .schema(AppConstants.nfcSchema)
+        .from('nfc_profiles')
+        .select(
+          'user_id, role, client_id, full_name, active, access_expires_at',
+        )
+        .eq('user_id', userId)
+        .maybeSingle();
+
+    if (profileRow == null) return null;
+
+    final row = Map<String, dynamic>.from(profileRow);
+    Map<String, dynamic>? clientRow;
+    final role = NfcRole.parse(row['role']);
+    final clientId = row['client_id']?.toString();
+
+    if (role == NfcRole.client && clientId != null) {
+      final result = await _client
+          .schema(AppConstants.nfcSchema)
+          .from('nfc_clients')
+          .select('active, access_expires_at, can_create_batches')
+          .eq('id', clientId)
+          .maybeSingle();
+      if (result != null) clientRow = Map<String, dynamic>.from(result);
+    }
+
+    return NfcProfile.fromMap(row, client: clientRow);
   }
 
   Future<void> requestPasswordReset(String email) {
