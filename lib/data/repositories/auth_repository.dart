@@ -1,14 +1,12 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config/constants.dart';
-import '../local/app_database.dart';
 import '../models/nfc_profile.dart';
 
 class AuthRepository {
-  AuthRepository(this._client, {AppDatabase? database}) : _database = database;
+  AuthRepository(this._client);
 
   final SupabaseClient _client;
-  final AppDatabase? _database;
 
   Stream<AuthState> get authStateChanges => _client.auth.onAuthStateChange;
 
@@ -72,12 +70,7 @@ class AuthRepository {
     await _client.auth.updateUser(UserAttributes(password: password));
   }
 
-  Future<void> signOut() async {
-    try {
-      await _client.auth.signOut();
-    } finally {
-      // Ne jamais laisser les données d’un compte être réutilisées par un autre.
-      await _database?.clearSensitiveData();
-    }
-  }
+  /// La file locale n’est pas supprimée : elle doit survivre au hors-ligne,
+  /// au redémarrage et à une reconnexion avant sa synchronisation.
+  Future<void> signOut() => _client.auth.signOut();
 }

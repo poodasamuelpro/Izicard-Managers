@@ -43,11 +43,4 @@ class AppDatabase {
     await _database?.close();
     _database = null;
   }
-
-  /// Supprime les opérations et dossiers locaux avant de changer de compte.
-  Future<void> clearSensitiveData() async {
-    final db = await instance;
-    await db.delete('pending_writes');
-    await db.delete('offline_batches');
-  }
 }

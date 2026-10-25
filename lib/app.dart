@@ -5,7 +5,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/router/app_router.dart';
 import 'core/theme/izicard_theme.dart';
-import 'data/local/app_database.dart';
 import 'data/models/nfc_profile.dart';
 import 'data/repositories/auth_repository.dart';
 import 'features/auth/access_revoked_screen.dart';
@@ -75,7 +74,6 @@ class AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<AuthGate> {
   late final AuthRepository _repository;
-  late final AppDatabase _database;
   StreamSubscription<AuthState>? _authSubscription;
   User? _user;
   Future<NfcProfile?>? _profileFuture;
@@ -84,8 +82,7 @@ class _AuthGateState extends State<AuthGate> {
   @override
   void initState() {
     super.initState();
-    _database = AppDatabase();
-    _repository = AuthRepository(Supabase.instance.client, database: _database);
+    _repository = AuthRepository(Supabase.instance.client);
     _user = _repository.currentUser;
     _profileFuture = _futureFor(_user);
     _authSubscription = _repository.authStateChanges.listen(_onAuthChanged);
@@ -118,7 +115,6 @@ class _AuthGateState extends State<AuthGate> {
   @override
   void dispose() {
     _authSubscription?.cancel();
-    unawaited(_database.close());
     super.dispose();
   }
 

@@ -441,3 +441,18 @@ Raccorder et démarrer le `SyncWorker` au cycle de vie authentifié, associer si
 ### Commit
 
 À renseigner après le commit de l’audit.
+
+
+## Correction de stratégie hors-ligne et session — 2026-10-25 11:28:40 UTC
+
+La purge globale ajoutée précédemment à `signOut` a été retirée. Une déconnexion ne doit pas supprimer `pending_writes` ni `offline_batches`, car ces données peuvent contenir des écritures NFC et des dossiers à synchroniser après le retour réseau. La file locale reste donc persistante au redémarrage et pendant les périodes hors connexion.
+
+Supabase Flutter conserve normalement la session localement et renouvelle automatiquement le jeton lorsqu’une connexion revient ; aucune déconnexion automatique sur simple perte réseau n’est ajoutée. La durée réelle d’un mois dépend toutefois de la configuration Supabase et d’un refresh token encore valide. L’accès totalement hors ligne nécessite encore un profil local/caches sécurisés : aujourd’hui `AuthGate` recharge le profil `nfc` au démarrage et ce parcours doit être adapté avant de déclarer le mode hors ligne complet.
+
+### Reste à faire
+
+Démarrer `SyncWorker` au cycle de vie authentifié, conserver les données en attente jusqu’à confirmation serveur, associer les caches à l’utilisateur courant pour éviter les mélanges de comptes, puis tester un mois de session avec pertes réseau répétées sur Android.
+
+### Commit
+
+À renseigner après le commit de cette correction.
