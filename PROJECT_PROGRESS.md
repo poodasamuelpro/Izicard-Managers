@@ -340,3 +340,35 @@ Configurer la redirection réelle vers la page d’activation, ajouter le deep l
 ### Commit
 
 `ec5b8c0` — `feat(auth): add mobile password activation`
+
+
+## Import Excel/CSV — état réel et actions manuelles — 2026-10-25 10:35:55 UTC
+
+### Fonctionnement prévu
+
+Depuis un dossier, l’utilisateur autorisé choisit un fichier `.xlsx`, `.xls` ou `.csv`. L’application doit lire le fichier localement, détecter et normaliser les colonnes, proposer une correspondance automatique avec les champs du format, permettre la correction manuelle, afficher un aperçu, valider les champs obligatoires puis appeler la même RPC backend `nfc_import_rows` que le Web par paquets. Les erreurs doivent être retournées ligne par ligne sans bloquer les lignes valides. Les données importées alimenteront ensuite la file d’écriture NFC et la synchronisation.
+
+### État réel actuel
+
+Les fichiers mobiles `lib/services/import/excel_reader.dart`, `lib/features/import/import_screen.dart`, `lib/features/import/mapping_screen.dart`, `lib/features/import/preview_screen.dart` et `lib/features/import/import_result_screen.dart` sont encore des squelettes. L’import Excel/CSV mobile ne fonctionne donc pas réellement aujourd’hui et aucun fichier n’est encore envoyé à Supabase.
+
+### Actions manuelles à faire par le propriétaire dans Supabase/Resend
+
+- Activer Email dans Supabase Auth et désactiver l’auto-inscription publique.
+- Configurer SMTP Resend avec une adresse expéditeur et un domaine vérifiés.
+- Régler l’OTP à 8 chiffres et coller les templates Recovery et Invite user.
+- Autoriser l’URL Web `set-password.html` et le futur deep link Android dans **Authentication > URL Configuration**.
+- Déployer `create-client-user` avec `SUPABASE_SERVICE_ROLE_KEY` dans les secrets et `INVITE_REDIRECT_TO` vers la page d’activation.
+- Vérifier l’exposition PostgREST/RPC du schéma `nfc`, les grants et les politiques RLS.
+- Appliquer le patch SQL qui réserve `nfc_create_batch` aux Admins.
+- Vérifier ou créer le profil Admin actif initial dans `nfc.nfc_profiles`.
+- Publier l’APK Android et remplacer le lien temporaire de `/app.html` par le vrai lien de téléchargement.
+- Tester invitation, activation, connexion, accès client et isolation des dossiers avant production.
+
+### Reste à faire dans le code
+
+Implémenter le lecteur `.xlsx/.xls/.csv`, la correspondance automatique/modifiable, l’aperçu, la validation, l’appel par paquets à `nfc_import_rows`, le bilan d’import et le stockage local nécessaire avant écriture NFC. Garder exactement les mêmes règles et la même RPC que le Web.
+
+### Commit
+
+Modification documentaire uniquement ; commit à renseigner s’il est créé.
