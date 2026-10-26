@@ -538,4 +538,4 @@ Brancher ce socle sur les écrans d’écriture en série et de vérification, p
 
 ### Commit
 
-À renseigner après le push.
+`46c32c6` — `feat(mobile): add real nfc encoding foundation`
