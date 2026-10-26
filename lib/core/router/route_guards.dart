@@ -13,6 +13,8 @@ import '../../features/batches/batches_screen.dart';
 import '../../features/home/module_screen.dart';
 import '../../features/import/import_screen.dart';
 import '../../features/sync/sync_status_screen.dart';
+import '../../features/verify/verify_tag_screen.dart';
+import '../../features/writing/write_screen.dart';
 
 /// Destinations accessibles depuis l'accueil, protégées à nouveau par les RPC/RLS.
 enum NfcDestination {
@@ -93,6 +95,8 @@ class NfcRouteGuard {
           NfcDestination.createBatch => BatchCreateScreen(profile: profile, repository: batches),
           NfcDestination.imports => ImportScreen(profile: profile, repository: batches),
           NfcDestination.clients => ClientsScreen(repository: ClientRepository(client)),
+          NfcDestination.write => WriteScreen(profile: profile),
+          NfcDestination.verify => const VerifyTagScreen(),
           NfcDestination.sync => SyncStatusScreen(
               repository: SyncRepository(database: AppDatabase(), remote: TagsRemote(client)),
             ),

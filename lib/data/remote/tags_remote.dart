@@ -18,6 +18,16 @@ class TagsRemote {
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
   }
 
+  Future<Map<String, dynamic>?> findByUid(String uid) async {
+    final row = await _client
+        .schema(AppConstants.nfcSchema)
+        .from('nfc_tags')
+        .select('id,batch_id,seq,public_id,data_type,payload,fields,status,uid,locked')
+        .eq('uid', uid)
+        .maybeSingle();
+    return row == null ? null : Map<String, dynamic>.from(row);
+  }
+
   Future<void> markWritten({
     required String tagId,
     required String status,
