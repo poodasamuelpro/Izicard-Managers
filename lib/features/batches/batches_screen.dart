@@ -92,6 +92,7 @@ class _BatchesScreenState extends State<BatchesScreen> {
                           builder: (_) => BatchDetailScreen(
                             batch: batch,
                             profile: widget.profile,
+                            repository: widget.repository,
                             onImport: () => _openImport(batch),
                           ),
                         )),

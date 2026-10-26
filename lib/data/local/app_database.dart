@@ -13,49 +13,83 @@ class AppDatabase {
     final existing = _database;
     if (existing != null) return existing;
     final path = p.join(await getDatabasesPath(), _databaseName);
-    _database = await openDatabase(path, version: 2, onCreate: (db, _) async {
+    _database = await openDatabase(path, version: 3, onCreate: (db, _) async {
       await db.execute('''
         CREATE TABLE offline_batches (
           id TEXT PRIMARY KEY,
           name TEXT NOT NULL,
           client_id TEXT,
           payload_json TEXT NOT NULL,
-          synced_at TEXT NOT NULL
+          synced_at TEXT NOT NULL,
+          user_id TEXT
         )
       ''');
-      await db.execute('''
-        CREATE TABLE pending_writes (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          tag_id TEXT NOT NULL,
-          status TEXT NOT NULL,
-          uid TEXT,
-          error TEXT,
-          lock_tag INTEGER NOT NULL DEFAULT 0,
-          attempts INTEGER NOT NULL DEFAULT 0,
-          created_at TEXT NOT NULL,
-          last_attempt_at TEXT
-        )
-      ''');
-      await db.execute('CREATE INDEX pending_writes_created_idx ON pending_writes(created_at)');
-      await db.execute('''
-        CREATE TABLE cached_profiles (
-          user_id TEXT PRIMARY KEY,
-          payload_json TEXT NOT NULL,
-          cached_at TEXT NOT NULL
-        )
-      ''');
+      await _createPendingWrites(db);
+      await _createCachedProfiles(db);
+      await _createOfflineTags(db);
     }, onUpgrade: (db, oldVersion, newVersion) async {
-      if (oldVersion < 2) {
-        await db.execute('''
-          CREATE TABLE cached_profiles (
-            user_id TEXT PRIMARY KEY,
-            payload_json TEXT NOT NULL,
-            cached_at TEXT NOT NULL
-          )
-        ''');
+      if (oldVersion < 2) await _createCachedProfiles(db);
+      if (oldVersion < 3) {
+        await db.execute('ALTER TABLE pending_writes ADD COLUMN user_id TEXT');
+        await db.execute('ALTER TABLE pending_writes ADD COLUMN permanent INTEGER NOT NULL DEFAULT 0');
+        await db.execute('ALTER TABLE pending_writes ADD COLUMN sync_error TEXT');
+        await db.execute('ALTER TABLE offline_batches ADD COLUMN user_id TEXT');
+        await _createOfflineTags(db);
       }
     });
     return _database!;
+  }
+
+  static Future<void> _createPendingWrites(Database db) async {
+    await db.execute('''
+      CREATE TABLE pending_writes (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        tag_id TEXT NOT NULL,
+        status TEXT NOT NULL,
+        uid TEXT,
+        error TEXT,
+        lock_tag INTEGER NOT NULL DEFAULT 0,
+        attempts INTEGER NOT NULL DEFAULT 0,
+        created_at TEXT NOT NULL,
+        last_attempt_at TEXT,
+        user_id TEXT,
+        permanent INTEGER NOT NULL DEFAULT 0,
+        sync_error TEXT
+      )
+    ''');
+    await db.execute('CREATE INDEX pending_writes_created_idx ON pending_writes(created_at)');
+  }
+
+  static Future<void> _createCachedProfiles(Database db) async {
+    await db.execute('''
+      CREATE TABLE cached_profiles (
+        user_id TEXT PRIMARY KEY,
+        payload_json TEXT NOT NULL,
+        cached_at TEXT NOT NULL
+      )
+    ''');
+  }
+
+  static Future<void> _createOfflineTags(Database db) async {
+    await db.execute('''
+      CREATE TABLE offline_tags (
+        user_id TEXT NOT NULL,
+        tag_id TEXT NOT NULL,
+        batch_id TEXT NOT NULL,
+        seq INTEGER NOT NULL,
+        public_id TEXT NOT NULL,
+        data_type TEXT NOT NULL,
+        payload TEXT NOT NULL,
+        fields_json TEXT NOT NULL,
+        status TEXT NOT NULL,
+        uid TEXT,
+        locked INTEGER NOT NULL DEFAULT 0,
+        synced_at TEXT NOT NULL,
+        PRIMARY KEY (user_id, tag_id)
+      )
+    ''');
+    await db.execute('CREATE INDEX offline_tags_batch_idx ON offline_tags(user_id, batch_id, seq)');
+    await db.execute('CREATE INDEX offline_tags_uid_idx ON offline_tags(user_id, uid)');
   }
 
   Future<void> cacheProfile({

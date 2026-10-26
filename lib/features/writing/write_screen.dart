@@ -11,9 +11,10 @@ import '../../data/remote/tags_remote.dart';
 import 'write_controller.dart';
 
 class WriteScreen extends StatefulWidget {
-  const WriteScreen({super.key, required this.profile});
+  const WriteScreen({super.key, required this.profile, this.initialBatchId});
 
   final NfcProfile profile;
+  final String? initialBatchId;
 
   @override
   State<WriteScreen> createState() => _WriteScreenState();
@@ -36,6 +37,7 @@ class _WriteScreenState extends State<WriteScreen> {
     _controller = WriteController(
       tags: TagRepository(TagsRemote(client)),
       database: _database,
+      userId: client.auth.currentUser?.id ?? '',
     );
     _batchFuture = _batches.listBatchStats();
   }

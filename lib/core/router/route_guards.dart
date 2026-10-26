@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/models/nfc_profile.dart';
 import '../../data/local/app_database.dart';
+import '../../data/local/offline_tags_dao.dart';
 import '../../data/repositories/batch_repository.dart';
 import '../../data/repositories/client_repository.dart';
 import '../../data/repositories/sync_repository.dart';
@@ -10,8 +11,9 @@ import '../../data/remote/tags_remote.dart';
 import '../../features/admin/batches/batch_create_screen.dart';
 import '../../features/admin/clients/clients_screen.dart';
 import '../../features/batches/batches_screen.dart';
-import '../../features/home/module_screen.dart';
+import '../../features/export/export_screen.dart';
 import '../../features/import/import_screen.dart';
+import '../../features/settings/settings_screen.dart';
 import '../../features/sync/sync_status_screen.dart';
 import '../../features/verify/verify_tag_screen.dart';
 import '../../features/writing/write_screen.dart';
@@ -88,7 +90,10 @@ class NfcRouteGuard {
 
     final client = Supabase.instance.client;
     final batches = BatchRepository(client);
-    await Navigator.of(context).push<void>(
+    final database = AppDatabase();
+    final userId = client.auth.currentUser?.id ?? '';
+    try {
+      await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (_) => switch (destination) {
           NfcDestination.batches => BatchesScreen(profile: profile, repository: batches),
@@ -97,12 +102,18 @@ class NfcRouteGuard {
           NfcDestination.clients => ClientsScreen(repository: ClientRepository(client)),
           NfcDestination.write => WriteScreen(profile: profile),
           NfcDestination.verify => const VerifyTagScreen(),
+          NfcDestination.export => ExportScreen(repository: batches),
+          NfcDestination.settings => SettingsScreen(profile: profile, email: client.auth.currentUser?.email ?? ''),
           NfcDestination.sync => SyncStatusScreen(
-              repository: SyncRepository(database: AppDatabase(), remote: TagsRemote(client)),
+              repository: SyncRepository(database: database, remote: TagsRemote(client), userId: userId),
+              offline: OfflineTagsDao(database),
+              userId: userId,
             ),
-          _ => NfcModuleScreen(destination: destination, profile: profile),
         },
       ),
-    );
+      );
+    } finally {
+      await database.close();
+    }
   }
 }

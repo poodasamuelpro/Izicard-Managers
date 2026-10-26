@@ -568,3 +568,25 @@ Brancher ce socle sur les écrans d’écriture en série et de vérification, p
 
 - `81734f2` — `feat(mobile): wire nfc writing and verification screens`
 - Progression documentaire : commit suivant.
+
+## Lot M1 — base locale v3, réglages, détail de dossier, export, synchro — 2026-10-26 UTC
+
+### Terminé dans le code
+
+- Dépendances ajoutées : `shared_preferences`, `wakelock_plus`, `path_provider`.
+- Base locale en version 3 (migration depuis v1/v2) : table `offline_tags` (cartes téléchargées, par utilisateur), `user_id` sur `offline_batches` et `pending_writes`, colonnes `permanent` et `sync_error` pour les refus définitifs. `OfflineTagsDao` (enregistrer/lister/rechercher par UID/mettre à jour/supprimer un dossier) et `PendingWritesDao` cloisonné par utilisateur.
+- `SyncRepository` : envoi séquentiel pour le seul utilisateur propriétaire de la file ; réseau coupé ou session expirée = on garde et on s'arrête ; refus de la base (UID déjà utilisé, carte annulée, accès refusé) = marqué définitif, conservé, la file continue ; relancer ou abandonner depuis l'écran Synchronisation.
+- Écran Synchronisation refait : opérations en attente et refusées (avec message), relancer/abandonner, dossiers téléchargés.
+- Réglages (`AppSettingsStore`, écran Réglages) : son, vibration, avancement automatique, écran allumé, verrouillage par défaut (désactivé). `FeedbackService` (vibration, son, écran allumé).
+- Détail d'un dossier complet : compteurs colorés, progression, liste paginée (50) des cartes avec statut coloré, filtres de statut, recherche (identifiant, UID, code, référence, nom), états chargement/vide/erreur, accès Importer, Écrire (dossier présélectionné), Vérifier, Exporter.
+- Export CSV (`;`, UTF-8 avec BOM, protection formules) depuis le détail et depuis l'écran Exporter ; partage Android.
+- Couleurs d'état communes (orange #C2410C, bleu #0299E2, vert #15803D, rouge #B91C1C). Les destinations Réglages et Exporter ne sont plus des écrans « en cours de raccordement » ; `module_screen.dart` et les fichiers vides `tag_reader`, `tag_writer`, `haptics_service`, `sound_service` sont supprimés.
+
+### Non vérifié
+
+Flutter/Dart absents de cet environnement et consigne de ne pas compiler avant que tout le code soit écrit : aucune analyse, aucun test. Des erreurs de compilation sont possibles et seront traitées à l'étape compilation.
+
+### Reste à faire (mobile)
+
+M2 : écriture en série complète (boucle, pause, verrouillage confirmé, lecture du cache local, enregistrement local d'abord), correction de la comparaison NDEF (bug : `NdefMessage` comparé par identité), vérification d'un tag améliorée. M3 : téléchargement hors-ligne d'un dossier, `SyncWorker` démarré après connexion et arrêté à la déconnexion, accès révoqué, nettoyage final. Plus tard : dossier `android/`, permission NFC, compilation, tests.
+

@@ -13,4 +13,28 @@ class IzicardColors {
   static const success = Color(0xFF21845A);
   static const warning = Color(0xFFB76A12);
   static const error = Color(0xFFB42318);
+
+  // États d'une carte (texte blanc lisible) — identiques au web.
+  static const statusPending = Color(0xFFC2410C);
+  static const statusWritten = Color(0xFF0299E2);
+  static const statusVerified = Color(0xFF15803D);
+  static const statusError = Color(0xFFB91C1C);
+  static const statusVoid = Color(0xFF617586);
+
+  static Color forTagStatus(String status) => switch (status) {
+        'pending' => statusPending,
+        'written' => statusWritten,
+        'verified' => statusVerified,
+        'error' => statusError,
+        _ => statusVoid,
+      };
+
+  static String labelForTagStatus(String status) => switch (status) {
+        'pending' => 'À écrire',
+        'written' => 'Écrit',
+        'verified' => 'Vérifié',
+        'error' => 'Erreur',
+        'void' => 'Annulé',
+        _ => status,
+      };
 }

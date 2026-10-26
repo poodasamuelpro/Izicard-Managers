@@ -10,6 +10,9 @@ class NfcTagRecord {
     required this.status,
     this.uid,
     this.locked = false,
+    this.attempts = 0,
+    this.lastError,
+    this.writtenAt,
   });
 
   final String id;
@@ -22,6 +25,9 @@ class NfcTagRecord {
   final String status;
   final String? uid;
   final bool locked;
+  final int attempts;
+  final String? lastError;
+  final String? writtenAt;
 
   bool get isWritable => !locked && status != 'verified' && status != 'void';
 
@@ -36,5 +42,8 @@ class NfcTagRecord {
         status: map['status']?.toString() ?? 'pending',
         uid: map['uid']?.toString(),
         locked: map['locked'] == true,
+        attempts: map['attempts'] is int ? map['attempts'] as int : int.tryParse('${map['attempts']}') ?? 0,
+        lastError: map['last_error']?.toString(),
+        writtenAt: map['written_at']?.toString(),
       );
 }

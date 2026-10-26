@@ -21,9 +21,9 @@ class WriteItemResult {
 }
 
 class WriteController {
-  WriteController({required TagRepository tags, required AppDatabase database})
+  WriteController({required TagRepository tags, required AppDatabase database, required String userId})
       : _tags = tags,
-        _sync = SyncRepository(database: database, remote: tags.remote);
+        _sync = SyncRepository(database: database, remote: tags.remote, userId: userId);
 
   final TagRepository _tags;
   final SyncRepository _sync;

@@ -1,76 +1,353 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/theme/izicard_colors.dart';
 import '../../data/models/nfc_batch.dart';
 import '../../data/models/nfc_profile.dart';
+import '../../data/models/nfc_tag.dart';
+import '../../data/remote/tags_remote.dart';
+import '../../data/repositories/batch_repository.dart';
+import '../../data/repositories/tag_repository.dart';
+import '../../services/export/csv_exporter.dart';
+import '../verify/verify_tag_screen.dart';
+import '../writing/write_screen.dart';
 
-class BatchDetailScreen extends StatelessWidget {
+class BatchDetailScreen extends StatefulWidget {
   const BatchDetailScreen({
     super.key,
     required this.batch,
     required this.profile,
+    required this.repository,
     required this.onImport,
   });
 
   final NfcBatch batch;
   final NfcProfile profile;
+  final BatchRepository repository;
   final VoidCallback onImport;
+
+  @override
+  State<BatchDetailScreen> createState() => _BatchDetailScreenState();
+}
+
+class _BatchDetailScreenState extends State<BatchDetailScreen> {
+  static const _pageSize = 50;
+  static const _filters = <String?, String>{
+    null: 'Toutes',
+    'pending': 'À écrire',
+    'written': 'Écrites',
+    'verified': 'Vérifiées',
+    'error': 'Erreurs',
+    'void': 'Annulées',
+  };
+
+  late final TagRepository _tags;
+  late NfcBatch _batch;
+  final _searchController = TextEditingController();
+  Timer? _debounce;
+  final List<NfcTagRecord> _items = [];
+  String? _status;
+  bool _loading = false;
+  bool _hasMore = true;
+  String? _error;
+  bool _exporting = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _batch = widget.batch;
+    _tags = TagRepository(TagsRemote(Supabase.instance.client));
+    _reload();
+  }
+
+  @override
+  void dispose() {
+    _debounce?.cancel();
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  bool get _canWork => _batch.status != 'archived' && widget.profile.hasValidAccess;
+
+  Future<void> _reload() async {
+    setState(() {
+      _items.clear();
+      _hasMore = true;
+      _error = null;
+    });
+    await Future.wait([_loadMore(), _refreshStats()]);
+  }
+
+  Future<void> _refreshStats() async {
+    try {
+      final all = await widget.repository.listBatchStats();
+      final fresh = all.where((b) => b.id == _batch.id);
+      if (fresh.isNotEmpty && mounted) setState(() => _batch = fresh.first);
+    } catch (_) {
+      // Les compteurs précédents restent affichés.
+    }
+  }
+
+  Future<void> _loadMore() async {
+    if (_loading || !_hasMore) return;
+    setState(() => _loading = true);
+    try {
+      final page = await _tags.page(
+        batchId: _batch.id,
+        status: _status,
+        search: _searchController.text,
+        offset: _items.length,
+        limit: _pageSize,
+      );
+      if (!mounted) return;
+      setState(() {
+        _items.addAll(page);
+        _hasMore = page.length == _pageSize;
+        _error = null;
+      });
+    } catch (error) {
+      if (mounted) setState(() => _error = error.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  void _onSearchChanged(String _) {
+    _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 400), _reload);
+  }
+
+  Future<void> _export() async {
+    if (_exporting) return;
+    setState(() => _exporting = true);
+    try {
+      final all = await _tags.all(_batch.id);
+      if (all.isEmpty) {
+        _snack('Ce dossier ne contient aucune carte.');
+      } else {
+        final count = await CsvExporter.share(batchName: _batch.name, tags: all);
+        _snack('$count ligne(s) exportée(s).');
+      }
+    } catch (error) {
+      _snack('Export impossible : ${error.toString().replaceFirst('Exception: ', '')}');
+    } finally {
+      if (mounted) setState(() => _exporting = false);
+    }
+  }
+
+  void _snack(String text) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
+  }
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final canImport = batch.status != 'archived' && profile.hasValidAccess;
     return Scaffold(
       appBar: AppBar(title: const Text('Détail du dossier')),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
-          Text(batch.name, style: theme.textTheme.headlineSmall),
-          const SizedBox(height: 8),
-          Align(alignment: Alignment.centerLeft, child: _StatusChip(status: batch.status, label: batch.statusLabel)),
-          const SizedBox(height: 20),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(children: [
-                _DetailRow(label: 'Cartes au total', value: '${batch.total}'),
-                _DetailRow(label: 'En attente', value: '${batch.pending}'),
-                _DetailRow(label: 'Écrites', value: '${batch.written}'),
-                _DetailRow(label: 'Vérifiées', value: '${batch.verified}'),
-                _DetailRow(label: 'Erreurs', value: '${batch.errors}'),
-                _DetailRow(label: 'Annulées', value: '${batch.voided}'),
+      body: SafeArea(
+        child: RefreshIndicator(
+          onRefresh: _reload,
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+            children: [
+              Row(children: [
+                Expanded(child: Text(_batch.name, style: theme.textTheme.headlineSmall)),
+                const SizedBox(width: 8),
+                _StatusChip(status: _batch.status, label: _batch.statusLabel),
               ]),
-            ),
+              const SizedBox(height: 14),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: _batch.progress,
+                  minHeight: 8,
+                  backgroundColor: IzicardColors.cyan.withOpacity(.12),
+                ),
+              ),
+              const SizedBox(height: 6),
+              Text('${(_batch.progress * 100).round()} % des cartes vérifiées', style: theme.textTheme.bodySmall),
+              const SizedBox(height: 14),
+              Wrap(spacing: 8, runSpacing: 8, children: [
+                _Stat(label: 'Total', value: _batch.total, color: IzicardColors.ink),
+                _Stat(label: 'À écrire', value: _batch.pending, color: IzicardColors.statusPending),
+                _Stat(label: 'Écrites', value: _batch.written, color: IzicardColors.statusWritten),
+                _Stat(label: 'Vérifiées', value: _batch.verified, color: IzicardColors.statusVerified),
+                _Stat(label: 'Erreurs', value: _batch.errors, color: IzicardColors.statusError),
+              ]),
+              const SizedBox(height: 16),
+              Wrap(spacing: 10, runSpacing: 10, children: [
+                if (_canWork)
+                  FilledButton.icon(
+                    onPressed: widget.onImport,
+                    icon: const Icon(Icons.upload_file_rounded),
+                    label: const Text('Importer / saisir'),
+                  ),
+                if (_canWork)
+                  FilledButton.icon(
+                    onPressed: () => Navigator.of(context)
+                        .push<void>(MaterialPageRoute<void>(
+                          builder: (_) => WriteScreen(profile: widget.profile, initialBatchId: _batch.id),
+                        ))
+                        .then((_) => _reload()),
+                    icon: const Icon(Icons.nfc_rounded),
+                    label: const Text('Écrire les cartes'),
+                  ),
+                OutlinedButton.icon(
+                  onPressed: () => Navigator.of(context)
+                      .push<void>(MaterialPageRoute<void>(builder: (_) => const VerifyTagScreen())),
+                  icon: const Icon(Icons.fact_check_outlined),
+                  label: const Text('Vérifier un tag'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _exporting ? null : _export,
+                  icon: _exporting
+                      ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                      : const Icon(Icons.download_rounded),
+                  label: const Text('Exporter en CSV'),
+                ),
+              ]),
+              const SizedBox(height: 22),
+              Text('Cartes du dossier', style: theme.textTheme.titleMedium),
+              const SizedBox(height: 10),
+              TextField(
+                controller: _searchController,
+                onChanged: _onSearchChanged,
+                textInputAction: TextInputAction.search,
+                decoration: const InputDecoration(
+                  prefixIcon: Icon(Icons.search_rounded),
+                  hintText: 'Identifiant, UID, code, référence…',
+                  border: OutlineInputBorder(),
+                ),
+              ),
+              const SizedBox(height: 10),
+              SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: _filters.entries
+                      .map((entry) => Padding(
+                            padding: const EdgeInsets.only(right: 8),
+                            child: ChoiceChip(
+                              label: Text(entry.value),
+                              selected: _status == entry.key,
+                              onSelected: (_) {
+                                _status = entry.key;
+                                _reload();
+                              },
+                            ),
+                          ))
+                      .toList(),
+                ),
+              ),
+              const SizedBox(height: 12),
+              if (_error != null)
+                _InlineError(message: _error!, onRetry: _loadMore)
+              else if (_items.isEmpty && !_loading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 32),
+                  child: Center(child: Text('Aucune carte ne correspond à ce filtre.')),
+                )
+              else
+                ..._items.map((tag) => _TagTile(tag: tag)),
+              if (_loading)
+                const Padding(padding: EdgeInsets.all(18), child: Center(child: CircularProgressIndicator())),
+              if (!_loading && _hasMore && _error == null && _items.isNotEmpty)
+                Center(
+                  child: TextButton.icon(
+                    onPressed: _loadMore,
+                    icon: const Icon(Icons.expand_more_rounded),
+                    label: const Text('Charger plus de cartes'),
+                  ),
+                ),
+            ],
           ),
-          const SizedBox(height: 16),
-          ClipRRect(borderRadius: BorderRadius.circular(8), child: LinearProgressIndicator(value: batch.progress, minHeight: 8, backgroundColor: IzicardColors.cyan.withOpacity(.12))),
-          const SizedBox(height: 8),
-          Text('${(batch.progress * 100).round()} % des tags vérifiés', textAlign: TextAlign.center, style: theme.textTheme.bodyMedium),
-          const SizedBox(height: 24),
-          if (canImport) FilledButton.icon(
-            onPressed: onImport,
-            icon: const Icon(Icons.upload_file_rounded),
-            label: const Text('Importer ou saisir des cartes'),
-          ),
-          const SizedBox(height: 12),
-          const Text(
-            'Les données passent par la RPC nfc_import_rows du schéma nfc. Supabase applique les règles de rôle et de propriété du dossier.',
-            textAlign: TextAlign.center,
-          ),
-        ],
+        ),
       ),
     );
   }
 }
 
-class _DetailRow extends StatelessWidget {
-  const _DetailRow({required this.label, required this.value});
-  final String label;
-  final String value;
+class _TagTile extends StatelessWidget {
+  const _TagTile({required this.tag});
+  final NfcTagRecord tag;
+
   @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 8),
-        child: Row(children: [Expanded(child: Text(label)), Text(value, style: const TextStyle(fontWeight: FontWeight.w800))]),
+  Widget build(BuildContext context) {
+    final color = IzicardColors.forTagStatus(tag.status);
+    final detail = <String>[
+      if (tag.payload.isNotEmpty) tag.payload.length > 70 ? '${tag.payload.substring(0, 69)}…' : tag.payload,
+      if (tag.uid != null && tag.uid!.isNotEmpty) 'UID ${tag.uid}',
+    ].join('\n');
+    return Card(
+      child: ListTile(
+        leading: CircleAvatar(
+          backgroundColor: color,
+          foregroundColor: Colors.white,
+          child: Text('${tag.sequence}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w800)),
+        ),
+        title: Text(tag.publicId, maxLines: 1, overflow: TextOverflow.ellipsis),
+        subtitle: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+          if (detail.isNotEmpty) Text(detail, maxLines: 3, overflow: TextOverflow.ellipsis),
+          if (tag.lastError != null && tag.lastError!.isNotEmpty)
+            Text(tag.lastError!, style: const TextStyle(color: IzicardColors.statusError, fontSize: 12)),
+        ]),
+        isThreeLine: detail.contains('\n') || (tag.lastError ?? '').isNotEmpty,
+        trailing: DecoratedBox(
+          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(99)),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+            child: Text(IzicardColors.labelForTagStatus(tag.status),
+                style: const TextStyle(color: Colors.white, fontSize: 11, fontWeight: FontWeight.w800)),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _Stat extends StatelessWidget {
+  const _Stat({required this.label, required this.value, required this.color});
+  final String label;
+  final int value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Container(
+        constraints: const BoxConstraints(minWidth: 84),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          border: Border.all(color: IzicardColors.border),
+          borderRadius: BorderRadius.circular(14),
+        ),
+        child: Column(children: [
+          Text('$value', style: TextStyle(color: color, fontSize: 20, fontWeight: FontWeight.w800)),
+          Text(label, style: const TextStyle(color: IzicardColors.muted, fontSize: 12)),
+        ]),
+      );
+}
+
+class _InlineError extends StatelessWidget {
+  const _InlineError({required this.message, required this.onRetry});
+  final String message;
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) => Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(children: [
+            Text(message, style: const TextStyle(color: IzicardColors.statusError)),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Réessayer'),
+            ),
+          ]),
+        ),
       );
 }
 
@@ -78,18 +355,22 @@ class _StatusChip extends StatelessWidget {
   const _StatusChip({required this.status, required this.label});
   final String status;
   final String label;
+
   @override
   Widget build(BuildContext context) {
     final color = switch (status) {
-      'completed' => IzicardColors.success,
+      'completed' => IzicardColors.statusVerified,
       'in_progress' => IzicardColors.blue,
       'ready' => IzicardColors.cyan,
       'archived' => Colors.grey,
-      _ => IzicardColors.warning,
+      _ => IzicardColors.statusPending,
     };
     return DecoratedBox(
-      decoration: BoxDecoration(color: color.withOpacity(.1), borderRadius: BorderRadius.circular(99)),
-      child: Padding(padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7), child: Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w800))),
+      decoration: BoxDecoration(color: color.withOpacity(.12), borderRadius: BorderRadius.circular(99)),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+        child: Text(label, style: TextStyle(color: color, fontWeight: FontWeight.w800)),
+      ),
     );
   }
 }
