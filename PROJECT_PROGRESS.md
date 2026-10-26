@@ -733,3 +733,17 @@ Les migrations 005 et 006 doivent être appliquées dans Supabase. La compilatio
 ### Commit
 
 `7a423bd` — poussé sur `master`.
+
+## Lot M9 — interface tablette, français obligatoire et thème clair — 2026-10-26 23:30 UTC
+
+L’interface mobile utilise maintenant un conteneur responsive commun qui centre les contenus et limite leur largeur sur tablette et paysage. L’accueil présente les destinations en grille à deux colonnes sur les écrans larges. Les dossiers passent également en grille à deux colonnes, tandis que le tableau de bord, le détail de dossier et les réglages bénéficient d’une largeur de lecture adaptée aux grands écrans.
+
+Le français est désormais explicitement sélectionné dans `MaterialApp` et le thème clair est forcé avec `ThemeMode.light`. Le mode sombre n’est pas proposé. La ressource anglaise `lib/l10n/app_en.arb` a été supprimée ; l’application reste exclusivement en français.
+
+### Partiel / non vérifié
+
+La compilation Flutter et le rendu sur une vraie tablette Android restent à vérifier lorsque l’environnement Android sera disponible. Les écrans ayant déjà une largeur maximale dédiée restent compatibles avec le nouveau conteneur.
+
+### Commit
+
+À renseigner après le push du lot M9.

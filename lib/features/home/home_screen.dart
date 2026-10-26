@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../core/router/route_guards.dart';
 import '../../core/theme/izicard_colors.dart';
+import '../../core/widgets/responsive_content.dart';
 import '../../data/models/nfc_profile.dart';
 import '../../data/repositories/auth_repository.dart';
 
@@ -84,8 +85,12 @@ class HomeScreen extends StatelessWidget {
         ],
       ),
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) => ListView(
+        child: ResponsiveContent(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final isGrid = constraints.maxWidth >= 760;
+              final tileWidth = (constraints.maxWidth - 16) / 2;
+              return ListView(
             padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
             children: [
               _WelcomeCard(
@@ -105,18 +110,35 @@ class HomeScreen extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: IzicardColors.muted),
               ),
               const SizedBox(height: 18),
-              ...destinations.map((destination) => Padding(
-                    padding: const EdgeInsets.only(bottom: 12),
-                    child: _DestinationCard(
-                      destination: destination,
-                      onTap: () => NfcRouteGuard.open(context, profile: profile, destination: destination, repository: repository),
-                    ),
-                  )),
+              if (isGrid)
+                Wrap(
+                  spacing: 16,
+                  runSpacing: 16,
+                  children: destinations
+                      .map((destination) => SizedBox(
+                            width: tileWidth,
+                            child: _DestinationCard(
+                              destination: destination,
+                              onTap: () => NfcRouteGuard.open(context, profile: profile, destination: destination, repository: repository),
+                            ),
+                          ))
+                      .toList(),
+                )
+              else
+                ...destinations.map((destination) => Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: _DestinationCard(
+                        destination: destination,
+                        onTap: () => NfcRouteGuard.open(context, profile: profile, destination: destination, repository: repository),
+                      ),
+                    )),
               const SizedBox(height: 8),
               Text('Les données et les autorisations sont gérées par le backend IziCard partagé.',
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall?.copyWith(color: IzicardColors.muted)),
             ],
+          );
+            },
           ),
         ),
       ),

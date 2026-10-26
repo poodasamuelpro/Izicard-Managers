@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config/constants.dart';
 import '../../core/theme/izicard_colors.dart';
+import '../../core/widgets/responsive_content.dart';
 import '../../data/models/nfc_batch.dart';
 import '../../data/models/nfc_profile.dart';
 import '../../data/repositories/batch_repository.dart';
@@ -115,8 +116,14 @@ class _BatchesScreenState extends State<BatchesScreen> {
             }).toList();
             return RefreshIndicator(
               onRefresh: _refresh,
-              child: ListView(
+              child: ResponsiveContent(
                 padding: const EdgeInsets.fromLTRB(20, 14, 20, 100),
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final isGrid = constraints.maxWidth >= 860;
+                    final cardWidth = (constraints.maxWidth - 12) / 2;
+                    return ListView(
+                padding: EdgeInsets.zero,
                 children: [
                   if (offline)
                     Container(
@@ -143,6 +150,25 @@ class _BatchesScreenState extends State<BatchesScreen> {
                   const SizedBox(height: 14),
                   if (visible.isEmpty)
                     _EmptyBatches(canCreate: _canCreate, onCreate: _openCreate, isFiltered: _filter != 'Tous')
+                  else if (isGrid)
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 12,
+                      children: visible.map((batch) => SizedBox(
+                        width: cardWidth,
+                        child: _BatchCard(
+                          batch: batch,
+                          onTap: () => Navigator.of(context).push<void>(MaterialPageRoute<void>(
+                            builder: (_) => BatchDetailScreen(
+                              batch: batch,
+                              profile: widget.profile,
+                              repository: widget.repository,
+                              onImport: () => _openImport(batch),
+                            ),
+                          )),
+                        ),
+                      )).toList(),
+                    )
                   else
                     ...visible.map((batch) => Padding(
                       padding: const EdgeInsets.only(bottom: 12),
@@ -159,6 +185,9 @@ class _BatchesScreenState extends State<BatchesScreen> {
                       ),
                     )),
                 ],
+                    );
+                  },
+                ),
               ),
             );
           },

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../../core/theme/izicard_colors.dart';
+import '../../../core/widgets/responsive_content.dart';
 import '../../../data/models/nfc_batch.dart';
 import '../../../data/models/nfc_client.dart';
 import '../../../data/models/nfc_profile.dart';
@@ -124,8 +125,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     }
     final ranking = perClient.entries.toList()..sort((a, b) => b.value.total.compareTo(a.value.total));
 
-    return ListView(
-      padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+    return ResponsiveContent(
+      child: ListView(
+      padding: EdgeInsets.zero,
       children: [
         Container(
           padding: const EdgeInsets.all(20),
@@ -218,6 +220,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             );
           }),
       ],
+      ),
     );
   }
 }

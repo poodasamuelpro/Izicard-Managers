@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/theme/izicard_colors.dart';
+import '../../core/widgets/responsive_content.dart';
 import '../../data/models/nfc_batch.dart';
 import '../../data/models/nfc_profile.dart';
 import '../../data/models/nfc_tag.dart';
@@ -297,7 +298,10 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
       body: SafeArea(
         child: RefreshIndicator(
           onRefresh: _reload,
-          child: ListView(
+          child: ResponsiveContent(
+            maxWidth: 1240,
+            padding: EdgeInsets.zero,
+            child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
             children: [
               if (_offlineMode)
@@ -442,6 +446,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                   ),
                 ),
             ],
+            ),
           ),
         ),
       ),

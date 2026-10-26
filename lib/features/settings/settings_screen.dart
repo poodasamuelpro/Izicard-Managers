@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/settings/app_settings.dart';
 import '../../core/theme/izicard_colors.dart';
+import '../../core/widgets/responsive_content.dart';
 import '../../data/local/app_database.dart';
 import '../../data/models/nfc_profile.dart';
 import '../../data/remote/tags_remote.dart';
@@ -71,8 +72,10 @@ class SettingsScreen extends StatelessWidget {
       body: SafeArea(
         child: ValueListenableBuilder<AppSettings>(
           valueListenable: store.notifier,
-          builder: (context, settings, _) => ListView(
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+          builder: (context, settings, _) => ResponsiveContent(
+            maxWidth: 900,
+            child: ListView(
+            padding: EdgeInsets.zero,
             children: [
               Card(
                 child: ListTile(
@@ -169,6 +172,7 @@ class SettingsScreen extends StatelessWidget {
                 ]),
               ),
             ],
+            ),
           ),
         ),
       ),

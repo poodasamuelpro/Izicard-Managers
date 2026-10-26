@@ -33,7 +33,7 @@ Aucune ligne ✅ n'a été compilée ni testée.
 | Import hors connexion | ❌ (réseau requis, par conception) |
 | Génération automatique de codes, QR codes, liaison avec les commandes du site | hors périmètre |
 | Ouverture directe de l'application depuis le lien d'invitation (deep link) | ❌ 🛠 |
-| Anglais (fichiers de langue vides, tout est en français) | ❌ |
+| Anglais | interdit — application exclusivement française |
 
 ### Points à signaler (lot M4)
 - Le champ `can_create_batches` de `nfc_clients` est marqué « legacy, ignoré par les autorisations » dans la migration 001 : l'interrupteur du dialogue d'accès l'écrit toujours mais n'a peut-être aucun effet. À trancher avec le propriétaire.
@@ -57,7 +57,7 @@ Aucune ligne ✅ n'a été compilée ni testée.
 |---|---|
 | Charte IziCard, états chargement / vide / erreur, couleurs d'état | ✅ |
 | Tablette et paysage : largeur de contenu limitée, mise en page à deux colonnes | ⚠️ (seulement connexion et accueil) |
-| Thème sombre | ❌ |
+| Thème sombre | retiré — thème clair obligatoire |
 | Audit d'accessibilité (contrastes, lecteur d'écran, grandes polices) | ❌ |
 | Icône, nom et écran de démarrage de l'application | ❌ 🛠 |
 

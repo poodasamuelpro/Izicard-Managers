@@ -49,3 +49,5 @@ Avant toute écriture, le mobile lit le contenu NDEF déjà présent. Si le tag 
 La liste des dossiers écoute également les changements Realtime Supabase sur `nfc.nfc_batches` et `nfc.nfc_tags`. Appliquer la migration backend partagée `005_nfc_realtime.sql` avant la mise en production ; les opérations hors ligne et la file de synchronisation locale restent indépendantes de cette écoute.
 
 Un administrateur peut archiver ou réactiver un dossier après confirmation. L’opération utilise la RPC partagée `nfc_archive_batch`; l’historique du dossier est consultable via `nfc_list_audit`. Appliquer `006_nfc_archive_history.sql` avant d’utiliser ces commandes.
+
+L’application est exclusivement en français : aucune interface anglaise n’est autorisée. Le thème clair est obligatoire et le mode sombre n’est pas proposé. Les écrans d’accueil, dossiers, tableau de bord, détail et réglages utilisent une mise en page responsive centrée, avec grilles à deux colonnes sur tablette et paysage lorsque l’espace le permet.

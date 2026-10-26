@@ -27,6 +27,9 @@ class IzicardApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       title: 'IziCard NFC',
       theme: IzicardTheme.light,
+      darkTheme: IzicardTheme.light,
+      themeMode: ThemeMode.light,
+      locale: const Locale('fr'),
       home: configurationError
           ? const ConfigurationErrorScreen()
           : const AuthGate(),
