@@ -56,6 +56,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
   final List<NfcTagRecord> _items = [];
   String? _status;
   bool _loading = false;
+  int _generation = 0;
   bool _hasMore = true;
   String? _error;
   bool _exporting = false;
@@ -85,10 +86,12 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
   bool get _canWork => _batch.status != 'archived' && widget.profile.hasValidAccess;
 
   Future<void> _reload() async {
+    _generation++;
     setState(() {
       _items.clear();
       _hasMore = true;
       _error = null;
+      _loading = false;
     });
     await Future.wait([_loadMore(), _refreshStats()]);
   }
@@ -105,6 +108,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
 
   Future<void> _loadMore() async {
     if (_loading || !_hasMore) return;
+    final generation = _generation;
     setState(() => _loading = true);
     try {
       final page = await _tags.page(
@@ -114,16 +118,16 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
         offset: _items.length,
         limit: _pageSize,
       );
-      if (!mounted) return;
+      if (!mounted || generation != _generation) return;
       setState(() {
         _items.addAll(page);
         _hasMore = page.length == _pageSize;
         _error = null;
       });
     } catch (error) {
-      if (mounted) setState(() => _error = error.toString().replaceFirst('Exception: ', ''));
+      if (mounted && generation == _generation) setState(() => _error = error.toString().replaceFirst('Exception: ', ''));
     } finally {
-      if (mounted) setState(() => _loading = false);
+      if (mounted && generation == _generation) setState(() => _loading = false);
     }
   }
 

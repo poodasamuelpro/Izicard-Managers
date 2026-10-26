@@ -94,6 +94,12 @@ class PendingWritesDao {
     return result.single['count']! as int;
   }
 
+  /// Rattache à [userId] les anciens éléments (créés avant la version 3) qui n'ont pas de propriétaire.
+  Future<void> adoptOrphans(String userId) async {
+    final db = await _database.instance;
+    await db.update('pending_writes', {'user_id': userId}, where: 'user_id IS NULL');
+  }
+
   Future<void> markAttempt(int id) async {
     final db = await _database.instance;
     await db.rawUpdate(

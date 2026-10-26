@@ -43,6 +43,9 @@ class WriteController extends ChangeNotifier {
   bool _running = false;
   bool _pauseRequested = false;
 
+  /// Vrai quand la carte courante est déjà vérifiée : la reprise doit passer à la suivante.
+  bool _awaitingAdvance = false;
+
   NfcTagRecord? get current => index < queue.length ? queue[index] : null;
   bool get isRunning => phase == SeriesPhase.waiting;
   bool get isActive => phase != SeriesPhase.idle && phase != SeriesPhase.finished;
@@ -163,6 +166,7 @@ class WriteController extends ChangeNotifier {
     if (result.verified) {
       verified++;
       _lastUid = result.uid;
+      _awaitingAdvance = true;
       phase = SeriesPhase.success;
       message = 'Carte n° ${tag.sequence} vérifiée · UID ${result.uid}${result.locked ? ' · verrouillée' : ''}'
           '${result.error != null ? '\n${result.error}' : ''}';
@@ -199,6 +203,7 @@ class WriteController extends ChangeNotifier {
   }
 
   void _advance() {
+    _awaitingAdvance = false;
     index++;
     if (current == null) {
       unawaited(finish());
@@ -246,6 +251,8 @@ class WriteController extends ChangeNotifier {
   void resume() {
     if (_running || phase != SeriesPhase.paused) return;
     _pauseRequested = false;
+    if (_awaitingAdvance) _advance();
+    if (phase == SeriesPhase.finished) return;
     unawaited(_run());
   }
 

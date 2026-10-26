@@ -59,6 +59,7 @@ class SyncRepository {
     if (_sessionUserId() != userId) {
       return SyncResult(sent: 0, remaining: await _queue.count(userId), blocked: true);
     }
+    await _queue.adoptOrphans(userId);
     var sent = 0;
     var rejected = 0;
     final items = await _queue.pending(userId, limit: 500);

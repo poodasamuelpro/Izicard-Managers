@@ -635,3 +635,15 @@ Aucune compilation, aucune analyse, aucun test, aucun essai sur tags réels (con
 4. Vérifier dans Supabase : grants/RLS de `nfc_tags` (lecture par UID), `nfc_mark_written`, scripts 003 puis 004 appliqués.
 5. Les fichiers de `test/` sont des emplacements vides à écrire à l'étape tests.
 
+## Relecture statique du mobile — 2026-10-26 UTC
+
+### Corrigé
+
+- Reprise après pause : une carte déjà vérifiée n'est plus réécrite, la série passe à la suivante.
+- Détail d'un dossier : un changement rapide de filtre ou de recherche pendant un chargement pouvait laisser la liste vide ; chaque chargement est maintenant numéroté et les réponses périmées sont ignorées.
+- Éléments de file créés avant la migration v3 (sans propriétaire) : rattachés à l'utilisateur connecté au premier envoi au lieu d'être ignorés.
+
+### Limites connues
+
+Les noms exacts de l'API `nfc_manager` 4.0.2 / `nfc_manager_ndef` 1.0.1 (`Ndef.from`, `write(message:)`, `writeLock`, `isWritable`, `maxSize`, `NdefRecord(...)`) reprennent le code existant et n'ont pas pu être vérifiés (documentation inaccessible depuis cet environnement) : à confirmer à la compilation. Aucune compilation ni test.
+
