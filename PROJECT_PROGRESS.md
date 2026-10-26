@@ -718,4 +718,4 @@ La compilation Flutter et la réception réelle d’événements nécessitent l�
 
 ### Commit
 
-À renseigner après le push du lot M7.
+`af2eb0a` — poussé sur `master`.
