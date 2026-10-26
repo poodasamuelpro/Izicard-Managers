@@ -1,5 +1,9 @@
-import 'package:flutter/material.dart';
+import 'dart:async';
 
+import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+
+import '../../core/config/constants.dart';
 import '../../core/theme/izicard_colors.dart';
 import '../../data/models/nfc_batch.dart';
 import '../../data/models/nfc_profile.dart';
@@ -20,18 +24,44 @@ class BatchesScreen extends StatefulWidget {
 
 class _BatchesScreenState extends State<BatchesScreen> {
   late Future<BatchList> _batches;
+  late final RealtimeChannel _realtime;
+  Timer? _realtimeDebounce;
   String _filter = 'Tous';
 
   @override
   void initState() {
     super.initState();
     _batches = loadBatches(widget.repository);
+    final client = Supabase.instance.client;
+    _realtime = client
+        .channel('izicard-mobile-batches-${client.auth.currentUser?.id ?? 'anonymous'}')
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: AppConstants.nfcSchema,
+          table: 'nfc_batches',
+          callback: (_) => _scheduleRealtimeRefresh(),
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.all,
+          schema: AppConstants.nfcSchema,
+          table: 'nfc_tags',
+          callback: (_) => _scheduleRealtimeRefresh(),
+        )
+        .subscribe();
   }
 
   Future<void> _refresh() async {
     final future = loadBatches(widget.repository);
     setState(() => _batches = future);
     try { await future; } catch (_) {}
+  }
+
+  void _scheduleRealtimeRefresh() {
+    if (!mounted) return;
+    _realtimeDebounce?.cancel();
+    _realtimeDebounce = Timer(const Duration(milliseconds: 500), () {
+      if (mounted) unawaited(_refresh());
+    });
   }
 
   bool _offline = false;
@@ -50,6 +80,13 @@ class _BatchesScreenState extends State<BatchesScreen> {
     Navigator.of(context).push<void>(MaterialPageRoute<void>(
       builder: (_) => ImportScreen(profile: widget.profile, repository: widget.repository, initialBatchId: batch.id),
     ));
+  }
+
+  @override
+  void dispose() {
+    _realtimeDebounce?.cancel();
+    Supabase.instance.client.removeChannel(_realtime);
+    super.dispose();
   }
 
   @override

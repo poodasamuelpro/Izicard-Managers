@@ -45,3 +45,5 @@ Les workflows GitHub Actions présents dans `.github/workflows/` sont conservés
 Le produit mobile encode des liens de profil IziCard ; aucune donnée sensible IziCare n’est traitée dans ce dépôt. Le profil hors connexion reste disponible selon la politique produit. Le chiffrement du cache et le stockage sécurisé spécifique de session ne sont pas ajoutés à ce stade afin de ne pas fragiliser la synchronisation ; ce choix sera réévalué si le périmètre des données change. Un PIN local optionnel à 6 chiffres pourra être ajouté ultérieurement sans bloquer les utilisateurs qui ne l’activent pas.
 
 Avant toute écriture, le mobile lit le contenu NDEF déjà présent. Si le tag contient des enregistrements, une confirmation explicite est demandée en écriture série comme en écriture d’une carte unique. Une annulation ne crée ni erreur métier ni résultat à synchroniser.
+
+La liste des dossiers écoute également les changements Realtime Supabase sur `nfc.nfc_batches` et `nfc.nfc_tags`. Appliquer la migration backend partagée `005_nfc_realtime.sql` avant la mise en production ; les opérations hors ligne et la file de synchronisation locale restent indépendantes de cette écoute.

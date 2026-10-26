@@ -705,3 +705,17 @@ Le contrôle intervient avant `ndef.write`, tandis que la relecture de vérifica
 ### Commit
 
 `e4df99e` — poussé sur `master`.
+
+## Lot M7 — synchronisation temps réel des dossiers — 2026-10-26 23:18 UTC
+
+L’écran mobile des dossiers écoute maintenant les événements Supabase Realtime sur `nfc.nfc_batches` et `nfc.nfc_tags`. Les changements de dossier, de statut ou de carte déclenchent un rafraîchissement temporisé des compteurs et de la progression, avec nettoyage de l’abonnement lors de la fermeture de l’écran. Le rafraîchissement manuel reste disponible comme solution de secours.
+
+Le dépôt Web/backend partagé contient la migration `005_nfc_realtime.sql`, qui ajoute `nfc.nfc_batches` et `nfc.nfc_tags` à la publication `supabase_realtime` et configure leur replica identity. Cette migration doit être appliquée dans Supabase avant d’attendre des événements en production.
+
+### Partiel / non vérifié
+
+La compilation Flutter et la réception réelle d’événements nécessitent l’application de la migration puis un environnement connecté. Le temps réel n’est pas un remplacement de la file locale de synchronisation : les résultats NFC non synchronisés restent protégés par le stockage local et la synchronisation existante.
+
+### Commit
+
+À renseigner après le push du lot M7.

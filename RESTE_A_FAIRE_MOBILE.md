@@ -106,3 +106,7 @@ Aucune ligne ✅ n'a été compilée ni testée.
 ## 10. Lot M6 — confirmation d’écrasement — 2026-10-26 23:17 UTC
 
 La lecture du contenu NDEF existant et la confirmation utilisateur sont maintenant branchées sur l’écriture en série et l’écriture d’une carte unique. Une annulation ne crée pas d’erreur dans la file de synchronisation. Il reste à compiler et tester sur des tags physiques lorsque l’environnement Android sera disponible.
+
+## 11. Lot M7 — temps réel — 2026-10-26 23:18 UTC
+
+✅ L’écran Dossiers écoute désormais `nfc.nfc_batches` et `nfc.nfc_tags` via le Realtime Supabase natif et rafraîchit les compteurs avec anti-rebond. Une migration backend partagée `005_nfc_realtime.sql` a été poussée dans le dépôt Web ; elle doit être appliquée dans Supabase. La compilation et le test avec une modification distante restent à effectuer.
