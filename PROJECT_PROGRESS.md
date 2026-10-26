@@ -539,3 +539,32 @@ Brancher ce socle sur les écrans d’écriture en série et de vérification, p
 ### Commit
 
 `46c32c6` — `feat(mobile): add real nfc encoding foundation`
+
+
+## Lot 2 — écriture et vérification NFC raccordées — 2026-10-26 01:31:35 UTC
+
+### Terminé dans le code mobile
+
+- La destination Écriture NFC ouvre maintenant un écran réel avec sélection du dossier, liste des cartes inscriptibles, payload backend, progression, état de la carte courante, bouton d’approche, nouvelle tentative et passage.
+- `WriteController` appelle `NfcService.writeOnce`, utilise toujours `nfc.nfc_tags.payload` comme source de vérité, enregistre `verified` ou `error` via `nfc_mark_written`, et place le résultat dans la file locale si l’appel réseau échoue.
+- La destination Vérification NFC ouvre maintenant un écran réel : lecture du tag, récupération de l’UID Android, recherche de la carte dans `nfc.nfc_tags`, comparaison avec le payload NDEF attendu et affichage des cas conforme, tag inconnu, contenu différent, tag vide ou erreur.
+- `TagsRemote` et `TagRepository` exposent la recherche d’une carte par UID.
+- La navigation mobile ne laisse plus les destinations Écriture et Vérification sur l’écran générique de présentation.
+
+### Partiel / non vérifié
+
+- Flutter et Dart ne sont pas installés dans ce sandbox : aucun `flutter pub get`, `flutter analyze`, test Flutter, compilation APK ou test sur puce réelle n’a pu être exécuté.
+- Le dépôt ne contient toujours pas la plateforme Android générée : `android/` ne contient que sa documentation. La permission NFC et le manifeste devront être ajoutés dans le prochain lot de génération/configuration Android.
+- La comparaison NDEF et les permissions Android restent à confirmer sur appareil réel avec des tags NTAG compatibles.
+
+### Reste à faire
+
+- Générer/configurer la plateforme Android et déclarer `android.permission.NFC` ainsi que `android.hardware.nfc`.
+- Exécuter l’analyse, les tests et le build Android dans Flutter 3.29.2 / Dart 3.7.2 ou via GitHub Actions.
+- Tester l’écriture, la relecture, le verrouillage, les erreurs, la file hors ligne et la synchronisation sur appareil NFC réel.
+- Vérifier dans Supabase les grants/RLS de la recherche par UID et de `nfc_mark_written`.
+
+### Commits
+
+- `81734f2` — `feat(mobile): wire nfc writing and verification screens`
+- Progression documentaire : commit suivant.
