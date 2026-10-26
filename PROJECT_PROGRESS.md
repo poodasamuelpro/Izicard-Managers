@@ -732,4 +732,4 @@ Les migrations 005 et 006 doivent être appliquées dans Supabase. La compilatio
 
 ### Commit
 
-À renseigner après le push du lot M8.
+`7a423bd` — poussé sur `master`.
