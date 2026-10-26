@@ -217,6 +217,73 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
     }
   }
 
+  Future<void> _toggleArchive() async {
+    final archived = _batch.status != 'archived';
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        icon: Icon(archived ? Icons.archive_outlined : Icons.unarchive_outlined),
+        title: Text(archived ? 'Archiver le dossier ?' : 'Réactiver le dossier ?'),
+        content: Text(archived
+            ? 'Le dossier sera conservé dans l’historique et aucune nouvelle écriture ou import ne sera autorisé.'
+            : 'Le dossier redeviendra disponible selon son état de cartes actuel.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Annuler')),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(archived ? 'Archiver' : 'Réactiver'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    try {
+      await widget.repository.archiveBatch(batchId: _batch.id, archived: archived);
+      await _reload();
+      _snack(archived ? 'Dossier archivé.' : 'Dossier réactivé.');
+    } catch (error) {
+      _snack('Opération impossible : ${error.toString().replaceFirst('Exception: ', '')}');
+    }
+  }
+
+  Future<void> _showHistory() async {
+    await showDialog<void>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('Historique du dossier'),
+        content: SizedBox(
+          width: 520,
+          child: FutureBuilder<List<Map<String, dynamic>>>(
+            future: widget.repository.listAudit(entity: 'batch', entityId: _batch.id),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState != ConnectionState.done) {
+                return const SizedBox(height: 120, child: Center(child: CircularProgressIndicator()));
+              }
+              if (snapshot.hasError) return const Text('Historique indisponible.');
+              final rows = snapshot.data ?? const <Map<String, dynamic>>[];
+              if (rows.isEmpty) return const Text('Aucun événement enregistré pour ce dossier.');
+              return ListView.separated(
+                shrinkWrap: true,
+                itemCount: rows.length,
+                separatorBuilder: (_, __) => const Divider(height: 1),
+                itemBuilder: (_, index) {
+                  final row = rows[index];
+                  final details = row['details'];
+                  return ListTile(
+                    dense: true,
+                    title: Text(row['action']?.toString() ?? 'Événement'),
+                    subtitle: Text('${row['at'] ?? ''}\n${details ?? ''}'),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        actions: [TextButton(onPressed: () => Navigator.of(dialogContext).pop(), child: const Text('Fermer'))],
+      ),
+    );
+  }
+
   void _snack(String text) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
@@ -309,6 +376,18 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                       : const Icon(Icons.download_rounded),
                   label: const Text('Exporter en CSV'),
                 ),
+                if (widget.profile.role == NfcRole.admin)
+                  OutlinedButton.icon(
+                    onPressed: _toggleArchive,
+                    icon: Icon(_batch.status == 'archived' ? Icons.unarchive_outlined : Icons.archive_outlined),
+                    label: Text(_batch.status == 'archived' ? 'Réactiver' : 'Archiver'),
+                  ),
+                if (widget.profile.role == NfcRole.admin)
+                  OutlinedButton.icon(
+                    onPressed: _showHistory,
+                    icon: const Icon(Icons.history_rounded),
+                    label: const Text('Historique'),
+                  ),
               ]),
               const SizedBox(height: 22),
               Text('Cartes du dossier', style: theme.textTheme.titleMedium),

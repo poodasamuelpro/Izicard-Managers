@@ -110,3 +110,7 @@ La lecture du contenu NDEF existant et la confirmation utilisateur sont maintena
 ## 11. Lot M7 — temps réel — 2026-10-26 23:18 UTC
 
 ✅ L’écran Dossiers écoute désormais `nfc.nfc_batches` et `nfc.nfc_tags` via le Realtime Supabase natif et rafraîchit les compteurs avec anti-rebond. Une migration backend partagée `005_nfc_realtime.sql` a été poussée dans le dépôt Web ; elle doit être appliquée dans Supabase. La compilation et le test avec une modification distante restent à effectuer.
+
+## 12. Lot M8 — archivage et historique — 2026-10-26 23:19 UTC
+
+✅ Archivage/réactivation réversible d’un dossier avec confirmation admin via RPC partagée. ✅ Consultation de l’historique d’audit d’un dossier via RPC sécurisée réservée aux admins. Le backend Web contient la migration `006_nfc_archive_history.sql`. À faire : appliquer les migrations Supabase 005/006 et compiler/tester avec des droits réels.

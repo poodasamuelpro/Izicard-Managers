@@ -80,4 +80,10 @@ class BatchRepository {
         filename: filename,
         mapping: mapping,
       );
+
+  Future<void> archiveBatch({required String batchId, required bool archived}) =>
+      _batches.archiveBatch(batchId: batchId, archived: archived);
+
+  Future<List<Map<String, dynamic>>> listAudit({String? entity, String? entityId, int limit = 100}) =>
+      _batches.listAudit(entity: entity, entityId: entityId, limit: limit);
 }

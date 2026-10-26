@@ -719,3 +719,17 @@ La compilation Flutter et la réception réelle d’événements nécessitent l�
 ### Commit
 
 `af2eb0a` — poussé sur `master`.
+
+## Lot M8 — archivage réversible et historique — 2026-10-26 23:19 UTC
+
+Le détail d’un dossier admin propose maintenant une confirmation avant archivage ou réactivation. L’opération passe par la RPC backend partagée `nfc_archive_batch`, conserve les cartes et interdit les imports/écritures tant que le dossier est archivé. La réactivation recalcule un état cohérent à partir des cartes présentes.
+
+Le détail propose également une consultation de l’historique d’audit du dossier via `nfc_list_audit`. Les événements sont lus côté serveur, réservés aux administrateurs, et affichés dans une boîte de dialogue dédiée. La migration backend `006_nfc_archive_history.sql` a été poussée dans le dépôt Web partagé.
+
+### Partiel / non vérifié
+
+Les migrations 005 et 006 doivent être appliquées dans Supabase. La compilation Flutter, les droits RLS/grants et la validation avec un dossier réel restent à effectuer.
+
+### Commit
+
+À renseigner après le push du lot M8.

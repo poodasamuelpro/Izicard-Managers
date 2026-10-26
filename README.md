@@ -47,3 +47,5 @@ Le produit mobile encode des liens de profil IziCard ; aucune donnée sensible I
 Avant toute écriture, le mobile lit le contenu NDEF déjà présent. Si le tag contient des enregistrements, une confirmation explicite est demandée en écriture série comme en écriture d’une carte unique. Une annulation ne crée ni erreur métier ni résultat à synchroniser.
 
 La liste des dossiers écoute également les changements Realtime Supabase sur `nfc.nfc_batches` et `nfc.nfc_tags`. Appliquer la migration backend partagée `005_nfc_realtime.sql` avant la mise en production ; les opérations hors ligne et la file de synchronisation locale restent indépendantes de cette écoute.
+
+Un administrateur peut archiver ou réactiver un dossier après confirmation. L’opération utilise la RPC partagée `nfc_archive_batch`; l’historique du dossier est consultable via `nfc_list_audit`. Appliquer `006_nfc_archive_history.sql` avant d’utiliser ces commandes.
