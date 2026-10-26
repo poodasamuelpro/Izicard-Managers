@@ -1,134 +1,268 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
+
 import '../../data/local/app_database.dart';
+import '../../data/models/nfc_batch.dart';
 import '../../data/models/nfc_tag.dart';
+import '../../data/repositories/offline_repository.dart';
 import '../../data/repositories/sync_repository.dart';
 import '../../data/repositories/tag_repository.dart';
+import '../../services/feedback/feedback_service.dart';
 import '../../services/nfc/nfc_service.dart';
 
-class WriteItemResult {
-  const WriteItemResult({required this.tag, this.status = 'pending', this.message, this.uid});
+enum SeriesPhase { idle, waiting, success, error, paused, finished }
 
-  final NfcTagRecord tag;
-  final String status;
-  final String? message;
-  final String? uid;
-
-  WriteItemResult copyWith({String? status, String? message, String? uid, bool clearMessage = false, bool clearUid = false}) => WriteItemResult(
-        tag: tag,
-        status: status ?? this.status,
-        message: clearMessage ? null : message ?? this.message,
-        uid: clearUid ? null : uid ?? this.uid,
-      );
-}
-
-class WriteController {
-  WriteController({required TagRepository tags, required AppDatabase database, required String userId})
+/// Série d'écriture : lit le cache local, écrit, relit, enregistre d'abord en local
+/// (file `pending_writes`), puis laisse la synchronisation prévenir la base.
+class WriteController extends ChangeNotifier {
+  WriteController({required TagRepository tags, required AppDatabase database, required this.userId})
       : _tags = tags,
+        _offline = OfflineRepository(database: database, remote: tags.remote, userId: userId),
         _sync = SyncRepository(database: database, remote: tags.remote, userId: userId);
 
   final TagRepository _tags;
+  final OfflineRepository _offline;
   final SyncRepository _sync;
-  List<WriteItemResult> items = const [];
-  int currentIndex = 0;
+  final String userId;
+
+  List<NfcTagRecord> queue = const [];
+  int index = 0;
+  SeriesPhase phase = SeriesPhase.idle;
+  String message = '';
+  String? loadError;
   bool loading = false;
-  bool processing = false;
-  String? error;
+  bool downloaded = false;
+  bool lock = false;
+  bool autoAdvance = true;
+  int verified = 0;
+  int errors = 0;
+  int skipped = 0;
+  int unsynced = 0;
+  String? _lastUid;
+  bool _running = false;
+  bool _pauseRequested = false;
 
-  NfcTagRecord? get currentTag => currentIndex < items.length ? items[currentIndex].tag : null;
-  WriteItemResult? get currentResult => currentIndex < items.length ? items[currentIndex] : null;
-  bool get isComplete => items.isNotEmpty && items.every((item) => item.status == 'verified' || item.status == 'skipped');
+  NfcTagRecord? get current => index < queue.length ? queue[index] : null;
+  bool get isRunning => phase == SeriesPhase.waiting;
+  bool get isActive => phase != SeriesPhase.idle && phase != SeriesPhase.finished;
 
-  Future<void> load(String batchId) async {
+  /// Charge les cartes à écrire depuis le cache local ; télécharge le dossier au besoin.
+  Future<void> load(NfcBatch batch) async {
     loading = true;
-    error = null;
+    loadError = null;
+    notifyListeners();
     try {
-      final tags = await _tags.listWritableTags(batchId);
-      items = tags.map((tag) => WriteItemResult(tag: tag)).toList();
-      currentIndex = 0;
-    } catch (exception) {
-      error = exception.toString().replaceFirst('Exception: ', '');
-      items = const [];
+      if (!await _offline.hasBatch(batch.id)) {
+        await _offline.downloadBatch(batch);
+        downloaded = true;
+      }
+      queue = await _offline.writableTags(batch.id);
+      index = 0;
+      unsynced = await _sync.pendingCount();
+    } catch (error) {
+      queue = const [];
+      loadError = await _offline.hasBatch(batch.id)
+          ? 'Impossible de lire le cache local : ${_clean(error)}'
+          : 'Dossier non téléchargé et réseau indisponible. Téléchargez-le tant que vous avez du réseau : ${_clean(error)}';
     } finally {
       loading = false;
+      notifyListeners();
     }
   }
 
-  Future<void> writeCurrent({required bool lockAfterWrite}) async {
-    final result = currentResult;
-    if (result == null || processing) return;
-    processing = true;
-    error = null;
-    _setCurrent(result.copyWith(status: 'writing', message: 'Approchez le tag du téléphone…'));
+  /// Met à jour le cache depuis le serveur (conserve les résultats non synchronisés).
+  Future<void> refreshFromServer(NfcBatch batch) async {
+    loading = true;
+    loadError = null;
+    notifyListeners();
     try {
-      final nfc = await NfcService.writeOnce(
-        dataType: result.tag.dataType,
-        payload: result.tag.payload,
-        lockAfterWrite: lockAfterWrite || result.tag.locked,
-      );
-      final status = nfc.verified ? 'verified' : 'error';
-      final message = nfc.verified ? 'Écriture et relecture confirmées.' : nfc.error ?? 'Écriture non vérifiée.';
-      _setCurrent(result.copyWith(status: status, message: message, uid: nfc.uid));
-      await _recordResult(
-        tag: result.tag,
-        status: status,
-        uid: nfc.uid,
-        error: nfc.verified ? null : message,
-        lockTag: lockAfterWrite || result.tag.locked,
-      );
-      if (nfc.verified) _advanceToNextPending();
-    } catch (exception) {
-      final message = exception.toString().replaceFirst('Exception: ', '');
-      _setCurrent(result.copyWith(status: 'error', message: message));
-      await _recordResult(tag: result.tag, status: 'error', error: message, lockTag: false);
+      await _offline.downloadBatch(batch);
+      queue = await _offline.writableTags(batch.id);
+      index = 0;
+    } catch (error) {
+      loadError = 'Mise à jour impossible : ${_clean(error)}';
     } finally {
-      processing = false;
+      loading = false;
+      notifyListeners();
     }
   }
 
-  void skipCurrent() {
-    final result = currentResult;
-    if (result == null || processing) return;
-    _setCurrent(result.copyWith(status: 'skipped', message: 'Carte passée par l’opérateur.'));
-    _advanceToNextPending();
+  void start({required bool lockAfterWrite, required bool auto}) {
+    if (queue.isEmpty || _running) return;
+    lock = lockAfterWrite;
+    autoAdvance = auto;
+    verified = 0;
+    errors = 0;
+    skipped = 0;
+    _lastUid = null;
+    _pauseRequested = false;
+    unawaited(FeedbackService.keepAwake(true));
+    unawaited(_run());
   }
 
-  void retryCurrent() {
-    final result = currentResult;
-    if (result == null || processing) return;
-    _setCurrent(result.copyWith(status: 'pending', clearMessage: true, clearUid: true));
-  }
+  Future<void> _run() async {
+    if (_running) return;
+    _running = true;
+    try {
+      while (true) {
+        final tag = current;
+        if (tag == null) {
+          await finish();
+          break;
+        }
+        phase = SeriesPhase.waiting;
+        message = 'Approchez le tag n° ${tag.sequence}';
+        notifyListeners();
 
-  void _setCurrent(WriteItemResult value) {
-    final copy = [...items];
-    copy[currentIndex] = value;
-    items = copy;
-  }
+        final result = await NfcService.writeOnce(
+          dataType: tag.dataType,
+          payload: tag.payload,
+          lockAfterWrite: lock,
+          guard: (uid) => _guard(tag, uid),
+        );
 
-  void _advanceToNextPending() {
-    for (var index = currentIndex + 1; index < items.length; index++) {
-      if (items[index].status == 'pending' || items[index].status == 'error') {
-        currentIndex = index;
-        return;
+        if (result.cancelled) {
+          phase = _pauseRequested ? SeriesPhase.paused : SeriesPhase.idle;
+          message = _pauseRequested ? 'Série en pause.' : '';
+          notifyListeners();
+          break;
+        }
+        await _handle(tag, result);
+        if (phase == SeriesPhase.error) break;
+        if (!autoAdvance) break; // l'opérateur appuie sur « Suivant »
+        await Future<void>.delayed(const Duration(milliseconds: 900));
+        if (_pauseRequested || phase != SeriesPhase.success) break;
+        _advance();
       }
+    } finally {
+      _running = false;
+      notifyListeners();
     }
   }
 
-  Future<void> _recordResult({
-    required NfcTagRecord tag,
+  Future<String?> _guard(NfcTagRecord tag, String uid) async {
+    if (uid.isEmpty || uid == 'INCONNU') return null;
+    if (uid == _lastUid) return 'Ce tag vient d’être utilisé pour la carte précédente. Posez un nouveau tag.';
+    final local = await _offline.dao.findByUid(userId, uid);
+    if (local != null && local.id != tag.id && (local.status == 'written' || local.status == 'verified')) {
+      return 'Ce tag (UID $uid) est déjà associé à la carte n° ${local.sequence} (${local.publicId}).';
+    }
+    try {
+      final remote = await _tags.findByUid(uid).timeout(const Duration(seconds: 3));
+      if (remote != null && remote.id != tag.id && (remote.status == 'written' || remote.status == 'verified')) {
+        return 'Ce tag (UID $uid) est déjà associé à la carte n° ${remote.sequence} (${remote.publicId}).';
+      }
+    } catch (_) {
+      // Hors connexion : le contrôle local et la base (à la synchronisation) restent les garde-fous.
+    }
+    return null;
+  }
+
+  Future<void> _handle(NfcTagRecord tag, NfcWriteResult result) async {
+    if (result.verified) {
+      verified++;
+      _lastUid = result.uid;
+      phase = SeriesPhase.success;
+      message = 'Carte n° ${tag.sequence} vérifiée · UID ${result.uid}${result.locked ? ' · verrouillée' : ''}'
+          '${result.error != null ? '\n${result.error}' : ''}';
+      await _record(tag, status: 'verified', uid: result.uid, lockTag: result.locked, error: null);
+      unawaited(FeedbackService.signal(success: true));
+    } else {
+      errors++;
+      phase = SeriesPhase.error;
+      message = result.error ?? 'Écriture non vérifiée.';
+      if (result.recordable) {
+        await _record(tag, status: 'error', uid: result.uid.isEmpty ? null : result.uid, lockTag: false, error: message);
+      }
+      unawaited(FeedbackService.signal(success: false));
+    }
+    notifyListeners();
+  }
+
+  /// Local d'abord (cache + file), puis envoi immédiat si possible.
+  Future<void> _record(
+    NfcTagRecord tag, {
     required String status,
     String? uid,
-    String? error,
     required bool lockTag,
+    String? error,
   }) async {
+    await _offline.dao.updateResult(userId: userId, tagId: tag.id, status: status, uid: uid, locked: lockTag);
+    await _sync.enqueueWrite(tagId: tag.id, status: status, uid: uid, error: error, lockTag: lockTag);
     try {
-      await _tags.markWritten(tag: tag, status: status, uid: uid, error: error, lockTag: lockTag);
+      final result = await _sync.syncPending();
+      unsynced = result.remaining;
     } catch (_) {
-      await _sync.enqueueWrite(
-        tagId: tag.id,
-        status: status,
-        uid: uid,
-        error: error,
-        lockTag: lockTag,
-      );
+      unsynced = await _sync.pendingCount();
     }
+  }
+
+  void _advance() {
+    index++;
+    if (current == null) {
+      unawaited(finish());
+    }
+  }
+
+  /// « Suivant » quand l'avancement automatique est désactivé.
+  void next() {
+    if (_running || phase != SeriesPhase.success) return;
+    _advance();
+    if (phase != SeriesPhase.finished) unawaited(_run());
+  }
+
+  void retry() {
+    if (_running || phase != SeriesPhase.error) return;
+    unawaited(_run());
+  }
+
+  void skip() {
+    if (_running) return;
+    if (phase != SeriesPhase.error && phase != SeriesPhase.paused && phase != SeriesPhase.idle) return;
+    skipped++;
+    _advance();
+    if (phase != SeriesPhase.finished) {
+      phase = SeriesPhase.paused;
+      message = 'Carte passée. Appuyez sur « Reprendre ».';
+      notifyListeners();
+    }
+  }
+
+  Future<void> pause() async {
+    if (phase != SeriesPhase.waiting) {
+      if (phase == SeriesPhase.success || phase == SeriesPhase.error) {
+        _pauseRequested = true;
+        phase = SeriesPhase.paused;
+        message = 'Série en pause.';
+        notifyListeners();
+      }
+      return;
+    }
+    _pauseRequested = true;
+    await NfcService.cancel();
+  }
+
+  void resume() {
+    if (_running || phase != SeriesPhase.paused) return;
+    _pauseRequested = false;
+    unawaited(_run());
+  }
+
+  Future<void> finish() async {
+    _pauseRequested = true;
+    await NfcService.cancel();
+    phase = SeriesPhase.finished;
+    unawaited(FeedbackService.keepAwake(false));
+    notifyListeners();
+  }
+
+  String _clean(Object error) => error.toString().replaceFirst('Exception: ', '');
+
+  @override
+  void dispose() {
+    unawaited(NfcService.cancel());
+    unawaited(FeedbackService.keepAwake(false));
+    super.dispose();
   }
 }

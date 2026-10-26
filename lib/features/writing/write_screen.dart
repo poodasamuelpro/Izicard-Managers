@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/settings/app_settings.dart';
 import '../../core/theme/izicard_colors.dart';
 import '../../data/local/app_database.dart';
 import '../../data/models/nfc_batch.dart';
 import '../../data/models/nfc_profile.dart';
+import '../../data/remote/tags_remote.dart';
 import '../../data/repositories/batch_repository.dart';
 import '../../data/repositories/tag_repository.dart';
-import '../../data/remote/tags_remote.dart';
 import 'write_controller.dart';
 
 class WriteScreen extends StatefulWidget {
@@ -25,13 +26,17 @@ class _WriteScreenState extends State<WriteScreen> {
   late final AppDatabase _database;
   late final WriteController _controller;
   Future<List<NfcBatch>>? _batchFuture;
-  NfcBatch? _selectedBatch;
-  bool _lockAfterWrite = false;
+  NfcBatch? _selected;
+  late bool _lock;
+  late bool _auto;
 
   @override
   void initState() {
     super.initState();
     final client = Supabase.instance.client;
+    final settings = AppSettingsStore.instance.value;
+    _lock = settings.lockByDefault;
+    _auto = settings.autoAdvance;
     _batches = BatchRepository(client);
     _database = AppDatabase();
     _controller = WriteController(
@@ -39,197 +44,340 @@ class _WriteScreenState extends State<WriteScreen> {
       database: _database,
       userId: client.auth.currentUser?.id ?? '',
     );
-    _batchFuture = _batches.listBatchStats();
+    _batchFuture = _batches.listBatchStats().then((all) {
+      final initial = widget.initialBatchId;
+      if (initial != null) {
+        final match = all.where((b) => b.id == initial);
+        if (match.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) => _select(match.first));
+        }
+      }
+      return all;
+    });
   }
 
   @override
   void dispose() {
+    _controller.dispose();
     _database.close();
     super.dispose();
   }
 
-  Future<void> _selectBatch(NfcBatch batch) async {
-    setState(() => _selectedBatch = batch);
-    await _controller.load(batch.id);
-    if (mounted) setState(() {});
+  Future<void> _select(NfcBatch batch) async {
+    setState(() => _selected = batch);
+    await _controller.load(batch);
   }
 
-  Future<void> _write() async {
-    await _controller.writeCurrent(lockAfterWrite: _lockAfterWrite);
-    if (mounted) setState(() {});
+  Future<void> _start() async {
+    if (_lock) {
+      final ok = await showDialog<bool>(
+        context: context,
+        builder: (context) => AlertDialog(
+          icon: const Icon(Icons.lock_outline_rounded),
+          title: const Text('Verrouillage définitif'),
+          content: const Text(
+            'Chaque tag vérifié sera verrouillé pour toujours : il ne pourra plus jamais être réécrit. '
+            'Confirmer pour toute cette série ?',
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Annuler')),
+            FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Verrouiller')),
+          ],
+        ),
+      );
+      if (ok != true) return;
+    }
+    _controller.start(lockAfterWrite: _lock, auto: _auto);
+  }
+
+  Future<bool> _confirmLeave() async {
+    if (!_controller.isActive) return true;
+    final leave = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Quitter la série ?'),
+        content: const Text('Les cartes déjà vérifiées sont enregistrées. La série en cours sera arrêtée.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Rester')),
+          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Quitter')),
+        ],
+      ),
+    );
+    return leave == true;
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Écriture NFC')),
-      body: SafeArea(
-        child: FutureBuilder<List<NfcBatch>>(
-          future: _batchFuture,
-          builder: (context, snapshot) {
-            if (snapshot.connectionState != ConnectionState.done) {
-              return const Center(child: CircularProgressIndicator());
-            }
-            if (snapshot.hasError) return _ErrorState(message: snapshot.error.toString());
-            final batches = snapshot.data ?? const <NfcBatch>[];
-            return _content(context, batches);
-          },
+    return AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) => PopScope(
+        canPop: !_controller.isActive,
+        onPopInvokedWithResult: (didPop, _) async {
+          if (didPop) return;
+          final navigator = Navigator.of(context);
+          if (await _confirmLeave()) {
+            await _controller.finish();
+            if (mounted) navigator.pop();
+          }
+        },
+        child: Scaffold(
+          appBar: AppBar(title: const Text('Écriture NFC')),
+          body: SafeArea(
+            child: switch (_controller.phase) {
+              SeriesPhase.idle => _setup(context),
+              SeriesPhase.finished => _summary(context),
+              _ => _run(context),
+            },
+          ),
         ),
       ),
     );
   }
 
-  Widget _content(BuildContext context, List<NfcBatch> batches) {
-    final result = _controller.currentResult;
-    final tag = _controller.currentTag;
+  // ----- Préparation -----
+  Widget _setup(BuildContext context) {
+    return FutureBuilder<List<NfcBatch>>(
+      future: _batchFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return _Message(
+            text: 'Impossible de charger les dossiers.',
+            onRetry: () => setState(() => _batchFuture = _batches.listBatchStats()),
+          );
+        }
+        final batches = (snapshot.data ?? const <NfcBatch>[]).where((b) => b.status != 'archived').toList();
+        final controller = _controller;
+        return ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
+            Text('Dossier à encoder', style: Theme.of(context).textTheme.titleLarge),
+            const SizedBox(height: 8),
+            if (batches.isEmpty)
+              const Card(child: Padding(padding: EdgeInsets.all(18), child: Text('Aucun dossier disponible.')))
+            else
+              DropdownButtonFormField<String>(
+                value: _selected?.id,
+                isExpanded: true,
+                decoration: const InputDecoration(labelText: 'Dossier', border: OutlineInputBorder()),
+                items: batches
+                    .map((b) => DropdownMenuItem(
+                          value: b.id,
+                          child: Text('${b.name} — ${b.pending + b.errors} à écrire', overflow: TextOverflow.ellipsis),
+                        ))
+                    .toList(),
+                onChanged: (id) {
+                  final batch = batches.firstWhere((b) => b.id == id);
+                  _select(batch);
+                },
+              ),
+            const SizedBox(height: 16),
+            if (controller.loading)
+              const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator()))
+            else if (controller.loadError != null)
+              _Message(text: controller.loadError!, onRetry: _selected == null ? null : () => _select(_selected!))
+            else if (_selected != null) ...[
+              Card(
+                color: IzicardColors.paleCyan,
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(children: [
+                    const Icon(Icons.offline_pin_outlined, color: IzicardColors.cyan),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(controller.queue.isEmpty
+                          ? 'Aucune carte en attente d’écriture dans ce dossier.'
+                          : '${controller.queue.length} carte(s) à écrire, lues depuis le cache de cet appareil.'
+                              '${controller.unsynced > 0 ? '\n${controller.unsynced} résultat(s) en attente de synchronisation.' : ''}'),
+                    ),
+                  ]),
+                ),
+              ),
+              const SizedBox(height: 8),
+              TextButton.icon(
+                onPressed: () => controller.refreshFromServer(_selected!),
+                icon: const Icon(Icons.refresh_rounded),
+                label: const Text('Mettre à jour depuis le serveur'),
+              ),
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                value: _auto,
+                onChanged: (value) => setState(() => _auto = value),
+                title: const Text('Avancement automatique'),
+                subtitle: const Text('Passe seul à la carte suivante après une carte vérifiée.'),
+              ),
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                value: _lock,
+                onChanged: (value) => setState(() => _lock = value),
+                title: const Text('Verrouiller définitivement les tags'),
+                subtitle: const Text('Irréversible. Appliqué seulement après une relecture réussie. Confirmation demandée.'),
+              ),
+              const SizedBox(height: 12),
+              FilledButton.icon(
+                style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(60)),
+                onPressed: controller.queue.isEmpty ? null : _start,
+                icon: const Icon(Icons.nfc_rounded),
+                label: const Text('Démarrer la série', style: TextStyle(fontSize: 17)),
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  // ----- Série en cours -----
+  Widget _run(BuildContext context) {
+    final c = _controller;
+    final tag = c.current;
+    final total = c.queue.length;
+    final (color, icon) = switch (c.phase) {
+      SeriesPhase.success => (IzicardColors.statusVerified, Icons.check_circle_rounded),
+      SeriesPhase.error => (IzicardColors.statusError, Icons.error_rounded),
+      SeriesPhase.paused => (IzicardColors.statusVoid, Icons.pause_circle_rounded),
+      _ => (IzicardColors.statusPending, Icons.nfc_rounded),
+    };
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        Text('Choisir un dossier', style: Theme.of(context).textTheme.titleLarge),
-        const SizedBox(height: 8),
-        if (batches.isEmpty)
-          const Card(child: Padding(padding: EdgeInsets.all(18), child: Text('Aucun dossier disponible.')))
-        else
-          DropdownButtonFormField<NfcBatch>(
-            value: _selectedBatch,
-            decoration: const InputDecoration(labelText: 'Dossier', border: OutlineInputBorder()),
-            items: batches.map((batch) => DropdownMenuItem(value: batch, child: Text(batch.name))).toList(),
-            onChanged: (batch) {
-              if (batch != null) _selectBatch(batch);
-            },
-          ),
-        const SizedBox(height: 18),
-        if (_selectedBatch != null) ...[
-          _BatchSummary(batch: _selectedBatch!),
-          const SizedBox(height: 18),
-          if (_controller.loading)
-            const Center(child: CircularProgressIndicator())
-          else if (_controller.error != null)
-            _ErrorState(message: _controller.error!)
-          else if (tag == null)
-            Card(
-              color: IzicardColors.paleCyan,
-              child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: Text(_controller.items.isEmpty ? 'Aucune carte en attente d’écriture.' : 'Toutes les cartes restantes ont été traitées.'),
-              ),
-            )
-          else ...[
-            _ProgressHeader(index: _controller.currentIndex + 1, total: _controller.items.length),
+        Row(children: [
+          Text('${(c.index + 1).clamp(1, total)} / $total',
+              style: Theme.of(context).textTheme.headlineMedium?.copyWith(fontWeight: FontWeight.w800)),
+          const SizedBox(width: 16),
+          Expanded(child: LinearProgressIndicator(value: total == 0 ? 0 : c.index / total, minHeight: 10)),
+        ]),
+        const SizedBox(height: 6),
+        Text('Vérifiées : ${c.verified} · Erreurs : ${c.errors} · Passées : ${c.skipped}'
+            '${c.unsynced > 0 ? ' · À synchroniser : ${c.unsynced}' : ''}'),
+        const SizedBox(height: 14),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 34),
+          decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(24)),
+          child: Column(children: [
+            Icon(icon, color: Colors.white, size: 64),
             const SizedBox(height: 12),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(18),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  Text('Carte ${tag.sequence}', style: Theme.of(context).textTheme.titleLarge),
-                  const SizedBox(height: 8),
-                  Text('Identifiant : ${tag.publicId}'),
-                  Text('Type : ${tag.dataType}'),
-                  const SizedBox(height: 12),
-                  const Text('Payload attendu', style: TextStyle(fontWeight: FontWeight.w800)),
-                  const SizedBox(height: 6),
-                  SelectableText(tag.payload),
-                  if (result?.message != null) ...[
-                    const SizedBox(height: 16),
-                    _StatusMessage(status: result!.status, message: result.message!),
-                  ],
-                ]),
-              ),
+            Text(
+              c.message,
+              textAlign: TextAlign.center,
+              style: const TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w800),
             ),
-            const SizedBox(height: 12),
-            SwitchListTile.adaptive(
-              contentPadding: EdgeInsets.zero,
-              value: _lockAfterWrite,
-              onChanged: result?.status == 'writing' ? null : (value) => setState(() => _lockAfterWrite = value),
-              title: const Text('Verrouiller le tag après vérification'),
-              subtitle: const Text('Cette opération est définitive sur les tags compatibles.'),
-            ),
-            const SizedBox(height: 8),
-            FilledButton.icon(
-              onPressed: _controller.processing ? null : _write,
-              icon: Icon(_controller.processing ? Icons.hourglass_top_rounded : Icons.nfc_rounded),
-              label: Text(_controller.processing ? 'Lecture du tag…' : 'Approcher le tag'),
-            ),
-            if (result?.status == 'error') ...[
+            if (c.phase == SeriesPhase.waiting) ...[
               const SizedBox(height: 8),
-              OutlinedButton.icon(
-                onPressed: _controller.processing ? null : () => setState(_controller.retryCurrent),
-                icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Réessayer'),
-              ),
+              const Text('Gardez le tag contre le dos du téléphone jusqu’au signal.',
+                  textAlign: TextAlign.center, style: TextStyle(color: Colors.white)),
             ],
-            const SizedBox(height: 8),
-            TextButton.icon(
-              onPressed: _controller.processing ? null : () => setState(_controller.skipCurrent),
-              icon: const Icon(Icons.skip_next_rounded),
-              label: const Text('Passer cette carte'),
-            ),
-          ],
+          ]),
+        ),
+        if (tag != null) ...[
+          const SizedBox(height: 14),
+          Text('Carte n° ${tag.sequence} — ${tag.publicId}', style: const TextStyle(fontWeight: FontWeight.w700)),
+          const SizedBox(height: 6),
+          Card(child: Padding(padding: const EdgeInsets.all(14), child: SelectableText(tag.payload))),
         ],
+        const SizedBox(height: 10),
+        if (c.phase == SeriesPhase.error)
+          FilledButton.icon(
+            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(58)),
+            onPressed: c.retry,
+            icon: const Icon(Icons.refresh_rounded),
+            label: const Text('Réessayer'),
+          ),
+        if (c.phase == SeriesPhase.success && !c.autoAdvance)
+          FilledButton.icon(
+            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(58)),
+            onPressed: c.next,
+            icon: const Icon(Icons.skip_next_rounded),
+            label: const Text('Carte suivante'),
+          ),
+        if (c.phase == SeriesPhase.paused)
+          FilledButton.icon(
+            style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(58)),
+            onPressed: c.resume,
+            icon: const Icon(Icons.play_arrow_rounded),
+            label: const Text('Reprendre'),
+          ),
+        const SizedBox(height: 8),
+        Wrap(spacing: 10, runSpacing: 10, children: [
+          if (c.phase == SeriesPhase.waiting || c.phase == SeriesPhase.success || c.phase == SeriesPhase.error)
+            OutlinedButton.icon(onPressed: c.pause, icon: const Icon(Icons.pause_rounded), label: const Text('Pause')),
+          if (c.phase == SeriesPhase.error || c.phase == SeriesPhase.paused)
+            OutlinedButton.icon(onPressed: c.skip, icon: const Icon(Icons.skip_next_rounded), label: const Text('Passer cette carte')),
+          OutlinedButton.icon(
+            onPressed: () => c.finish(),
+            icon: const Icon(Icons.stop_rounded),
+            label: const Text('Terminer'),
+          ),
+        ]),
+      ],
+    );
+  }
+
+  // ----- Résumé -----
+  Widget _summary(BuildContext context) {
+    final c = _controller;
+    final remaining = (c.queue.length - c.index).clamp(0, c.queue.length);
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        const Icon(Icons.flag_rounded, size: 56, color: IzicardColors.cyan),
+        const SizedBox(height: 10),
+        Text('Série terminée', textAlign: TextAlign.center, style: Theme.of(context).textTheme.headlineSmall),
+        const SizedBox(height: 16),
+        Wrap(alignment: WrapAlignment.center, spacing: 10, runSpacing: 10, children: [
+          _Count(label: 'Vérifiées', value: c.verified, color: IzicardColors.statusVerified),
+          _Count(label: 'Erreurs', value: c.errors, color: IzicardColors.statusError),
+          _Count(label: 'Passées', value: c.skipped, color: IzicardColors.statusVoid),
+          _Count(label: 'Restantes', value: remaining, color: IzicardColors.statusPending),
+        ]),
+        if (c.unsynced > 0) ...[
+          const SizedBox(height: 14),
+          Text('${c.unsynced} résultat(s) seront envoyés à la base dès que la connexion revient (écran Synchronisation).',
+              textAlign: TextAlign.center),
+        ],
+        const SizedBox(height: 20),
+        FilledButton(onPressed: () => Navigator.of(context).maybePop(), child: const Text('Retour')),
       ],
     );
   }
 }
 
-class _BatchSummary extends StatelessWidget {
-  const _BatchSummary({required this.batch});
-  final NfcBatch batch;
+class _Count extends StatelessWidget {
+  const _Count({required this.label, required this.value, required this.color});
+  final String label;
+  final int value;
+  final Color color;
 
   @override
-  Widget build(BuildContext context) => Card(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(children: [
-            const Icon(Icons.inventory_2_outlined, color: IzicardColors.cyan),
-            const SizedBox(width: 12),
-            Expanded(child: Text('${batch.statusLabel} · ${batch.total} cartes')),
-            Text('${(batch.progress * 100).round()} %'),
-          ]),
-        ),
+  Widget build(BuildContext context) => Container(
+        width: 140,
+        padding: const EdgeInsets.all(14),
+        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(16)),
+        child: Column(children: [
+          Text('$value', style: const TextStyle(color: Colors.white, fontSize: 26, fontWeight: FontWeight.w800)),
+          Text(label, style: const TextStyle(color: Colors.white)),
+        ]),
       );
 }
 
-class _ProgressHeader extends StatelessWidget {
-  const _ProgressHeader({required this.index, required this.total});
-  final int index;
-  final int total;
-
-  @override
-  Widget build(BuildContext context) => Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-        Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
-          Text('Progression', style: Theme.of(context).textTheme.titleMedium),
-          Text('$index / $total'),
-        ]),
-        const SizedBox(height: 8),
-        LinearProgressIndicator(value: total == 0 ? 0 : index / total, minHeight: 8),
-      ]);
-}
-
-class _StatusMessage extends StatelessWidget {
-  const _StatusMessage({required this.status, required this.message});
-  final String status;
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    final color = status == 'verified' ? IzicardColors.success : status == 'error' ? Colors.red : IzicardColors.cyan;
-    return Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      Icon(status == 'verified' ? Icons.check_circle : Icons.info_outline, color: color),
-      const SizedBox(width: 8),
-      Expanded(child: Text(message, style: TextStyle(color: color, fontWeight: FontWeight.w700))),
-    ]);
-  }
-}
-
-class _ErrorState extends StatelessWidget {
-  const _ErrorState({required this.message});
-  final String message;
+class _Message extends StatelessWidget {
+  const _Message({required this.text, this.onRetry});
+  final String text;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) => Card(
         child: Padding(
           padding: const EdgeInsets.all(18),
-          child: Text(message, style: const TextStyle(color: Colors.red)),
+          child: Column(children: [
+            Text(text, style: const TextStyle(color: IzicardColors.statusError)),
+            if (onRetry != null) ...[
+              const SizedBox(height: 10),
+              OutlinedButton.icon(onPressed: onRetry, icon: const Icon(Icons.refresh_rounded), label: const Text('Réessayer')),
+            ],
+          ]),
         ),
       );
 }

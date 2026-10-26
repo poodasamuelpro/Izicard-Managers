@@ -6,6 +6,9 @@ import '../../data/models/nfc_tag.dart';
 import '../../data/repositories/tag_repository.dart';
 import '../../data/remote/tags_remote.dart';
 import '../../services/nfc/ndef_builder.dart';
+import '../../data/local/app_database.dart';
+import '../../data/local/offline_tags_dao.dart';
+import '../../services/feedback/feedback_service.dart';
 import '../../services/nfc/nfc_service.dart';
 
 class VerifyTagScreen extends StatefulWidget {
@@ -17,6 +20,8 @@ class VerifyTagScreen extends StatefulWidget {
 
 class _VerifyTagScreenState extends State<VerifyTagScreen> {
   late final TagRepository _tags;
+  late final AppDatabase _database;
+  late final OfflineTagsDao _offline;
   bool _reading = false;
   String? _error;
   String? _uid;
@@ -27,6 +32,15 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
   void initState() {
     super.initState();
     _tags = TagRepository(TagsRemote(Supabase.instance.client));
+    _database = AppDatabase();
+    _offline = OfflineTagsDao(_database);
+  }
+
+  @override
+  void dispose() {
+    NfcService.cancel();
+    _database.close();
+    super.dispose();
   }
 
   Future<void> _verify() async {
@@ -39,26 +53,34 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
     });
     try {
       final read = await NfcService.readOnce();
-      final tag = await _tags.findByUid(read.uid);
+      NfcTagRecord? tag;
+      try {
+        tag = await _tags.findByUid(read.uid).timeout(const Duration(seconds: 6));
+      } catch (_) {
+        // Hors connexion : recherche dans les dossiers téléchargés sur cet appareil.
+        tag = await _offline.findByUid(Supabase.instance.client.auth.currentUser?.id ?? '', read.uid);
+      }
       if (!mounted) return;
+      final found = tag;
       setState(() {
         _uid = read.uid;
-        _expected = tag;
-        if (tag == null) {
-          _result = 'Tag inconnu dans le backend.';
-        } else if (tag.locked) {
-          _result = 'Tag déjà verrouillé : vérification en lecture seule.';
+        _expected = found;
+        if (found == null) {
+          _result = 'Tag inconnu ou non autorisé.';
         } else if (read.message == null) {
           _result = 'Le tag ne contient aucun enregistrement NDEF.';
         } else {
-          final expected = NdefPayloadBuilder.build(dataType: tag.dataType, payload: tag.payload);
-          _result = read.message == expected ? 'Contenu conforme.' : 'Contenu différent du payload attendu.';
+          final expected = NdefPayloadBuilder.build(dataType: found.dataType, payload: found.payload);
+          _result = NfcService.sameMessage(read.message!, expected) ? 'Contenu conforme.' : 'Contenu différent du payload attendu.';
         }
       });
     } catch (exception) {
       if (mounted) setState(() => _error = exception.toString().replaceFirst('Exception: ', ''));
     } finally {
-      if (mounted) setState(() => _reading = false);
+      if (mounted) {
+        setState(() => _reading = false);
+        FeedbackService.signal(success: _result == 'Contenu conforme.');
+      }
     }
   }
 
@@ -89,14 +111,14 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
           ),
           if (_error != null) ...[
             const SizedBox(height: 16),
-            _ResultCard(color: Colors.red, icon: Icons.error_outline, title: 'Erreur de lecture', message: _error!),
+            _ResultCard(color: IzicardColors.statusError, icon: Icons.error_outline, title: 'Erreur de lecture', message: _error!),
           ],
           if (_result != null) ...[
             const SizedBox(height: 16),
             _ResultCard(
-              color: isOk ? IzicardColors.success : Colors.orange,
+              color: isOk ? IzicardColors.statusVerified : IzicardColors.statusPending,
               icon: isOk ? Icons.verified_rounded : Icons.warning_amber_rounded,
-              title: isOk ? 'Conforme' : 'À contrôler',
+              title: isOk ? 'Conforme ✔' : 'À contrôler ✖',
               message: _result!,
             ),
             const SizedBox(height: 12),

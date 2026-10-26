@@ -590,3 +590,22 @@ Flutter/Dart absents de cet environnement et consigne de ne pas compiler avant q
 
 M2 : écriture en série complète (boucle, pause, verrouillage confirmé, lecture du cache local, enregistrement local d'abord), correction de la comparaison NDEF (bug : `NdefMessage` comparé par identité), vérification d'un tag améliorée. M3 : téléchargement hors-ligne d'un dossier, `SyncWorker` démarré après connexion et arrêté à la déconnexion, accès révoqué, nettoyage final. Plus tard : dossier `android/`, permission NFC, compilation, tests.
 
+## Lot M2 — écriture NFC en série et vérification — 2026-10-26 UTC
+
+### Terminé dans le code
+
+- **Bug corrigé** : la relecture comparait deux `NdefMessage` avec `!=` (identité), donc jamais égaux. `NfcService.sameMessage` compare maintenant enregistrement par enregistrement (format, type, contenu). Utilisé par l'écriture et par la vérification.
+- `NfcService.writeOnce` : NFC indisponible détecté, délai de 60 s, annulation (`cancel`), contrôle capacité/inscriptible, écriture, relecture comparée, verrouillage seulement après relecture réussie (échec de verrouillage signalé sans perdre la carte vérifiée), garde-fou avant écriture : UID déjà associé à une autre carte refusé.
+- `WriteController` (ChangeNotifier) : lit le **cache local** (télécharge le dossier au besoin via `OfflineRepository`), boucle en série, avancement automatique ou bouton « Carte suivante », Pause/Reprendre, Passer, Réessayer, Terminer, refus du même UID deux fois d'affilée, **enregistrement local d'abord** (cache + file `pending_writes`) puis envoi immédiat si le réseau le permet, signal sonore/vibration, écran maintenu allumé.
+- `WriteScreen` refait : préparation (dossier, avancement automatique, verrouillage avec confirmation explicite, mise à jour du cache depuis le serveur), écran de série plein écran (compteur n / total, panneau orange / vert / rouge, payload, boutons larges), confirmation avant de quitter, résumé final. Présélection du dossier depuis le détail.
+- `VerifyTagScreen` : comparaison NDEF corrigée, recherche hors-ligne dans les dossiers téléchargés si le réseau est absent, couleurs d'état, signal sonore.
+- `OfflineRepository.downloadBatch` : télécharge les cartes et ré-applique les résultats encore en file pour ne rien perdre.
+
+### Non vérifié
+
+Aucune compilation ni test. L'écriture NFC réelle (ISO 14443 / NTAG), le verrouillage et le comportement de `nfc_manager 4.0.2` restent à valider sur un téléphone Android avec de vrais tags.
+
+### Reste à faire (mobile)
+
+M3 : bouton de téléchargement hors-ligne dans le détail du dossier, `SyncWorker` démarré après connexion et arrêté à la déconnexion (retour réseau, retour au premier plan), accès révoqué en cours de session, nettoyage final et documentation. Plus tard : dossier `android/`, permission NFC, compilation, tests.
+
