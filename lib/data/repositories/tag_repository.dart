@@ -24,6 +24,11 @@ class TagRepository {
   Future<List<NfcTagRecord>> all(String batchId) async =>
       (await _remote.listAllTags(batchId)).map(NfcTagRecord.fromMap).toList();
 
+  Future<NfcTagRecord?> getTag(String tagId) async {
+    final row = await _remote.getTag(tagId);
+    return row == null ? null : NfcTagRecord.fromMap(row);
+  }
+
   Future<NfcTagRecord?> findByUid(String uid) async {
     final row = await _remote.findByUid(uid);
     return row == null ? null : NfcTagRecord.fromMap(row);

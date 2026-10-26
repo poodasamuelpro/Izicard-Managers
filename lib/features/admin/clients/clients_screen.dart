@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/theme/izicard_colors.dart';
 import '../../../data/models/nfc_client.dart';
 import '../../../data/repositories/client_repository.dart';
+import 'client_edit_screen.dart';
 import 'client_form_screen.dart';
 
 class ClientsScreen extends StatefulWidget {
@@ -37,6 +38,15 @@ class _ClientsScreenState extends State<ClientsScreen> {
       ),
     );
     if (created == true && mounted) await _refresh();
+  }
+
+  Future<void> _edit(NfcClient client) async {
+    final saved = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder: (_) => ClientEditScreen(client: client, repository: widget.repository),
+      ),
+    );
+    if (saved == true && mounted) await _refresh();
   }
 
   Future<void> _manageAccess(NfcClient client) async {
@@ -223,11 +233,19 @@ class _ClientsScreenState extends State<ClientsScreen> {
                                   if (client.canCreateBatches) 'Création de dossiers autorisée',
                                 ].join(' · ')),
                               ),
-                              trailing: IconButton.filledTonal(
-                                tooltip: 'Gérer les accès',
-                                onPressed: () => _manageAccess(client),
-                                icon: const Icon(Icons.manage_accounts_rounded),
-                              ),
+                              onTap: () => _edit(client),
+                              trailing: Row(mainAxisSize: MainAxisSize.min, children: [
+                                IconButton(
+                                  tooltip: 'Modifier le client',
+                                  onPressed: () => _edit(client),
+                                  icon: const Icon(Icons.edit_outlined),
+                                ),
+                                IconButton.filledTonal(
+                                  tooltip: 'Gérer les accès',
+                                  onPressed: () => _manageAccess(client),
+                                  icon: const Icon(Icons.manage_accounts_rounded),
+                                ),
+                              ]),
                             ),
                           )),
                   ],

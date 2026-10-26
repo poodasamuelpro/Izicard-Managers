@@ -5,11 +5,13 @@ import '../../data/models/nfc_profile.dart';
 import '../../data/local/app_database.dart';
 import '../../data/local/offline_tags_dao.dart';
 import '../../data/repositories/batch_repository.dart';
+import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/client_repository.dart';
 import '../../data/repositories/sync_repository.dart';
 import '../../data/remote/tags_remote.dart';
 import '../../features/admin/batches/batch_create_screen.dart';
 import '../../features/admin/clients/clients_screen.dart';
+import '../../features/admin/dashboard/admin_dashboard_screen.dart';
 import '../../features/batches/batches_screen.dart';
 import '../../features/export/export_screen.dart';
 import '../../features/import/import_screen.dart';
@@ -20,6 +22,7 @@ import '../../features/writing/write_screen.dart';
 
 /// Destinations accessibles depuis l'accueil, protégées à nouveau par les RPC/RLS.
 enum NfcDestination {
+  dashboard,
   clients,
   batches,
   createBatch,
@@ -33,6 +36,7 @@ enum NfcDestination {
 
 extension NfcDestinationDetails on NfcDestination {
   String get title => switch (this) {
+        NfcDestination.dashboard => 'Tableau de bord',
         NfcDestination.clients => 'Clients et accès',
         NfcDestination.batches => 'Dossiers NFC',
         NfcDestination.createBatch => 'Créer un dossier',
@@ -45,6 +49,7 @@ extension NfcDestinationDetails on NfcDestination {
       };
 
   String get description => switch (this) {
+        NfcDestination.dashboard => 'Vue d’ensemble : clients, dossiers et avancement des cartes.',
         NfcDestination.clients => 'Gérez les clients, leurs profils et leurs accès.',
         NfcDestination.batches => 'Consultez les dossiers qui vous sont attribués.',
         NfcDestination.createBatch => 'Préparez un dossier pour votre client.',
@@ -57,6 +62,7 @@ extension NfcDestinationDetails on NfcDestination {
       };
 
   bool allowedFor(NfcProfile profile) => switch (this) {
+        NfcDestination.dashboard ||
         NfcDestination.clients => profile.role == NfcRole.admin,
         NfcDestination.createBatch => profile.role == NfcRole.admin ||
             (profile.role == NfcRole.client && profile.canCreateBatches && profile.clientId != null),
@@ -80,6 +86,7 @@ class NfcRouteGuard {
     BuildContext context, {
     required NfcProfile profile,
     required NfcDestination destination,
+    required AuthRepository repository,
   }) async {
     if (!canOpen(profile, destination)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -96,6 +103,7 @@ class NfcRouteGuard {
       await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (_) => switch (destination) {
+          NfcDestination.dashboard => AdminDashboardScreen(profile: profile, repository: batches, clients: ClientRepository(client)),
           NfcDestination.batches => BatchesScreen(profile: profile, repository: batches),
           NfcDestination.createBatch => BatchCreateScreen(profile: profile, repository: batches),
           NfcDestination.imports => ImportScreen(profile: profile, repository: batches),
@@ -103,7 +111,7 @@ class NfcRouteGuard {
           NfcDestination.write => WriteScreen(profile: profile),
           NfcDestination.verify => const VerifyTagScreen(),
           NfcDestination.export => ExportScreen(repository: batches),
-          NfcDestination.settings => SettingsScreen(profile: profile, email: client.auth.currentUser?.email ?? ''),
+          NfcDestination.settings => SettingsScreen(profile: profile, repository: repository, email: client.auth.currentUser?.email ?? ''),
           NfcDestination.sync => SyncStatusScreen(
               repository: SyncRepository(database: database, remote: TagsRemote(client), userId: userId),
               offline: OfflineTagsDao(database),

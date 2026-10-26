@@ -29,6 +29,22 @@ class NfcTagRecord {
   final String? lastError;
   final String? writtenAt;
 
+  NfcTagRecord copyWith({String? status, String? uid, bool? locked, String? lastError, bool clearError = false}) => NfcTagRecord(
+        id: id,
+        batchId: batchId,
+        sequence: sequence,
+        publicId: publicId,
+        dataType: dataType,
+        payload: payload,
+        fields: fields,
+        status: status ?? this.status,
+        uid: uid ?? this.uid,
+        locked: locked ?? this.locked,
+        attempts: attempts + 1,
+        lastError: clearError ? null : lastError ?? this.lastError,
+        writtenAt: writtenAt,
+      );
+
   bool get isWritable => !locked && status != 'verified' && status != 'void';
 
   factory NfcTagRecord.fromMap(Map<String, dynamic> map) => NfcTagRecord(

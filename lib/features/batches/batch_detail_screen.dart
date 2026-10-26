@@ -13,6 +13,7 @@ import '../../data/repositories/offline_repository.dart';
 import '../../data/repositories/batch_repository.dart';
 import '../../data/repositories/tag_repository.dart';
 import '../../services/export/csv_exporter.dart';
+import '../cards/tag_detail_screen.dart';
 import '../verify/verify_tag_screen.dart';
 import '../writing/write_screen.dart';
 
@@ -60,12 +61,15 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
   bool _hasMore = true;
   String? _error;
   bool _exporting = false;
+  bool _offlineMode = false;
+  late final String _userId;
 
   @override
   void initState() {
     super.initState();
     _batch = widget.batch;
     final client = Supabase.instance.client;
+    _userId = client.auth.currentUser?.id ?? '';
     _tags = TagRepository(TagsRemote(client));
     _database = AppDatabase();
     _offline = OfflineRepository(database: _database, remote: TagsRemote(client), userId: client.auth.currentUser?.id ?? '');
@@ -88,6 +92,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
   Future<void> _reload() async {
     _generation++;
     setState(() {
+      _offlineMode = false;
       _items.clear();
       _hasMore = true;
       _error = null;
@@ -102,7 +107,13 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
       final fresh = all.where((b) => b.id == _batch.id);
       if (fresh.isNotEmpty && mounted) setState(() => _batch = fresh.first);
     } catch (_) {
-      // Les compteurs précédents restent affichés.
+      // Hors connexion : compteurs recalculés depuis le cache local si le dossier est téléchargé.
+      try {
+        final local = (await _offline.offlineBatches()).where((b) => b.id == _batch.id);
+        if (local.isNotEmpty && mounted) setState(() => _batch = local.first);
+      } catch (_) {
+        // Les compteurs précédents restent affichés.
+      }
     }
   }
 
@@ -111,15 +122,30 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
     final generation = _generation;
     setState(() => _loading = true);
     try {
-      final page = await _tags.page(
-        batchId: _batch.id,
-        status: _status,
-        search: _searchController.text,
-        offset: _items.length,
-        limit: _pageSize,
-      );
+      List<NfcTagRecord> page;
+      var offline = _offlineMode;
+      if (offline) {
+        page = await _localPage();
+      } else {
+        try {
+          page = await _tags.page(
+            batchId: _batch.id,
+            status: _status,
+            search: _searchController.text,
+            offset: _items.length,
+            limit: _pageSize,
+          );
+        } catch (remoteError) {
+          if (!await _offline.hasBatch(_batch.id)) rethrow;
+          // Réseau indisponible : on bascule sur le cache local, depuis le début de la liste.
+          offline = true;
+          _items.clear();
+          page = await _localPage();
+        }
+      }
       if (!mounted || generation != _generation) return;
       setState(() {
+        _offlineMode = offline;
         _items.addAll(page);
         _hasMore = page.length == _pageSize;
         _error = null;
@@ -131,6 +157,22 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
     }
   }
 
+  Future<List<NfcTagRecord>> _localPage() => _offline.dao.page(
+        userId: _userId,
+        batchId: _batch.id,
+        status: _status,
+        search: _searchController.text,
+        offset: _items.length,
+        limit: _pageSize,
+      );
+
+  Future<void> _openTag(NfcTagRecord tag) async {
+    final changed = await Navigator.of(context).push<bool>(MaterialPageRoute<bool>(
+      builder: (_) => TagDetailScreen(tag: tag, profile: widget.profile, batchName: _batch.name),
+    ));
+    if (changed == true && mounted) await _reload();
+  }
+
   void _onSearchChanged(String _) {
     _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 400), _reload);
@@ -140,7 +182,13 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
     if (_exporting) return;
     setState(() => _exporting = true);
     try {
-      final all = await _tags.all(_batch.id);
+      List<NfcTagRecord> all;
+      try {
+        all = await _tags.all(_batch.id);
+      } catch (_) {
+        if (!await _offline.hasBatch(_batch.id)) rethrow;
+        all = await _offline.dao.allTags(_userId, _batch.id);
+      }
       if (all.isEmpty) {
         _snack('Ce dossier ne contient aucune carte.');
       } else {
@@ -185,6 +233,20 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
           child: ListView(
             padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
             children: [
+              if (_offlineMode)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: IzicardColors.statusPending.withOpacity(.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Row(children: [
+                    Icon(Icons.cloud_off_rounded, color: IzicardColors.statusPending),
+                    SizedBox(width: 10),
+                    Expanded(child: Text('Mode hors connexion : cartes et compteurs du cache de cet appareil.')),
+                  ]),
+                ),
               Row(children: [
                 Expanded(child: Text(_batch.name, style: theme.textTheme.headlineSmall)),
                 const SizedBox(width: 8),
@@ -289,7 +351,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                   child: Center(child: Text('Aucune carte ne correspond à ce filtre.')),
                 )
               else
-                ..._items.map((tag) => _TagTile(tag: tag)),
+                ..._items.map((tag) => _TagTile(tag: tag, onTap: () => _openTag(tag))),
               if (_loading)
                 const Padding(padding: EdgeInsets.all(18), child: Center(child: CircularProgressIndicator())),
               if (!_loading && _hasMore && _error == null && _items.isNotEmpty)
@@ -309,8 +371,9 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
 }
 
 class _TagTile extends StatelessWidget {
-  const _TagTile({required this.tag});
+  const _TagTile({required this.tag, required this.onTap});
   final NfcTagRecord tag;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -321,6 +384,7 @@ class _TagTile extends StatelessWidget {
     ].join('\n');
     return Card(
       child: ListTile(
+        onTap: onTap,
         leading: CircleAvatar(
           backgroundColor: color,
           foregroundColor: Colors.white,

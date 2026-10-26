@@ -7,6 +7,7 @@ import '../../data/repositories/batch_repository.dart';
 import '../admin/batches/batch_create_screen.dart';
 import '../import/import_screen.dart';
 import 'batch_detail_screen.dart';
+import 'batch_source.dart';
 
 class BatchesScreen extends StatefulWidget {
   const BatchesScreen({super.key, required this.profile, required this.repository});
@@ -18,23 +19,25 @@ class BatchesScreen extends StatefulWidget {
 }
 
 class _BatchesScreenState extends State<BatchesScreen> {
-  late Future<List<NfcBatch>> _batches;
+  late Future<BatchList> _batches;
   String _filter = 'Tous';
 
   @override
   void initState() {
     super.initState();
-    _batches = widget.repository.listBatchStats();
+    _batches = loadBatches(widget.repository);
   }
 
   Future<void> _refresh() async {
-    final future = widget.repository.listBatchStats();
+    final future = loadBatches(widget.repository);
     setState(() => _batches = future);
     try { await future; } catch (_) {}
   }
 
-  bool get _canCreate => widget.profile.role == NfcRole.admin ||
-      (widget.profile.role == NfcRole.client && widget.profile.canCreateBatches && widget.profile.clientId != null);
+  bool _offline = false;
+
+  bool get _canCreate => !_offline && (widget.profile.role == NfcRole.admin ||
+      (widget.profile.role == NfcRole.client && widget.profile.canCreateBatches && widget.profile.clientId != null));
 
   void _openCreate() {
     if (!_canCreate) return;
@@ -55,12 +58,18 @@ class _BatchesScreenState extends State<BatchesScreen> {
         floatingActionButton: _canCreate ? FloatingActionButton.extended(
           onPressed: _openCreate, icon: const Icon(Icons.add_rounded), label: const Text('Nouveau dossier'),
         ) : null,
-        body: SafeArea(child: FutureBuilder<List<NfcBatch>>(
+        body: SafeArea(child: FutureBuilder<BatchList>(
           future: _batches,
           builder: (context, snapshot) {
             if (snapshot.connectionState != ConnectionState.done) return const Center(child: CircularProgressIndicator());
             if (snapshot.hasError) return _LoadError(onRetry: _refresh);
-            final batches = snapshot.data ?? const <NfcBatch>[];
+            final batches = snapshot.data?.batches ?? const <NfcBatch>[];
+            final offline = snapshot.data?.offline ?? false;
+            if (offline != _offline) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted && _offline != offline) setState(() => _offline = offline);
+              });
+            }
             final visible = batches.where((batch) => _filter == 'Tous' || switch (_filter) {
               'En cours' => batch.status == 'in_progress',
               'À traiter' => batch.pending > 0 || batch.errors > 0,
@@ -72,6 +81,20 @@ class _BatchesScreenState extends State<BatchesScreen> {
               child: ListView(
                 padding: const EdgeInsets.fromLTRB(20, 14, 20, 100),
                 children: [
+                  if (offline)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 12),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: IzicardColors.statusPending.withOpacity(.1),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Row(children: [
+                        Icon(Icons.cloud_off_rounded, color: IzicardColors.statusPending),
+                        SizedBox(width: 10),
+                        Expanded(child: Text('Hors connexion : dossiers téléchargés sur cet appareil. Tirez pour réessayer.')),
+                      ]),
+                    ),
                   _SummaryHeader(count: batches.length),
                   const SizedBox(height: 20),
                   SingleChildScrollView(scrollDirection: Axis.horizontal, child: Row(

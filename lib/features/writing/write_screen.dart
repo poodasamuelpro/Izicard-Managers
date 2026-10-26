@@ -9,6 +9,9 @@ import '../../data/models/nfc_profile.dart';
 import '../../data/remote/tags_remote.dart';
 import '../../data/repositories/batch_repository.dart';
 import '../../data/repositories/tag_repository.dart';
+import '../batches/batch_source.dart';
+import '../cards/card_picker_screen.dart';
+import '../nfc/nfc_help_banner.dart';
 import 'write_controller.dart';
 
 class WriteScreen extends StatefulWidget {
@@ -25,7 +28,8 @@ class _WriteScreenState extends State<WriteScreen> {
   late final BatchRepository _batches;
   late final AppDatabase _database;
   late final WriteController _controller;
-  Future<List<NfcBatch>>? _batchFuture;
+  Future<BatchList>? _batchFuture;
+  bool _nfcReady = true;
   NfcBatch? _selected;
   late bool _lock;
   late bool _auto;
@@ -44,7 +48,8 @@ class _WriteScreenState extends State<WriteScreen> {
       database: _database,
       userId: client.auth.currentUser?.id ?? '',
     );
-    _batchFuture = _batches.listBatchStats().then((all) {
+    _batchFuture = loadBatches(_batches).then((list) {
+      final all = list.batches;
       final initial = widget.initialBatchId;
       if (initial != null) {
         final match = all.where((b) => b.id == initial);
@@ -52,7 +57,7 @@ class _WriteScreenState extends State<WriteScreen> {
           WidgetsBinding.instance.addPostFrameCallback((_) => _select(match.first));
         }
       }
-      return all;
+      return list;
     });
   }
 
@@ -66,6 +71,15 @@ class _WriteScreenState extends State<WriteScreen> {
   Future<void> _select(NfcBatch batch) async {
     setState(() => _selected = batch);
     await _controller.load(batch);
+  }
+
+  Future<void> _pickSingle() async {
+    final batch = _selected;
+    if (batch == null) return;
+    final changed = await Navigator.of(context).push<bool>(MaterialPageRoute<bool>(
+      builder: (_) => CardPickerScreen(tags: _controller.queue, profile: widget.profile, batchName: batch.name),
+    ));
+    if (changed == true && mounted) await _controller.load(batch);
   }
 
   Future<void> _start() async {
@@ -136,7 +150,7 @@ class _WriteScreenState extends State<WriteScreen> {
 
   // ----- Préparation -----
   Widget _setup(BuildContext context) {
-    return FutureBuilder<List<NfcBatch>>(
+    return FutureBuilder<BatchList>(
       future: _batchFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
@@ -145,14 +159,24 @@ class _WriteScreenState extends State<WriteScreen> {
         if (snapshot.hasError) {
           return _Message(
             text: 'Impossible de charger les dossiers.',
-            onRetry: () => setState(() => _batchFuture = _batches.listBatchStats()),
+            onRetry: () => setState(() => _batchFuture = loadBatches(_batches)),
           );
         }
-        final batches = (snapshot.data ?? const <NfcBatch>[]).where((b) => b.status != 'archived').toList();
+        final batches = (snapshot.data?.batches ?? const <NfcBatch>[]).where((b) => b.status != 'archived').toList();
+        final offline = snapshot.data?.offline ?? false;
         final controller = _controller;
         return ListView(
           padding: const EdgeInsets.all(20),
           children: [
+            NfcHelpBanner(onChanged: (ready) {
+              if (ready != _nfcReady && mounted) setState(() => _nfcReady = ready);
+            }),
+            if (offline)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 10),
+                child: Text('Hors connexion : seuls les dossiers déjà téléchargés sont disponibles.',
+                    style: TextStyle(color: IzicardColors.statusPending, fontWeight: FontWeight.w700)),
+              ),
             Text('Dossier à encoder', style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
             if (batches.isEmpty)
@@ -218,9 +242,16 @@ class _WriteScreenState extends State<WriteScreen> {
               const SizedBox(height: 12),
               FilledButton.icon(
                 style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(60)),
-                onPressed: controller.queue.isEmpty ? null : _start,
+                onPressed: controller.queue.isEmpty || !_nfcReady ? null : _start,
                 icon: const Icon(Icons.nfc_rounded),
                 label: const Text('Démarrer la série', style: TextStyle(fontSize: 17)),
+              ),
+              const SizedBox(height: 10),
+              OutlinedButton.icon(
+                style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+                onPressed: controller.queue.isEmpty ? null : _pickSingle,
+                icon: const Icon(Icons.looks_one_outlined),
+                label: const Text('Encoder une seule carte', style: TextStyle(fontSize: 16)),
               ),
             ],
           ],

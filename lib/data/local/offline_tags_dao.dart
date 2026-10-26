@@ -83,19 +83,80 @@ class OfflineTagsDao {
     for (final row in rows) {
       final decoded = jsonDecode(row['payload_json']! as String);
       if (decoded is! Map) continue;
-      final batch = NfcBatch.fromStats(Map<String, dynamic>.from(decoded));
-      final count = Sqflite.firstIntValue(await db.rawQuery(
-            'SELECT COUNT(*) FROM offline_tags WHERE user_id = ? AND batch_id = ?',
-            [userId, batch.id],
-          )) ??
-          0;
+      final snapshot = NfcBatch.fromStats(Map<String, dynamic>.from(decoded));
+      // Compteurs recalculés depuis le cache : ils reflètent le travail fait hors connexion.
+      final counts = await statusCounts(userId, snapshot.id);
+      final count = counts.values.fold<int>(0, (a, b) => a + b);
+      final batch = NfcBatch(
+        id: snapshot.id,
+        clientId: snapshot.clientId,
+        name: snapshot.name,
+        status: snapshot.status,
+        quantity: snapshot.quantity,
+        total: count,
+        pending: counts['pending'] ?? 0,
+        written: counts['written'] ?? 0,
+        verified: counts['verified'] ?? 0,
+        errors: counts['error'] ?? 0,
+        voided: counts['void'] ?? 0,
+      );
       infos.add(OfflineBatchInfo(
         batch: batch,
         syncedAt: DateTime.tryParse(row['synced_at']! as String) ?? DateTime.now(),
-        tagCount: count,
+        tagCount: batch.total,
       ));
     }
     return infos;
+  }
+
+  /// Cartes du cache local, avec les mêmes filtres que la liste en ligne.
+  Future<List<NfcTagRecord>> page({
+    required String userId,
+    required String batchId,
+    String? status,
+    String? search,
+    required int offset,
+    int limit = 50,
+  }) async {
+    final db = await _database.instance;
+    final where = StringBuffer('user_id = ? AND batch_id = ?');
+    final args = <Object?>[userId, batchId];
+    if (status != null && status.isNotEmpty) {
+      where.write(' AND status = ?');
+      args.add(status);
+    }
+    final term = (search ?? '').trim();
+    if (term.isNotEmpty) {
+      where.write(' AND (public_id LIKE ? OR uid LIKE ? OR fields_json LIKE ?)');
+      final like = '%$term%';
+      args.addAll([like, like, like]);
+    }
+    final rows = await db.query('offline_tags',
+        where: where.toString(), whereArgs: args, orderBy: 'seq ASC', limit: limit, offset: offset);
+    return rows.map(_fromRow).toList();
+  }
+
+  Future<List<NfcTagRecord>> allTags(String userId, String batchId) async {
+    final db = await _database.instance;
+    final rows = await db.query('offline_tags',
+        where: 'user_id = ? AND batch_id = ?', whereArgs: [userId, batchId], orderBy: 'seq ASC');
+    return rows.map(_fromRow).toList();
+  }
+
+  Future<Map<String, int>> statusCounts(String userId, String batchId) async {
+    final db = await _database.instance;
+    final rows = await db.rawQuery(
+      'SELECT status, COUNT(*) AS c FROM offline_tags WHERE user_id = ? AND batch_id = ? GROUP BY status',
+      [userId, batchId],
+    );
+    return {for (final row in rows) row['status']! as String: row['c']! as int};
+  }
+
+  Future<NfcTagRecord?> tagById(String userId, String tagId) async {
+    final db = await _database.instance;
+    final rows = await db.query('offline_tags',
+        where: 'user_id = ? AND tag_id = ?', whereArgs: [userId, tagId], limit: 1);
+    return rows.isEmpty ? null : _fromRow(rows.first);
   }
 
   Future<bool> hasBatch(String userId, String batchId) async {

@@ -1,4 +1,4 @@
-# Mobile — ce qui manque selon les attentes (audit du 2026-10-26)
+# Mobile — ce qui manque selon les attentes (audit du 2026-10-26, mis à jour après le lot M4 à 21:07 UTC)
 
 Légende : ✅ fait et branché · ⚠️ fait mais incomplet · ❌ absent · 🔒 attend une décision du propriétaire · 🛠 attend la phase compilation/Android.
 Aucune ligne ✅ n'a été compilée ni testée.
@@ -12,18 +12,18 @@ Aucune ligne ✅ n'a été compilée ni testée.
 | Création de dossier, liste des dossiers, détail avec cartes paginées | ✅ |
 | Import fichier (mapping, aperçu, bilan, modèle), saisie manuelle | ✅ |
 | Écriture en série, vérification d'un tag, export CSV, réglages, synchronisation | ✅ |
-| Liste des dossiers **hors connexion** (dossiers téléchargés) | ❌ |
-| Détail d'une carte (champs, donnée, historique, erreurs) | ❌ |
-| Écrire une seule carte précise | ❌ |
-| Compte (changer le mot de passe, déconnexion, version) dans Réglages | ❌ |
-| Modifier un client (nom, contact, téléphone) | ❌ |
-| Tableau de bord admin (totaux, dossiers en retard, erreurs) | ❌ |
-| Aide si le NFC est désactivé (bouton vers les réglages Android) | ❌ |
+| Liste des dossiers **hors connexion** (dossiers téléchargés ; bandeau, détail et cartes lus dans le cache) | ✅ |
+| Détail d'une carte (champs, donnée copiable, UID, tentatives, dernière erreur, verrouillage) | ✅ |
+| Écrire **une seule carte** précise (depuis le détail d'une carte ou « Encoder une seule carte » dans l'écriture ; hors connexion possible) | ✅ |
+| Compte dans Réglages (changer le mot de passe, déconnexion avec alerte si résultats non synchronisés, version) | ✅ |
+| Modifier un client (nom, contact, e-mail de contact, téléphone) | ✅ |
+| Tableau de bord admin (totaux cartes et clients, dossiers avec erreurs, volume par client) | ✅ |
+| Aide si le NFC est désactivé (bandeau + bouton vers les réglages NFC d'Android : écriture, une carte, vérification) | ✅ |
 
 ## 2. Fonctionnalités et logique
 | Point | État |
 |---|---|
-| **Choix du dossier à l'écriture et liste des dossiers dépendent du réseau : impossible de commencer hors connexion** | ❌ (critique) |
+| Choix du dossier à l'écriture et liste des dossiers hors connexion (dossiers déjà téléchargés) | ✅ |
 | Annuler (« void ») ou réactiver une carte | 🔒 ❌ (règle à confirmer : écriture directe en table ou RPC) |
 | Retraitement d'une carte déjà vérifiée par l'admin (la base l'autorise) | ❌ |
 | Confirmation avant d'écraser un tag qui contient déjà des données | ❌ |
@@ -34,6 +34,12 @@ Aucune ligne ✅ n'a été compilée ni testée.
 | Génération automatique de codes, QR codes, liaison avec les commandes du site | hors périmètre |
 | Ouverture directe de l'application depuis le lien d'invitation (deep link) | ❌ 🛠 |
 | Anglais (fichiers de langue vides, tout est en français) | ❌ |
+
+### Points à signaler (lot M4)
+- Le champ `can_create_batches` de `nfc_clients` est marqué « legacy, ignoré par les autorisations » dans la migration 001 : l'interrupteur du dialogue d'accès l'écrit toujours mais n'a peut-être aucun effet. À trancher avec le propriétaire.
+- Modifier un client change `nfc_clients` seulement, pas l'e-mail de connexion (Supabase Auth).
+- Hors connexion, la création de dossier est masquée ; l'import exige le réseau.
+- Rien n'a été compilé : `package_info_plus` et `app_settings` sont nouveaux dans `pubspec.yaml`.
 
 ## 3. Sécurité
 | Point | État |

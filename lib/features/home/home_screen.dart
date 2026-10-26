@@ -48,6 +48,7 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     final destinations = _isAdmin
         ? <NfcDestination>[
+            NfcDestination.dashboard,
             NfcDestination.createBatch,
             NfcDestination.batches,
             NfcDestination.clients,
@@ -108,7 +109,7 @@ class HomeScreen extends StatelessWidget {
                     padding: const EdgeInsets.only(bottom: 12),
                     child: _DestinationCard(
                       destination: destination,
-                      onTap: () => NfcRouteGuard.open(context, profile: profile, destination: destination),
+                      onTap: () => NfcRouteGuard.open(context, profile: profile, destination: destination, repository: repository),
                     ),
                   )),
               const SizedBox(height: 8),
@@ -187,6 +188,7 @@ class _DestinationCard extends StatelessWidget {
         NfcDestination.verify => Icons.fact_check_outlined,
         NfcDestination.sync => Icons.sync_rounded,
         NfcDestination.settings => Icons.settings_outlined,
+        NfcDestination.dashboard => Icons.dashboard_outlined,
       };
 
   @override

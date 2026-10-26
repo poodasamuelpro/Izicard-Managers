@@ -10,6 +10,7 @@ import '../../data/local/app_database.dart';
 import '../../data/local/offline_tags_dao.dart';
 import '../../services/feedback/feedback_service.dart';
 import '../../services/nfc/nfc_service.dart';
+import '../nfc/nfc_help_banner.dart';
 
 class VerifyTagScreen extends StatefulWidget {
   const VerifyTagScreen({super.key});
@@ -92,6 +93,7 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
+          const NfcHelpBanner(),
           Card(
             color: IzicardColors.paleCyan,
             child: Padding(

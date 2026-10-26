@@ -57,6 +57,16 @@ class TagsRemote {
     return all;
   }
 
+  Future<Map<String, dynamic>?> getTag(String tagId) async {
+    final row = await _client
+        .schema(AppConstants.nfcSchema)
+        .from('nfc_tags')
+        .select(_tagColumns)
+        .eq('id', tagId)
+        .maybeSingle();
+    return row == null ? null : Map<String, dynamic>.from(row);
+  }
+
   Future<Map<String, dynamic>?> findByUid(String uid) async {
     final row = await _client
         .schema(AppConstants.nfcSchema)

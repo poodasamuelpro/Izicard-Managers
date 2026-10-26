@@ -647,3 +647,17 @@ Aucune compilation, aucune analyse, aucun test, aucun essai sur tags réels (con
 
 Les noms exacts de l'API `nfc_manager` 4.0.2 / `nfc_manager_ndef` 1.0.1 (`Ndef.from`, `write(message:)`, `writeLock`, `isWritable`, `maxSize`, `NdefRecord(...)`) reprennent le code existant et n'ont pas pu être vérifiés (documentation inaccessible depuis cet environnement) : à confirmer à la compilation. Aucune compilation ni test.
 
+
+## Lot M4 — 2026-10-26 21:07 UTC (mobile uniquement)
+
+### Terminé et branché
+- Écriture d'**une seule carte** : `SingleWriteScreen` (garde-fous, relecture comparée, verrouillage confirmé, résultat local puis envoi), accessible depuis le détail d'une carte et depuis « Encoder une seule carte » (`CardPickerScreen`) dans l'écriture.
+- Détail d'une carte : `TagDetailScreen` (en ligne, repli sur le cache).
+- Dossiers hors connexion : liste (`batch_source.dart`), détail (cartes, compteurs, export lus dans le cache), choix du dossier dans l'écriture.
+- Aide NFC désactivé : `NfcHelpBanner` dans l'écriture, l'écriture d'une carte et la vérification.
+- Réglages : compte (mot de passe, déconnexion, version).
+- Modifier un client : `ClientEditScreen` + `ClientsRemote.updateClient`.
+- Tableau de bord admin : `AdminDashboardScreen`, nouvelle destination `dashboard` réservée à l'admin.
+
+### Non vérifié
+Rien compilé ni testé. Les nouvelles dépendances `package_info_plus` et `app_settings` n'ont pas été résolues. Voir `RESTE_A_FAIRE_MOBILE.md` pour le reste.

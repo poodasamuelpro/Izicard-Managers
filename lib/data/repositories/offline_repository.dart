@@ -19,6 +19,10 @@ class OfflineRepository {
 
   OfflineTagsDao get dao => _dao;
 
+  /// Dossiers téléchargés, avec compteurs locaux à jour.
+  Future<List<NfcBatch>> offlineBatches() async =>
+      (await _dao.downloadedBatches(userId)).map((info) => info.batch).toList();
+
   Future<bool> hasBatch(String batchId) => _dao.hasBatch(userId, batchId);
 
   /// Télécharge (ou met à jour) toutes les cartes du dossier, puis ré-applique les

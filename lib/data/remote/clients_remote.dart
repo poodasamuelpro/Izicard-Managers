@@ -43,6 +43,27 @@ class ClientsRemote {
         .eq('id', clientId);
   }
 
+  /// Coordonnées du client (table nfc_clients, réservée à l'administrateur par la RLS).
+  Future<void> updateClient({
+    required String clientId,
+    required String name,
+    String? contactName,
+    String? email,
+    String? phone,
+  }) async {
+    String? clean(String? value) {
+      final text = value?.trim() ?? '';
+      return text.isEmpty ? null : text;
+    }
+
+    await _client.schema(AppConstants.nfcSchema).from('nfc_clients').update({
+      'name': name.trim(),
+      'contact_name': clean(contactName),
+      'email': clean(email),
+      'phone': clean(phone),
+    }).eq('id', clientId);
+  }
+
   Future<Map<String, dynamic>> inviteClient({
     required String fullName,
     required String email,

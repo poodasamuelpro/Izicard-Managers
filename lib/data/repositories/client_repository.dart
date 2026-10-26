@@ -28,6 +28,20 @@ class ClientRepository {
     required bool allowed,
   }) => _remote.setCanCreateBatches(clientId: clientId, allowed: allowed);
 
+  Future<void> updateClient({
+    required String clientId,
+    required String name,
+    String? contactName,
+    String? email,
+    String? phone,
+  }) => _remote.updateClient(
+        clientId: clientId,
+        name: name,
+        contactName: contactName,
+        email: email,
+        phone: phone,
+      );
+
   Future<Map<String, dynamic>> inviteClient({
     required String fullName,
     required String email,

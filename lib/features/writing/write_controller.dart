@@ -3,11 +3,13 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../../data/local/app_database.dart';
+import '../../data/local/offline_tags_dao.dart';
 import '../../data/models/nfc_batch.dart';
 import '../../data/models/nfc_tag.dart';
 import '../../data/repositories/offline_repository.dart';
 import '../../data/repositories/sync_repository.dart';
 import '../../data/repositories/tag_repository.dart';
+import '../../data/repositories/write_recorder.dart';
 import '../../services/feedback/feedback_service.dart';
 import '../../services/nfc/nfc_service.dart';
 
@@ -19,11 +21,15 @@ class WriteController extends ChangeNotifier {
   WriteController({required TagRepository tags, required AppDatabase database, required this.userId})
       : _tags = tags,
         _offline = OfflineRepository(database: database, remote: tags.remote, userId: userId),
-        _sync = SyncRepository(database: database, remote: tags.remote, userId: userId);
+        _sync = SyncRepository(database: database, remote: tags.remote, userId: userId),
+        _recorder = WriteRecorder(database: database, remote: tags.remote, userId: userId),
+        _dao = OfflineTagsDao(database);
 
   final TagRepository _tags;
   final OfflineRepository _offline;
   final SyncRepository _sync;
+  final WriteRecorder _recorder;
+  final OfflineTagsDao _dao;
   final String userId;
 
   List<NfcTagRecord> queue = const [];
@@ -144,23 +150,7 @@ class WriteController extends ChangeNotifier {
     }
   }
 
-  Future<String?> _guard(NfcTagRecord tag, String uid) async {
-    if (uid.isEmpty || uid == 'INCONNU') return null;
-    if (uid == _lastUid) return 'Ce tag vient d’être utilisé pour la carte précédente. Posez un nouveau tag.';
-    final local = await _offline.dao.findByUid(userId, uid);
-    if (local != null && local.id != tag.id && (local.status == 'written' || local.status == 'verified')) {
-      return 'Ce tag (UID $uid) est déjà associé à la carte n° ${local.sequence} (${local.publicId}).';
-    }
-    try {
-      final remote = await _tags.findByUid(uid).timeout(const Duration(seconds: 3));
-      if (remote != null && remote.id != tag.id && (remote.status == 'written' || remote.status == 'verified')) {
-        return 'Ce tag (UID $uid) est déjà associé à la carte n° ${remote.sequence} (${remote.publicId}).';
-      }
-    } catch (_) {
-      // Hors connexion : le contrôle local et la base (à la synchronisation) restent les garde-fous.
-    }
-    return null;
-  }
+  Future<String?> _guard(NfcTagRecord tag, String uid) => _recorder.guard(tag, uid, lastUid: _lastUid);
 
   Future<void> _handle(NfcTagRecord tag, NfcWriteResult result) async {
     if (result.verified) {
@@ -192,14 +182,7 @@ class WriteController extends ChangeNotifier {
     required bool lockTag,
     String? error,
   }) async {
-    await _offline.dao.updateResult(userId: userId, tagId: tag.id, status: status, uid: uid, locked: lockTag);
-    await _sync.enqueueWrite(tagId: tag.id, status: status, uid: uid, error: error, lockTag: lockTag);
-    try {
-      final result = await _sync.syncPending();
-      unsynced = result.remaining;
-    } catch (_) {
-      unsynced = await _sync.pendingCount();
-    }
+    unsynced = await _recorder.record(tag, status: status, uid: uid, lockTag: lockTag, error: error);
   }
 
   void _advance() {

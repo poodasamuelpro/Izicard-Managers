@@ -22,6 +22,8 @@ dependencies:
   shared_preferences: ^2.3.2
   wakelock_plus: ^1.2.8
   path_provider: ^2.1.4
+  package_info_plus: ^8.1.0
+  app_settings: ^5.1.1
   nfc_manager: 4.0.2
   nfc_manager_ndef: 1.0.1
 
