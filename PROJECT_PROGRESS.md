@@ -515,4 +515,4 @@ Cette entrée remplace toute ancienne consigne de suivi demandant d’appliquer 
 
 ### Commit
 
-À renseigner après commit et push du lot mobile.
+`c72b741` — `feat(mobile): implement dynamic format imports`, poussé sur `master`.
