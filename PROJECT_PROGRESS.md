@@ -516,3 +516,26 @@ Cette entrée remplace toute ancienne consigne de suivi demandant d’appliquer 
 ### Commit
 
 `c72b741` — `feat(mobile): implement dynamic format imports`, poussé sur `master`.
+
+## Lot 1 — socle réel d’encodage NFC Android — 2026-10-26 01:24 UTC
+
+### Terminé dans le code
+
+- Ajout des dépendances compatibles Dart 3.7.2 : `nfc_manager 4.0.2` et `nfc_manager_ndef 1.0.1`.
+- Remplacement des placeholders NFC par une session réelle : disponibilité, détection, UID Android, lecture NDEF, écriture NDEF, relecture de contrôle et verrouillage définitif optionnel.
+- Construction NDEF depuis le payload backend : URI, texte et MIME `text/vcard`.
+- Ajout du modèle `NfcTagRecord` avec payload, type, statut, UID, verrouillage et champs.
+- Ajout de la lecture ordonnée des tags `pending`/`error` depuis `nfc.nfc_tags`.
+- Ajout du repository mobile pour lister les cartes inscriptibles et remonter le résultat à `nfc_mark_written`.
+
+### Partiel / non vérifié
+
+`git diff --check` est passé. Flutter/Dart ne sont pas installés dans ce sandbox : aucun `flutter pub get`, `flutter analyze`, build Android ou test avec une puce réelle n’a été exécuté. La permission et le manifeste Android seront traités dans le lot de câblage Android.
+
+### Reste à faire
+
+Brancher ce socle sur les écrans d’écriture en série et de vérification, puis synchroniser les résultats hors ligne.
+
+### Commit
+
+À renseigner après le push.

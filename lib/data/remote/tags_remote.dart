@@ -6,6 +6,18 @@ class TagsRemote {
   TagsRemote(this._client);
   final SupabaseClient _client;
 
+  Future<List<Map<String, dynamic>>> listWritableTags(String batchId) async {
+    final rows = await _client
+        .schema(AppConstants.nfcSchema)
+        .from('nfc_tags')
+        .select('id,batch_id,seq,public_id,data_type,payload,fields,status,uid,locked')
+        .eq('batch_id', batchId)
+        .inFilter('status', ['pending', 'error'])
+        .eq('locked', false)
+        .order('seq');
+    return rows.map((row) => Map<String, dynamic>.from(row)).toList();
+  }
+
   Future<void> markWritten({
     required String tagId,
     required String status,
