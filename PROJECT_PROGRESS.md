@@ -704,4 +704,4 @@ Le contrôle intervient avant `ndef.write`, tandis que la relecture de vérifica
 
 ### Commit
 
-À renseigner après le push du lot M6.
+`e4df99e` — poussé sur `master`.
