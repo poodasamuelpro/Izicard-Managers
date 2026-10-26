@@ -694,4 +694,4 @@ Rien compilé ni testé. Les nouvelles dépendances `package_info_plus` et `app_
 
 ### Commit
 
-À renseigner après le push du lot M5.
+`270dbca` — poussé sur `master`.
