@@ -102,3 +102,7 @@ Aucune ligne ✅ n'a été compilée ni testée.
 | Historique/audit consultable dans l’application | ❌ nécessite contrat backend partagé |
 | Écoute Realtime Supabase pour les changements de dossiers/cartes | ❌ à ajouter |
 | Synchronisation lorsque l’application est totalement fermée | ❌ à traiter après génération Android |
+
+## 10. Lot M6 — confirmation d’écrasement — 2026-10-26 23:17 UTC
+
+La lecture du contenu NDEF existant et la confirmation utilisateur sont maintenant branchées sur l’écriture en série et l’écriture d’une carte unique. Une annulation ne crée pas d’erreur dans la file de synchronisation. Il reste à compiler et tester sur des tags physiques lorsque l’environnement Android sera disponible.

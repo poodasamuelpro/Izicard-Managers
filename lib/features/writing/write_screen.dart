@@ -47,6 +47,7 @@ class _WriteScreenState extends State<WriteScreen> {
       tags: TagRepository(TagsRemote(client)),
       database: _database,
       userId: client.auth.currentUser?.id ?? '',
+      confirmOverwrite: _confirmOverwrite,
     );
     _batchFuture = loadBatches(_batches).then((list) {
       final all = list.batches;
@@ -102,6 +103,26 @@ class _WriteScreenState extends State<WriteScreen> {
       if (ok != true) return;
     }
     _controller.start(lockAfterWrite: _lock, auto: _auto);
+  }
+
+  Future<bool> _confirmOverwrite(String uid, int existingRecordCount) async {
+    if (!mounted) return false;
+    return await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            icon: const Icon(Icons.warning_amber_rounded),
+            title: const Text('Tag déjà utilisé'),
+            content: Text(
+              'Le tag $uid contient déjà $existingRecordCount enregistrement(s) NDEF. '
+              'La nouvelle donnée remplacera son contenu actuel. Continuer ?',
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Annuler')),
+              FilledButton(onPressed: () => Navigator.of(dialogContext).pop(true), child: const Text('Remplacer')),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   Future<bool> _confirmLeave() async {

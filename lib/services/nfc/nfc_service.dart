@@ -130,6 +130,7 @@ class NfcService {
     required String payload,
     required bool lockAfterWrite,
     Future<String?> Function(String uid)? guard,
+    Future<bool> Function(String uid, int existingRecordCount)? confirmOverwrite,
     Duration timeout = const Duration(seconds: 60),
   }) async {
     if (!await isAvailable()) {
@@ -159,6 +160,24 @@ class NfcService {
             if (!ndef.isWritable) throw const FormatException('Ce tag n’est pas inscriptible (déjà verrouillé ?).');
             if (ndef.maxSize < expected.byteLength) {
               throw FormatException('Donnée trop volumineuse : ${expected.byteLength} octets pour ${ndef.maxSize}.');
+            }
+            final existing = await ndef.read();
+            if (existing != null && existing.records.isNotEmpty) {
+              final allowed = confirmOverwrite == null
+                  ? false
+                  : await confirmOverwrite(uid, existing.records.length);
+              if (!allowed) {
+                if (!completer.isCompleted) {
+                  completer.complete(const NfcWriteResult(
+                    uid: '',
+                    verified: false,
+                    recordable: false,
+                    cancelled: true,
+                    error: 'Écriture annulée : le tag contient déjà une donnée.',
+                  ));
+                }
+                return;
+              }
             }
             await ndef.write(message: expected);
             final readBack = await ndef.read();

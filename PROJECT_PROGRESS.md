@@ -695,3 +695,13 @@ Rien compilé ni testé. Les nouvelles dépendances `package_info_plus` et `app_
 ### Commit
 
 `270dbca` — poussé sur `master`.
+
+## Lot M6 — confirmation avant écrasement d’un tag — 2026-10-26 23:17 UTC
+
+Le service NFC lit désormais le contenu NDEF existant avant toute écriture. Si le tag contient déjà au moins un enregistrement, l’opérateur doit confirmer explicitement le remplacement. La confirmation est disponible pour l’écriture en série et pour l’écriture d’une carte unique. Une annulation retourne un résultat non enregistrable et n’est pas comptée comme une erreur métier ni synchronisée vers le backend.
+
+Le contrôle intervient avant `ndef.write`, tandis que la relecture de vérification et le verrouillage définitif restent obligatoires après écriture. La compilation Flutter et la validation sur vrais tags restent différées conformément aux décisions précédentes.
+
+### Commit
+
+À renseigner après le push du lot M6.

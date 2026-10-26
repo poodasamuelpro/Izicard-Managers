@@ -90,6 +90,7 @@ class _SingleWriteScreenState extends State<SingleWriteScreen> {
       payload: tag.payload,
       lockAfterWrite: _lock,
       guard: (uid) => _recorder.guard(tag, uid),
+      confirmOverwrite: _confirmOverwrite,
     );
     unawaited(FeedbackService.keepAwake(false));
     if (!mounted) return;
@@ -129,6 +130,26 @@ class _SingleWriteScreenState extends State<SingleWriteScreen> {
         _message = text;
       });
     }
+  }
+
+  Future<bool> _confirmOverwrite(String uid, int existingRecordCount) async {
+    if (!mounted) return false;
+    return await showDialog<bool>(
+          context: context,
+          builder: (dialogContext) => AlertDialog(
+            icon: const Icon(Icons.warning_amber_rounded),
+            title: const Text('Tag déjà utilisé'),
+            content: Text(
+              'Le tag $uid contient déjà $existingRecordCount enregistrement(s) NDEF. '
+              'La nouvelle donnée remplacera son contenu actuel. Continuer ?',
+            ),
+            actions: [
+              TextButton(onPressed: () => Navigator.of(dialogContext).pop(false), child: const Text('Annuler')),
+              FilledButton(onPressed: () => Navigator.of(dialogContext).pop(true), child: const Text('Remplacer')),
+            ],
+          ),
+        ) ??
+        false;
   }
 
   Future<void> _cancel() async {

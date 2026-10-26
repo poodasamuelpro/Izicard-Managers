@@ -18,7 +18,7 @@ enum SeriesPhase { idle, waiting, success, error, paused, finished }
 /// Série d'écriture : lit le cache local, écrit, relit, enregistre d'abord en local
 /// (file `pending_writes`), puis laisse la synchronisation prévenir la base.
 class WriteController extends ChangeNotifier {
-  WriteController({required TagRepository tags, required AppDatabase database, required this.userId})
+  WriteController({required TagRepository tags, required AppDatabase database, required this.userId, this.confirmOverwrite})
       : _tags = tags,
         _offline = OfflineRepository(database: database, remote: tags.remote, userId: userId),
         _sync = SyncRepository(database: database, remote: tags.remote, userId: userId),
@@ -31,6 +31,7 @@ class WriteController extends ChangeNotifier {
   final WriteRecorder _recorder;
   final OfflineTagsDao _dao;
   final String userId;
+  final Future<bool> Function(String uid, int existingRecordCount)? confirmOverwrite;
 
   List<NfcTagRecord> queue = const [];
   int index = 0;
@@ -129,6 +130,7 @@ class WriteController extends ChangeNotifier {
           payload: tag.payload,
           lockAfterWrite: lock,
           guard: (uid) => _guard(tag, uid),
+          confirmOverwrite: confirmOverwrite,
         );
 
         if (result.cancelled) {
