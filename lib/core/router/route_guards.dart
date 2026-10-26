@@ -11,8 +11,10 @@ import '../../features/admin/batches/batch_create_screen.dart';
 import '../../features/admin/clients/clients_screen.dart';
 import '../../features/batches/batches_screen.dart';
 import '../../features/home/module_screen.dart';
+import '../../features/import/import_screen.dart';
 import '../../features/sync/sync_status_screen.dart';
 
+/// Destinations accessibles depuis l'accueil, protégées à nouveau par les RPC/RLS.
 enum NfcDestination {
   clients,
   batches,
@@ -39,31 +41,23 @@ extension NfcDestinationDetails on NfcDestination {
       };
 
   String get description => switch (this) {
-        NfcDestination.clients =>
-          'Gérez les clients, leurs profils et leurs accès à la plateforme.',
-        NfcDestination.batches =>
-          'Consultez les dossiers et suivez leur progression.',
-        NfcDestination.createBatch =>
-          'Préparez un nouveau dossier d’encodage NFC.',
-        NfcDestination.imports =>
-          'Importez et contrôlez les données des cartes.',
-        NfcDestination.export =>
-          'Téléchargez les données et rapports des dossiers.',
-        NfcDestination.write =>
-          'Écrivez et vérifiez les tags NFC associés à un dossier.',
-        NfcDestination.verify =>
-          'Relisez un tag et contrôlez les données encodées.',
-        NfcDestination.sync =>
-          'Consultez les opérations en attente de synchronisation.',
-        NfcDestination.settings =>
-          'Consultez les paramètres de votre espace IziCard.',
+        NfcDestination.clients => 'Gérez les clients, leurs profils et leurs accès.',
+        NfcDestination.batches => 'Consultez les dossiers qui vous sont attribués.',
+        NfcDestination.createBatch => 'Préparez un dossier pour votre client.',
+        NfcDestination.imports => 'Importez un fichier ou saisissez une carte.',
+        NfcDestination.export => 'Téléchargez les données et rapports des dossiers.',
+        NfcDestination.write => 'Écrivez et vérifiez les tags NFC associés à un dossier.',
+        NfcDestination.verify => 'Relisez un tag et contrôlez les données encodées.',
+        NfcDestination.sync => 'Consultez les opérations en attente de synchronisation.',
+        NfcDestination.settings => 'Consultez les paramètres de votre espace IziCard.',
       };
 
   bool allowedFor(NfcProfile profile) => switch (this) {
-        NfcDestination.clients ||
+        NfcDestination.clients => profile.role == NfcRole.admin,
+        NfcDestination.createBatch => profile.role == NfcRole.admin ||
+            (profile.role == NfcRole.client && profile.canCreateBatches && profile.clientId != null),
         NfcDestination.imports ||
-        NfcDestination.export => profile.role == NfcRole.admin,
-        NfcDestination.createBatch => profile.role == NfcRole.admin,
+        NfcDestination.export ||
         NfcDestination.batches ||
         NfcDestination.write ||
         NfcDestination.verify ||
@@ -75,9 +69,8 @@ extension NfcDestinationDetails on NfcDestination {
 class NfcRouteGuard {
   const NfcRouteGuard._();
 
-  static bool canOpen(NfcProfile profile, NfcDestination destination) {
-    return profile.hasValidAccess && destination.allowedFor(profile);
-  }
+  static bool canOpen(NfcProfile profile, NfcDestination destination) =>
+      profile.hasValidAccess && destination.allowedFor(profile);
 
   static Future<void> open(
     BuildContext context, {
@@ -86,38 +79,24 @@ class NfcRouteGuard {
   }) async {
     if (!canOpen(profile, destination)) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Vous n’avez pas accès à cette fonctionnalité.'),
-        ),
+        const SnackBar(content: Text('Vous n’avez pas accès à cette fonctionnalité.')),
       );
       return;
     }
 
     final client = Supabase.instance.client;
+    final batches = BatchRepository(client);
     await Navigator.of(context).push<void>(
       MaterialPageRoute<void>(
         builder: (_) => switch (destination) {
-          NfcDestination.batches => BatchesScreen(
-              profile: profile,
-              repository: BatchRepository(client),
-            ),
-          NfcDestination.createBatch => BatchCreateScreen(
-              profile: profile,
-              repository: BatchRepository(client),
-            ),
-          NfcDestination.clients => ClientsScreen(
-              repository: ClientRepository(client),
-            ),
+          NfcDestination.batches => BatchesScreen(profile: profile, repository: batches),
+          NfcDestination.createBatch => BatchCreateScreen(profile: profile, repository: batches),
+          NfcDestination.imports => ImportScreen(profile: profile, repository: batches),
+          NfcDestination.clients => ClientsScreen(repository: ClientRepository(client)),
           NfcDestination.sync => SyncStatusScreen(
-              repository: SyncRepository(
-                database: AppDatabase(),
-                remote: TagsRemote(client),
-              ),
+              repository: SyncRepository(database: AppDatabase(), remote: TagsRemote(client)),
             ),
-          _ => NfcModuleScreen(
-              destination: destination,
-              profile: profile,
-            ),
+          _ => NfcModuleScreen(destination: destination, profile: profile),
         },
       ),
     );

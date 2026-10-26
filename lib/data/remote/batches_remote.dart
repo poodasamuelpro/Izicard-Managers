@@ -16,6 +16,16 @@ class BatchesRemote {
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
   }
 
+  Future<Map<String, dynamic>> getBatchImportContext(String batchId) async {
+    final row = await _client
+        .schema(AppConstants.nfcSchema)
+        .from('nfc_batches')
+        .select('id, name, format_id, data_type, settings, status')
+        .eq('id', batchId)
+        .single();
+    return Map<String, dynamic>.from(row);
+  }
+
   Future<dynamic> createBatch({
     required String clientId,
     required String formatId,
@@ -25,19 +35,19 @@ class BatchesRemote {
     required String? prefix,
     required String? template,
     required bool lockAfterWrite,
+    Map<String, dynamic>? settings,
   }) {
-    return _client.schema(AppConstants.nfcSchema).rpc(
-      'nfc_create_batch',
-      params: {
-        'p_client': clientId,
-        'p_format': formatId,
-        'p_name': name.trim(),
-        'p_quantity': quantity,
-        'p_data_type': dataType,
-        'p_prefix': prefix,
-        'p_template': template,
-        'p_lock': lockAfterWrite,
-      },
-    );
+    final params = <String, dynamic>{
+      'p_client': clientId,
+      'p_format': formatId,
+      'p_name': name.trim(),
+      'p_quantity': quantity,
+      'p_data_type': dataType,
+      'p_prefix': prefix,
+      'p_template': template,
+      'p_lock': lockAfterWrite,
+    };
+    if (settings != null && settings.isNotEmpty) params['p_settings'] = settings;
+    return _client.schema(AppConstants.nfcSchema).rpc('nfc_create_batch', params: params);
   }
 }

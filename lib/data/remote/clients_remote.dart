@@ -32,6 +32,17 @@ class ClientsRemote {
     );
   }
 
+  Future<void> setCanCreateBatches({
+    required String clientId,
+    required bool allowed,
+  }) async {
+    await _client
+        .schema(AppConstants.nfcSchema)
+        .from('nfc_clients')
+        .update({'can_create_batches': allowed})
+        .eq('id', clientId);
+  }
+
   Future<Map<String, dynamic>> inviteClient({
     required String fullName,
     required String email,

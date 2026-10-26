@@ -46,7 +46,14 @@ Le même principe peut être appliqué au template de confirmation si la confirm
 
 ## 5. Schéma métier NFC
 
-La migration Supabase vers le schéma `nfc` est confirmée comme déployée (2026-10-25, selon le propriétaire). Toutes les tables, types, vues et fonctions métier NFC doivent être lues/appelées dans `nfc`, sans repli vers `public`. Le script SQL historique du dépôt Web utilise encore `public` et doit être réaligné pour les futures installations. Web et mobile partagent ce schéma et cette API ; les tests de connexion restent différés.
+La migration Supabase vers le schéma `nfc` est confirmée comme déployée (2026-10-25, selon le propriétaire). Toutes les tables, types, vues et fonctions métier NFC doivent être lues/appelées dans `nfc`, sans repli vers `public`. Ne pas rejouer le bootstrap historique `001_nfc.sql` : il ne décrit pas l’état actuellement installé.
+
+Les scripts de règles de formats donnés avec la consigne sont des prérequis avant les essais de ces écrans :
+
+1. Exécuter `003_nfc_enum_code.sql` seul dans une exécution du SQL Editor pour ajouter la valeur enum `code`.
+2. Après la réussite de 003, exécuter `004_nfc_formats_rules.sql` dans une autre exécution du SQL Editor. Il ajoute `rules`/`settings`, les formats, le contrôle client de `can_create_batches`, `p_settings` et la RPC `nfc_import_rows`.
+
+Ne pas exécuter les deux scripts dans une même transaction/exécution. Le code mobile n’embarque aucune logique `service_role`. L’Admin seul invite des clients et peut créer un dossier pour tout client; un client peut créer uniquement pour son propre client si l’Admin active `nfc.nfc_clients.can_create_batches` (faux par défaut), avec le contrôle final effectué côté fonction/RLS. Web et mobile partagent le même schéma et les mêmes RPC. Au moment de ce lot, l’application mobile n’a pas été compilée et aucune connexion/test Supabase n’a été lancé.
 
 ## 6. Redirection et sécurité
 

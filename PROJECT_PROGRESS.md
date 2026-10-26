@@ -486,3 +486,33 @@ Lorsqu’une lecture Supabase réussie confirme qu’aucun profil n’existe pou
 ### Commit
 
 À renseigner après le commit de cette modification.
+
+
+## Import dynamique, formats Code et droits de création — 2026-10-26 00:50 UTC
+
+### Terminé dans le code mobile
+
+- Le formulaire de dossier accepte un Admin pour tout client ou un client seulement pour son propre `client_id` si `can_create_batches` est accordé. L’accueil/routeur appliquent le même droit; l’écran Admin Clients contient l’interrupteur, désactivé par défaut, et met à jour `nfc.nfc_clients` sous RLS.
+- Le type de données vient de `default_data_type`; les réglages `code_charset`, `code_min`, `code_max` et le paramètre `p_settings` ne sont envoyés que pour un format dont le type par défaut est `code`.
+- Le flux import mobile couvre les fichiers `.xlsx`, `.xls` et `.csv`, la sélection de feuille, la lecture locale en texte, le mapping automatique/modifiable, le blocage des associations `required`/`required_any` manquantes, l’aperçu, la saisie manuelle, l’appel de `nfc_import_rows` en lots de 500, le bilan avec numéro de ligne Excel/message serveur, le CSV des rejets et le modèle XLSX à deux feuilles (Instructions, exemples, champs/règles et colonnes texte pour code/téléphone).
+- Les champs, alias, types, labels, puce, capacité et règles sont lus depuis `nfc.nfc_card_formats.field_schema/rules`; aucune liste de champs métier n’est codée en dur. Les règles de contenu et le nettoyage restent à Supabase. Les dépendances Excel/fichier/partage et les contraintes Flutter/Dart minimales sont documentées dans `pubspec.yaml` et le README.
+- README, architecture mobile et guide Supabase corrigés : la création client autorisé remplace l’ancienne restriction Admin-only; l’écriture NFC reste hors périmètre de cette étape.
+
+### Partiel / non vérifié
+
+Flutter et Dart ne sont pas installés dans cet environnement. Aucun `flutter pub get`, formatage/analyse, compilation, test sur appareil ou appel de connexion Supabase n’a été exécuté. Les scripts SQL 003 et 004 ne sont pas confirmés appliqués par le propriétaire; les nouveaux formats/règles ne pourront pas être validés avant leur application séparée et dans l’ordre demandé.
+
+### Reste à faire
+
+- Le propriétaire exécute 003 seul, puis 004 dans une seconde exécution, sans rejouer 001.
+- Installer l’environnement Flutter minimum déclaré (Flutter 3.29.2 / Dart 3.7.2), résoudre d’éventuelles incompatibilités révélées par `pub get`/analyse/compilation, puis tester le flux sur Android et Supabase après autorisation.
+- L’écriture et la relecture physique NFC, le cache/import hors ligne complet et la synchronisation reliée à l’écriture restent hors périmètre.
+- L’audit lecture seule du dépôt Web a relevé qu’il contient encore `manual_patches/002_admin_only_batch_creation_nfc.sql` et ne contient pas les scripts 003/004 attendus. Le dépôt Web n’a pas été modifié dans ce lot mobile; sa mise en conformité reste à traiter dans la phase Web autorisée.
+
+### Correction des anciennes notes
+
+Cette entrée remplace toute ancienne consigne de suivi demandant d’appliquer le patch 002 « Admin seulement » ou indiquant que `can_create_batches` ne donne aucun droit. Ne pas appliquer 002 : la règle attendue est Admin pour tout client, ou client autorisé pour son propre compte. L’invitation client reste réservée à l’Admin; l’auto-inscription demeure interdite.
+
+### Commit
+
+À renseigner après commit et push du lot mobile.

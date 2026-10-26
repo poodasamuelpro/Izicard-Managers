@@ -1,3 +1,5 @@
+import 'card_format.dart';
+
 class NfcBatch {
   const NfcBatch({
     required this.id,
@@ -52,4 +54,22 @@ class NfcBatch {
 
   static int _asInt(Object? value) =>
       value is int ? value : int.tryParse(value?.toString() ?? '') ?? 0;
+}
+
+class BatchImportContext {
+  const BatchImportContext({
+    required this.id,
+    required this.name,
+    required this.dataType,
+    required this.format,
+    required this.settings,
+    required this.status,
+  });
+
+  final String id;
+  final String name;
+  final String dataType;
+  final CardFormat format;
+  final Map<String, dynamic> settings;
+  final String status;
 }

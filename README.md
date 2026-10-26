@@ -2,11 +2,11 @@
 
 Application Android d’encodage NFC en série et interface de l’écosystème IziCard. L’application mobile et l’espace admin Web doivent proposer les mêmes fonctions métier et utiliser un backend/API unique : même projet Supabase, mêmes données, mêmes fonctions serveur/RPC et mêmes règles d’accès. Le mobile n’a pas son propre backend ni ses propres règles métier.
 
-En mode administrateur, l’application mobile doit pouvoir faire tout ce que l’espace admin Web permet, notamment gérer les clients et accès, créer et suivre les dossiers, gérer les imports et exports et utiliser les autres opérations métier disponibles. Seul l’Admin peut créer un client et un dossier ; le client reçoit une invitation email, se connecte sur Web ou Android et ne voit que les dossiers associés à son profil. L’auto-inscription client est interdite. Les deux interfaces appellent les mêmes opérations côté serveur ; seule la présentation et l’intégration du NFC peuvent être propres à chaque plateforme. Toute fonction métier doit être partagée plutôt que réimplémentée séparément.
+L’Admin peut gérer les clients et accès, créer un dossier pour n’importe quel client et utiliser les opérations métier disponibles. Un client invité peut aussi créer un dossier uniquement pour son propre compte si `nfc.nfc_clients.can_create_batches = true`; l’Admin attribue ce droit, désactivé par défaut. L’Admin seul invite/ajoute les clients; l’auto-inscription reste interdite. Web et mobile appellent les mêmes opérations Supabase/RPC et règles RLS; l’interface ne remplace jamais les contrôles serveur.
 
 ## Schéma Supabase obligatoire
 
-Tous les objets métier IziCard NFC (tables, vues, types et fonctions/RPC) doivent être lus et utilisés dans le schéma PostgreSQL `nfc`, jamais via `public` en repli. Exemple : `nfc.nfc_profiles`, `nfc.nfc_batches` et les RPC du schéma `nfc`. Le code mobile et le Web visent ce même schéma et le backend commun. La migration Supabase vers `nfc` est maintenant confirmée comme déployée (2026-10-25). Le script historique `001_nfc.sql` du dépôt Web emploie encore `public` et doit être réaligné pour les installations futures ; les droits, RLS et RPC restent à confirmer avant les tests fonctionnels.
+Tous les objets métier IziCard NFC (tables, vues, types et fonctions/RPC) sont lus et utilisés dans le schéma PostgreSQL `nfc`, jamais via `public` en repli. La migration du schéma est confirmée comme déployée. Ne pas rejouer le bootstrap historique `001_nfc.sql`; vérifier ultérieurement les droits/RLS sur une instance réelle.
 
 Le mobile doit charger le profil et le rôle depuis `nfc.nfc_profiles`, puis présenter un accueil et une navigation adaptés au rôle et à l’état d’accès. La sécurité est appliquée côté backend par RLS/fonctions, pas seulement par masquage des écrans. L’interface doit suivre la charte IziCard et offrir une UX professionnelle, intuitive et accessible : boutons retour cohérents, états de chargement/erreur/vide et confirmations lorsque nécessaire. Les tests de connexion sont différés pour le moment.
 
@@ -22,7 +22,7 @@ Les emails nécessaires sont celui de récupération avec code OTP et, si activ�
 
 ## Configuration locale
 
-Copier [`.env.example`](.env.example) vers un fichier local ignoré par Git, ou fournir les mêmes valeurs par `--dart-define` lors du build. Ne jamais ajouter de secret serveur au dépôt.
+Copier [`.env.example`](.env.example) vers un fichier local ignoré par Git, ou fournir les mêmes valeurs par `--dart-define` lors du build. Le lecteur XLS legacy nécessite Flutter >= 3.29.2 / Dart >= 3.7.2. Ne jamais ajouter de secret serveur au dépôt.
 
 ```bash
 flutter pub get
@@ -32,6 +32,6 @@ flutter run --dart-define=SUPABASE_URL=https://votre-projet.supabase.co \
 
 ## Responsabilités prévues
 
-Le socle mobile couvre d’abord la connexion par mot de passe, la déconnexion, le mot de passe oublié avec OTP de 8 chiffres et la session. Il couvrira ensuite l’accès selon le rôle, le téléchargement de dossiers, l’import et la vérification des données, l’écriture NFC en série, la relecture, la file hors ligne et la synchronisation. Les écrans suivent la charte IziCard : cyan `#01A3CA`, bleu `#0299E2`, fond blanc, états de succès/erreur/attente lisibles et logo fourni dans `assets/images/logo.jpg`.
+Le code mobile contient maintenant les écrans Admin/client de dossiers, la permission `can_create_batches`, le chargement des formats/champs depuis `nfc`, la saisie manuelle, l’import `.xlsx`/`.xls`/`.csv` avec mapping, aperçu, envoi par lots via `nfc_import_rows`, bilan et export CSV des erreurs, ainsi qu’un modèle Excel à deux feuilles. Cette implémentation n’a pas encore été compilée ni testée; elle dépend de l’application préalable des scripts Supabase 003 puis 004. L’écriture NFC, l’export métier général et la synchronisation hors ligne restent hors périmètre de ce lot. Les écrans suivent la charte IziCard : cyan `#01A3CA`, bleu `#0299E2`, fond blanc et états lisibles.
 
 Voir [`MOBILE_ARCHITECTURE.md`](MOBILE_ARCHITECTURE.md) et [`PROJECT_PROGRESS.md`](PROJECT_PROGRESS.md) pour le détail et l’état réel d’avancement.

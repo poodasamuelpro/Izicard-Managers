@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/theme/izicard_colors.dart';
 import '../../../data/models/nfc_client.dart';
@@ -40,6 +41,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
 
   Future<void> _manageAccess(NfcClient client) async {
     var active = client.active;
+    var canCreateBatches = client.canCreateBatches;
     DateTime? expires = client.accessExpiresAt;
     final save = await showDialog<bool>(
       context: context,
@@ -55,6 +57,13 @@ class _ClientsScreenState extends State<ClientsScreen> {
                 value: active,
                 title: const Text('Accès actif'),
                 onChanged: (value) => setDialogState(() => active = value),
+              ),
+              SwitchListTile.adaptive(
+                contentPadding: EdgeInsets.zero,
+                value: canCreateBatches,
+                title: const Text('Autoriser la création de dossiers'),
+                subtitle: const Text('Le client ne peut créer que pour son propre compte.'),
+                onChanged: (value) => setDialogState(() => canCreateBatches = value),
               ),
               const SizedBox(height: 8),
               Text(expires == null
@@ -123,15 +132,19 @@ class _ClientsScreenState extends State<ClientsScreen> {
         active: active,
         expiresAt: expires,
       );
+      await widget.repository.setCanCreateBatches(
+        clientId: client.id,
+        allowed: canCreateBatches,
+      );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Accès client mis à jour.')),
       );
       await _refresh();
-    } catch (_) {
+    } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Impossible de modifier cet accès. Réessayez.')),
+        SnackBar(content: Text(error is PostgrestException ? error.message : error.toString())),
       );
     }
   }
@@ -207,6 +220,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
                                   if (client.email?.isNotEmpty == true) client.email!,
                                   if (client.contactName?.isNotEmpty == true) client.contactName!,
                                   'Accès : ${client.accessLabel}',
+                                  if (client.canCreateBatches) 'Création de dossiers autorisée',
                                 ].join(' · ')),
                               ),
                               trailing: IconButton.filledTonal(

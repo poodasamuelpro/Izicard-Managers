@@ -24,4 +24,23 @@ class TagsRemote {
       },
     );
   }
+
+  Future<Map<String, dynamic>> importRows({
+    required String batchId,
+    required List<Map<String, dynamic>> rows,
+    String? filename,
+    Map<String, dynamic>? mapping,
+  }) async {
+    final response = await _client.schema(AppConstants.nfcSchema).rpc(
+      'nfc_import_rows',
+      params: {
+        'p_batch': batchId,
+        'p_rows': rows,
+        'p_filename': filename,
+        'p_mapping': mapping,
+      },
+    );
+    if (response is Map) return Map<String, dynamic>.from(response);
+    throw const FormatException('Réponse d’import nfc_import_rows invalide.');
+  }
 }
