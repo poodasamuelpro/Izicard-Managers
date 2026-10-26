@@ -609,3 +609,29 @@ Aucune compilation ni test. L'écriture NFC réelle (ISO 14443 / NTAG), le verro
 
 M3 : bouton de téléchargement hors-ligne dans le détail du dossier, `SyncWorker` démarré après connexion et arrêté à la déconnexion (retour réseau, retour au premier plan), accès révoqué en cours de session, nettoyage final et documentation. Plus tard : dossier `android/`, permission NFC, compilation, tests.
 
+## Lot M3 — hors-ligne branché, accès révoqué, documentation — 2026-10-26 UTC
+
+### Terminé dans le code
+
+- Détail d'un dossier : bouton « Télécharger pour le hors-ligne » / « Mettre à jour hors-ligne » (`OfflineRepository.downloadBatch`), indicateur de disponibilité.
+- `SyncWorker` réécrit (observateur de cycle de vie) et **démarré par `AuthGate`** uniquement pour un profil valide, arrêté à la déconnexion ou si l'accès est retiré ; déclencheurs : démarrage, retour du réseau, retour au premier plan.
+- **Accès révoqué en cours de session** : contrôle du profil toutes les 2 minutes et au retour au premier plan ; si l'accès est retiré ou expiré, tous les écrans ouverts sont fermés et l'écran dédié s'affiche ; la file locale est conservée (jamais purgée).
+- Cloisonnement par utilisateur de bout en bout (cache, file, envoi).
+- `MOBILE_ARCHITECTURE.md` mis à jour (périmètre réel, boucle d'écriture, hors-ligne, sécurité).
+
+### Écrans et fonctions mobiles désormais codés
+
+Connexion, activation, accueil par rôle, clients/invitation, création de dossier, liste et détail des dossiers, import et saisie manuelle, écriture NFC en série, vérification d'un tag, export CSV, réglages, synchronisation, accès révoqué, hors-ligne.
+
+### Non vérifié
+
+Aucune compilation, aucune analyse, aucun test, aucun essai sur tags réels (consigne : code d'abord). Des erreurs de compilation Dart sont possibles.
+
+### Reste à faire après l'écriture du code
+
+1. Générer le dossier `android/`, déclarer `android.permission.NFC` et `android.hardware.nfc`, vérifier le `minSdk` exigé par les bibliothèques.
+2. Compiler : `flutter pub get`, `flutter analyze`, corriger les erreurs, build APK.
+3. Essais sur appareil avec 5 à 10 vrais tags (écriture, relecture, verrouillage, erreurs, hors-ligne, synchro, révocation).
+4. Vérifier dans Supabase : grants/RLS de `nfc_tags` (lecture par UID), `nfc_mark_written`, scripts 003 puis 004 appliqués.
+5. Les fichiers de `test/` sont des emplacements vides à écrire à l'étape tests.
+

@@ -20,9 +20,9 @@ UI/UX de qualité professionnelle, alignée sur la charte IziCard (cyan `#01A3CA
 - Charte IziCard : cyan #01A3CA, bleu #0299E2, blanc.
 
 ## Écrans et périmètre mobile actuel
-Connexion · Accès révoqué · Accueil (selon rôle) · Clients et accès (Admin, incluant l’interrupteur de création) · Création de dossier (Admin ou client autorisé) · Liste/détail des dossiers · Import `.xlsx`/`.xls`/`.csv` (choix dossier/feuille, mapping modifiable, aperçu, lots de 500, bilan et export CSV des erreurs) · Saisie manuelle d’une carte · modèle Excel par format avec feuille Instructions. Ces parcours sont codés mais restent non compilés/non testés.
+Connexion · Accès révoqué · Accueil (selon rôle) · Clients et accès (Admin, interrupteur de création) · Création de dossier (Admin ou client autorisé) · Liste des dossiers · **Détail d'un dossier** (compteurs, cartes paginées avec filtres et recherche, téléchargement hors-ligne, export) · Import `.xlsx`/`.xls`/`.csv` (mapping, aperçu, lots de 500, bilan) · Saisie manuelle · **Écriture NFC en série** · **Vérification d'un tag** · **Export CSV** · **Réglages** · **Synchronisation** (file, refus définitifs, dossiers téléchargés).
 
-L’écriture NFC en série, la relecture physique, l’export métier général et la synchronisation hors ligne sont hors périmètre de cette étape; leur présence dans les sections suivantes décrit uniquement la cible, pas un fonctionnement livré.
+Tout ce code est écrit mais **non compilé et non testé** : le dossier `android/`, la permission NFC, la compilation et les essais sur de vrais tags viennent après l'écriture complète du code.
 
 ## Formats et import
 Les écrans ne codent pas les champs par format : ils lisent `code`, `label`, `default_data_type`, `payload_template`, `chip`, `capacity_bytes`, `field_schema` et `rules` depuis `nfc.nfc_card_formats`. Le même `field_schema` pilote le formulaire manuel, le modèle, la reconnaissance des en-têtes et les labels de l’aperçu. Les cellules sont lues comme texte; les valeurs sont envoyées avec les clés techniques définies par le format à `nfc_import_rows` par paquets de 500. Les validations de contenu et le nettoyage restent à Supabase; l’application bloque seulement les associations manquantes des champs `required`/`required_any` avant envoi.
@@ -30,22 +30,23 @@ Les écrans ne codent pas les champs par format : ils lisent `code`, `label`, `d
 Le format dont `default_data_type = 'code'` expose les réglages `code_charset`, `code_min` et `code_max`; le client transmet `p_settings` au RPC de création. Les autres formats n’envoient pas `p_settings`.
 
 ## Boucle d'écriture
-1. Charger la prochaine carte « à écrire » du dossier (cache local).
-2. Afficher « Pose le tag n° 37 / 120 ».
-3. Écrire l'enregistrement NDEF selon le type de donnée.
-4. Relire le tag et comparer avec la donnée attendue.
-5. Enregistrer localement (statut vérifié ou erreur, UID, verrou) puis passer à la suivante, avec bip et vibration.
-6. En arrière-plan : envoi à `nfc_mark_written`.
-Erreur : bandeau rouge + Réessayer. Un UID déjà associé à une autre carte est refusé par la base : l'app le signale et ne passe pas à la carte suivante.
+1. La prochaine carte « à écrire » vient **toujours du cache local** (le dossier est téléchargé au premier usage, ou depuis le détail du dossier).
+2. Écran plein écran : « n / total », panneau orange (attente), vert (vérifiée), rouge (erreur).
+3. À la détection : garde-fou (UID déjà associé à une autre carte, ou même tag que la carte précédente → refusé avant toute écriture), tag inscriptible, capacité suffisante.
+4. Écriture NDEF du `payload` tel que stocké par la base (jamais recalculé), **relecture et comparaison** enregistrement par enregistrement.
+5. Verrouillage définitif seulement si demandé (confirmation explicite à chaque série) et seulement après relecture réussie.
+6. **Résultat enregistré d'abord en local** (cache + file `pending_writes`), puis envoi immédiat si le réseau le permet, sinon par le `SyncWorker`.
+7. Succès : bip + vibration, carte suivante (automatique ou bouton selon les réglages). Erreur : écran rouge, Réessayer / Passer / Pause / Terminer.
 
 ## NDEF par type de donnée
 url → enregistrement URI · text → enregistrement texte · phone / email / sms → URI tel: / mailto: / sms: (déjà construits côté base) · geo → URI geo: · contact → vCard. Pour `code`, la base fournit soit le code, soit un lien rendu via le modèle. La donnée finale est calculée côté base et stockée dans `nfc.nfc_tags.payload`; lorsqu’elle sera implémentée, l’app devra l’écrire telle quelle. L’écriture elle-même n’est pas dans le lot actuel.
 
 ## Hors-ligne et conflits
-Table locale « file d'attente » : tag, statut, UID, erreur, verrou, date. Envoi dans l'ordre, nouvelle tentative automatique. Si l'accès a été révoqué entre-temps, l'envoi échoue : l'app affiche l'écran « accès révoqué » et garde la file pour l'admin.
-
-## Sécurité
-Jeton de session stocké de façon sécurisée (stockage chiffré Android). Données hors-ligne limitées aux dossiers téléchargés. Déconnexion = effacement du cache local. Verrouillage définitif jamais activé par défaut, avec confirmation.
+- Tables locales : `offline_batches`, `offline_tags` (cartes téléchargées), `pending_writes` (file d'envoi), `cached_profiles`. Tout est **cloisonné par `user_id`** : un élément n'est envoyé que sous la session de son propriétaire.
+- `SyncWorker` : démarré après l'authentification d'un profil valide, arrêté à la déconnexion ; déclencheurs : démarrage, retour du réseau, retour de l'application au premier plan, bouton manuel. Envoi séquentiel.
+- Réseau coupé ou session expirée : l'élément est conservé. Succès confirmé par la base : supprimé. Refus définitif de la base (UID déjà utilisé, carte annulée, accès refusé) : l'élément est marqué « refusé », conservé, visible avec son message dans l'écran Synchronisation (réessayer ou abandonner), sans boucle infinie.
+- L'accès est recontrôlé toutes les 2 minutes et au retour au premier plan : accès retiré ou expiré = tous les écrans se ferment, écran « accès révoqué », file conservée.
+- Le téléchargement d'un dossier ré-applique les résultats encore en file pour ne rien écraser.
 
 ## Construction sans terminal
 GitHub Actions construit l'APK/AAB (workflows fournis). La clé de signature et les clés Supabase sont dans les secrets GitHub, jamais dans le dépôt.
@@ -54,7 +55,7 @@ GitHub Actions construit l'APK/AAB (workflows fournis). La clé de signature et 
 Après génération du dossier android/ : ajouter la permission NFC et la déclaration de fonctionnalité NFC dans AndroidManifest.xml (voir android/README.md).
 
 ## Bibliothèques utilisées ou prévues
-`supabase_flutter`, `sqflite`, `connectivity_plus`, `excel`, `excel2003`, `file_picker`, `cross_file`, `share_plus`. Les plugins NFC et la compilation doivent être évalués séparément au moment du lot écriture.
+`supabase_flutter`, `sqflite`, `connectivity_plus`, `excel`, `excel2003`, `file_picker`, `cross_file`, `share_plus`, `shared_preferences`, `wakelock_plus`, `path_provider`, `nfc_manager` 4.0.2 + `nfc_manager_ndef` 1.0.1. Les versions exactes sont à confirmer à la compilation.
 
 ## Limites
 L'écriture sur plusieurs lecteurs en parallèle (encodeur PC) n'est pas dans ce dépôt : prévue plus tard côté agent PC. La disponibilité exacte de chaque fonction NFC (relecture, verrouillage) dépend de la bibliothèque et du téléphone : à tester sur appareil réel avec 5 à 10 tags avant production.

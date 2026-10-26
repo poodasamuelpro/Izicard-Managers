@@ -7,7 +7,9 @@ import '../../core/theme/izicard_colors.dart';
 import '../../data/models/nfc_batch.dart';
 import '../../data/models/nfc_profile.dart';
 import '../../data/models/nfc_tag.dart';
+import '../../data/local/app_database.dart';
 import '../../data/remote/tags_remote.dart';
+import '../../data/repositories/offline_repository.dart';
 import '../../data/repositories/batch_repository.dart';
 import '../../data/repositories/tag_repository.dart';
 import '../../services/export/csv_exporter.dart';
@@ -44,7 +46,11 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
   };
 
   late final TagRepository _tags;
+  late final AppDatabase _database;
+  late final OfflineRepository _offline;
   late NfcBatch _batch;
+  bool _downloading = false;
+  bool _available = false;
   final _searchController = TextEditingController();
   Timer? _debounce;
   final List<NfcTagRecord> _items = [];
@@ -58,7 +64,13 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
   void initState() {
     super.initState();
     _batch = widget.batch;
-    _tags = TagRepository(TagsRemote(Supabase.instance.client));
+    final client = Supabase.instance.client;
+    _tags = TagRepository(TagsRemote(client));
+    _database = AppDatabase();
+    _offline = OfflineRepository(database: _database, remote: TagsRemote(client), userId: client.auth.currentUser?.id ?? '');
+    _offline.hasBatch(_batch.id).then((value) {
+      if (mounted) setState(() => _available = value);
+    });
     _reload();
   }
 
@@ -66,6 +78,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
   void dispose() {
     _debounce?.cancel();
     _searchController.dispose();
+    _database.close();
     super.dispose();
   }
 
@@ -137,6 +150,21 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
     }
   }
 
+  Future<void> _download() async {
+    if (_downloading) return;
+    setState(() => _downloading = true);
+    try {
+      await _refreshStats();
+      final count = await _offline.downloadBatch(_batch);
+      if (mounted) setState(() => _available = true);
+      _snack('$count carte(s) téléchargée(s) : le dossier est utilisable hors connexion.');
+    } catch (error) {
+      _snack('Téléchargement impossible : ${error.toString().replaceFirst('Exception: ', '')}');
+    } finally {
+      if (mounted) setState(() => _downloading = false);
+    }
+  }
+
   void _snack(String text) {
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
@@ -200,6 +228,13 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                       .push<void>(MaterialPageRoute<void>(builder: (_) => const VerifyTagScreen())),
                   icon: const Icon(Icons.fact_check_outlined),
                   label: const Text('Vérifier un tag'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _downloading ? null : _download,
+                  icon: _downloading
+                      ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                      : Icon(_available ? Icons.offline_pin_rounded : Icons.download_for_offline_outlined),
+                  label: Text(_available ? 'Mettre à jour hors-ligne' : 'Télécharger pour le hors-ligne'),
                 ),
                 OutlinedButton.icon(
                   onPressed: _exporting ? null : _export,

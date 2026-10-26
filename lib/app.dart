@@ -5,9 +5,13 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/router/app_router.dart';
 import 'core/theme/izicard_theme.dart';
+import 'core/network/connectivity_service.dart';
 import 'data/local/app_database.dart';
 import 'data/models/nfc_profile.dart';
+import 'data/remote/tags_remote.dart';
 import 'data/repositories/auth_repository.dart';
+import 'data/repositories/sync_repository.dart';
+import 'services/sync/sync_worker.dart';
 import 'features/auth/access_revoked_screen.dart';
 import 'features/auth/login_screen.dart';
 import 'features/auth/password_setup_screen.dart';
@@ -73,13 +77,16 @@ class AuthGate extends StatefulWidget {
   State<AuthGate> createState() => _AuthGateState();
 }
 
-class _AuthGateState extends State<AuthGate> {
+class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
   late final AuthRepository _repository;
   late final AppDatabase _database;
   StreamSubscription<AuthState>? _authSubscription;
   User? _user;
   Future<NfcProfile?>? _profileFuture;
   bool _passwordSetup = false;
+  SyncWorker? _worker;
+  String? _workerUserId;
+  Timer? _accessTimer;
 
   @override
   void initState() {
@@ -92,10 +99,75 @@ class _AuthGateState extends State<AuthGate> {
     _user = _repository.currentUser;
     _profileFuture = _futureFor(_user);
     _authSubscription = _repository.authStateChanges.listen(_onAuthChanged);
+    WidgetsBinding.instance.addObserver(this);
+    // Contrôle régulier de l'accès : une révocation doit se voir sans redémarrer l'application.
+    _accessTimer = Timer.periodic(const Duration(minutes: 2), (_) => unawaited(_recheckAccess()));
   }
 
-  Future<NfcProfile?>? _futureFor(User? user) =>
-      user == null ? null : _repository.loadProfile(user.id);
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) unawaited(_recheckAccess());
+  }
+
+  /// Charge le profil ; démarre la synchro seulement pour un accès valide, l'arrête sinon.
+  Future<NfcProfile?>? _futureFor(User? user) {
+    if (user == null) {
+      unawaited(_stopWorker());
+      return null;
+    }
+    return _repository.loadProfile(user.id).then((profile) {
+      if (profile != null && profile.hasValidAccess) {
+        unawaited(_startWorker(user.id));
+      } else {
+        unawaited(_stopWorker());
+      }
+      return profile;
+    });
+  }
+
+  Future<void> _startWorker(String userId) async {
+    if (_workerUserId == userId && _worker != null) return;
+    await _stopWorker();
+    final worker = SyncWorker(
+      connectivity: ConnectivityService(),
+      repository: SyncRepository(
+        database: _database,
+        remote: TagsRemote(Supabase.instance.client),
+        userId: userId,
+      ),
+    );
+    _worker = worker;
+    _workerUserId = userId;
+    await worker.start();
+  }
+
+  /// Arrête l'envoi sans toucher à la file : elle reste intacte pour son propriétaire.
+  Future<void> _stopWorker() async {
+    final worker = _worker;
+    _worker = null;
+    _workerUserId = null;
+    await worker?.dispose();
+  }
+
+  /// Recontrôle l'accès en cours de session. Si l'accès est retiré ou expiré, on
+  /// ferme tous les écrans ouverts et on affiche l'écran d'accès révoqué ; la file locale est conservée.
+  Future<void> _recheckAccess() async {
+    final user = _user;
+    if (user == null || !mounted) return;
+    try {
+      final profile = await _repository.loadProfile(user.id);
+      if (!mounted || user.id != _user?.id) return;
+      if (profile != null && profile.hasValidAccess) {
+        unawaited(_startWorker(user.id));
+        return;
+      }
+      unawaited(_stopWorker());
+      Navigator.of(context).popUntil((route) => route.isFirst);
+      setState(() => _profileFuture = Future<NfcProfile?>.value(profile));
+    } catch (_) {
+      // Réseau indisponible : l'accès en cache reste valable jusqu'au prochain contrôle réussi.
+    }
+  }
 
   void _onAuthChanged(AuthState state) {
     if (state.event == AuthChangeEvent.passwordRecovery) {
@@ -120,7 +192,10 @@ class _AuthGateState extends State<AuthGate> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _accessTimer?.cancel();
     _authSubscription?.cancel();
+    unawaited(_stopWorker());
     unawaited(_database.close());
     super.dispose();
   }
