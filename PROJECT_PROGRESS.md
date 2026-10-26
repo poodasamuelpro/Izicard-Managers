@@ -746,4 +746,4 @@ La compilation Flutter et le rendu sur une vraie tablette Android restent à vé
 
 ### Commit
 
-À renseigner après le push du lot M9.
+`3ddbd2c` — poussé sur `master`.
