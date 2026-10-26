@@ -80,3 +80,25 @@ Aucune ligne ✅ n'a été compilée ni testée.
 1. `access_code` écrit en clair sur les cartes membre ?
 2. Garder ou désactiver `izicare_direct` / `izipro_direct` ?
 3. Annulation / réactivation d'une carte et archivage d'un dossier : par l'admin seulement, et avec quelle règle ?
+
+## 8. Décisions confirmées par le propriétaire — 2026-10-26 23:16 UTC
+
+- L’e-mail modifiable depuis la fiche client est uniquement un e-mail de contact. Il ne doit jamais modifier l’e-mail de connexion Supabase Auth.
+- Un client peut créer lui-même un dossier lorsqu’il est autorisé, uniquement pour son propre compte/client. Cette règle est déjà contrôlée par le mobile et par la RPC `nfc_create_batch`.
+- Les workflows GitHub Actions ne seront pas utilisés pour la validation. Les fichiers restent tels quels et la compilation/analyse seront exécutées depuis un terminal ou un autre environnement.
+- Le projet Android complet est en attente jusqu’à la fin du développement fonctionnel.
+- Le profil en cache hors connexion est conservé conformément à la politique produit.
+- Les données de l’application sont des liens de profil IziCard ; aucune donnée sensible IziCare n’est traitée dans ce projet. Aucun chiffrement de cache ne sera ajouté s’il risque de fragiliser la synchronisation, mais la décision pourra être réévaluée si le périmètre de données change.
+- Le stockage sécurisé spécifique de session Supabase n’est pas nécessaire à ce stade. Un PIN local optionnel pourra être ajouté ultérieurement ; s’il est activé, il devra être défini à 6 chiffres, et s’il ne l’est pas l’application ne sera pas bloquée.
+
+## 9. Nouveau travail fonctionnel
+
+| Fonction | État |
+|---|---|
+| Annulation explicite d’une lecture NFC | ✅ code ajouté, compilation à confirmer |
+| Timeout de lecture NFC et fermeture propre de session | ✅ code ajouté, compilation à confirmer |
+| Confirmation avant écrasement d’un tag contenant déjà des données | ❌ à ajouter |
+| Archivage d’un dossier | ❌ nécessite RPC/backend partagé |
+| Historique/audit consultable dans l’application | ❌ nécessite contrat backend partagé |
+| Écoute Realtime Supabase pour les changements de dossiers/cartes | ❌ à ajouter |
+| Synchronisation lorsque l’application est totalement fermée | ❌ à traiter après génération Android |

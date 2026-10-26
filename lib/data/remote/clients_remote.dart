@@ -43,7 +43,10 @@ class ClientsRemote {
         .eq('id', clientId);
   }
 
-  /// Coordonnées du client (table nfc_clients, réservée à l'administrateur par la RLS).
+  /// Coordonnées métier du client (table nfc_clients, réservée à l'administrateur par la RLS).
+  ///
+  /// `email` est uniquement l'e-mail de contact enregistré sur le client.
+  /// Cette méthode ne touche jamais à l'e-mail du compte Supabase Auth.
   Future<void> updateClient({
     required String clientId,
     required String name,

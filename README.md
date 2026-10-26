@@ -35,3 +35,11 @@ flutter run --dart-define=SUPABASE_URL=https://votre-projet.supabase.co \
 Le code mobile contient maintenant les écrans Admin/client de dossiers, la permission `can_create_batches`, le chargement des formats/champs depuis `nfc`, la saisie manuelle, l’import `.xlsx`/`.xls`/`.csv` avec mapping, aperçu, envoi par lots via `nfc_import_rows`, bilan et export CSV des erreurs, ainsi qu’un modèle Excel à deux feuilles. Cette implémentation n’a pas encore été compilée ni testée; elle dépend de l’application préalable des scripts Supabase 003 puis 004. L’écriture NFC, l’export métier général et la synchronisation hors ligne restent hors périmètre de ce lot. Les écrans suivent la charte IziCard : cyan `#01A3CA`, bleu `#0299E2`, fond blanc et états lisibles.
 
 Voir [`MOBILE_ARCHITECTURE.md`](MOBILE_ARCHITECTURE.md) et [`PROJECT_PROGRESS.md`](PROJECT_PROGRESS.md) pour le détail et l’état réel d’avancement.
+
+## Décisions de validation et périmètre actuel
+
+L’e-mail modifiable dans la fiche d’un client est un e-mail de contact métier ; il ne modifie jamais l’e-mail de connexion du compte Supabase Auth. Lorsqu’un client est autorisé à créer des dossiers, l’application ne lui permet de créer qu’un dossier pour son propre `client_id` et la RPC `nfc_create_batch` applique le même contrôle côté serveur.
+
+Les workflows GitHub Actions présents dans `.github/workflows/` sont conservés comme documentation, mais ne seront pas utilisés pour la validation. L’analyse, la compilation et les vérifications seront exécutées depuis un terminal ou un autre environnement Flutter. Le projet Android complet est volontairement différé jusqu’à la fin du développement fonctionnel.
+
+Le produit mobile encode des liens de profil IziCard ; aucune donnée sensible IziCare n’est traitée dans ce dépôt. Le profil hors connexion reste disponible selon la politique produit. Le chiffrement du cache et le stockage sécurisé spécifique de session ne sont pas ajoutés à ce stade afin de ne pas fragiliser la synchronisation ; ce choix sera réévalué si le périmètre des données change. Un PIN local optionnel à 6 chiffres pourra être ajouté ultérieurement sans bloquer les utilisateurs qui ne l’activent pas.

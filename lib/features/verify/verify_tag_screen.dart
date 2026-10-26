@@ -54,6 +54,7 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
     });
     try {
       final read = await NfcService.readOnce();
+      if (read.cancelled) return;
       NfcTagRecord? tag;
       try {
         tag = await _tags.findByUid(read.uid).timeout(const Duration(seconds: 6));
@@ -85,6 +86,8 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
     }
   }
 
+  Future<void> _cancelReading() => NfcService.cancel();
+
   @override
   Widget build(BuildContext context) {
     final isOk = _result == 'Contenu conforme.';
@@ -105,9 +108,17 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
                 const SizedBox(height: 18),
                 FilledButton.icon(
                   onPressed: _reading ? null : _verify,
-                  icon: Icon(_reading ? Icons.hourglass_top_rounded : Icons.nfc_rounded),
-                  label: Text(_reading ? 'Approchez le tag…' : 'Lire et vérifier'),
+                  icon: const Icon(Icons.nfc_rounded),
+                  label: const Text('Lire et vérifier'),
                 ),
+                if (_reading) ...[
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    onPressed: _cancelReading,
+                    icon: const Icon(Icons.close_rounded),
+                    label: const Text('Annuler la lecture'),
+                  ),
+                ],
               ]),
             ),
           ),

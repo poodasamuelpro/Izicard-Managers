@@ -661,3 +661,37 @@ Les noms exacts de l'API `nfc_manager` 4.0.2 / `nfc_manager_ndef` 1.0.1 (`Ndef.f
 
 ### Non vérifié
 Rien compilé ni testé. Les nouvelles dépendances `package_info_plus` et `app_settings` n'ont pas été résolues. Voir `RESTE_A_FAIRE_MOBILE.md` pour le reste.
+
+## Lot M5 — décisions métier confirmées et annulation NFC — 2026-10-26 23:16 UTC
+
+### Décisions confirmées
+
+- L’e-mail affiché et modifiable dans la fiche client est un e-mail de contact métier enregistré dans `nfc.nfc_clients.email`.
+- La modification d’un client ne modifie jamais l’e-mail de connexion du compte Supabase Auth.
+- Un client autorisé peut créer un dossier uniquement pour son propre `client_id`. Le mobile applique ce droit dans l’interface et la RPC `nfc_create_batch` le contrôle côté serveur avec `nfc_my_client()` et `can_create_batches`.
+- Les workflows GitHub Actions restent présents comme documentation mais ne seront pas utilisés pour la validation. La compilation et les vérifications seront exécutées ultérieurement depuis le terminal ou un autre environnement Flutter.
+- Le dossier Android complet reste volontairement en attente jusqu’à la fin du développement fonctionnel. Aucune permission NFC ni génération Android n’est ajoutée dans ce lot.
+- Le cache du profil hors ligne pendant la durée prévue par la politique produit est conservé. Les données NFC de l’application sont des liens de profil IziCard ; aucune donnée IziCare sensible n’est stockée par ce projet.
+- Le stockage sécurisé explicite de session Supabase n’est pas ajouté à ce stade. Un PIN local optionnel pourra être évalué séparément sans bloquer les utilisateurs qui ne l’activent pas.
+
+### Terminé dans le code mobile
+
+- La fiche de modification client documente et sépare explicitement l’e-mail de contact de l’e-mail Auth.
+- La lecture NFC est maintenant annulable depuis l’écran Vérifier un tag.
+- Une lecture NFC possède un délai maximal de 60 secondes, ferme la session dans tous les cas et signale une annulation sans créer de résultat métier.
+
+### Partiel / non vérifié
+
+- La compatibilité exacte des API `nfc_manager` et `nfc_manager_ndef` reste à confirmer lors de la compilation Flutter, volontairement différée.
+- La synchronisation fonctionne au premier plan et au retour réseau ; la synchronisation lorsque l’application est totalement fermée reste à traiter après génération du projet Android.
+- L’archivage, l’historique métier et le temps réel nécessitent encore la définition/qualification des opérations backend partagées avant raccordement mobile.
+
+### Reste à faire
+
+- Ajouter une confirmation professionnelle avant l’écrasement d’un tag qui contient déjà des données, sans modifier la source de vérité backend.
+- Raccorder l’archivage et la consultation d’historique aux RPC/tables partagés après qualification backend.
+- Évaluer puis implémenter une synchronisation Android en arrière-plan seulement après disponibilité du projet Android.
+
+### Commit
+
+À renseigner après le push du lot M5.

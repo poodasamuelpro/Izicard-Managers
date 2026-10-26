@@ -94,7 +94,10 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                   controller: _email,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.next,
-                  decoration: const InputDecoration(labelText: 'Email de connexion'),
+                  decoration: const InputDecoration(
+                    labelText: 'E-mail de connexion Auth',
+                    helperText: 'Utilisé uniquement pour l’invitation et la connexion du compte.',
+                  ),
                   validator: (value) {
                     final required = _required(value, 'L’email');
                     if (required != null) return required;

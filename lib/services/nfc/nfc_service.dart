@@ -8,10 +8,11 @@ import 'package:nfc_manager_ndef/nfc_manager_ndef.dart';
 import 'ndef_builder.dart';
 
 class NfcReadResult {
-  const NfcReadResult({required this.uid, required this.message, this.maxSize});
+  const NfcReadResult({required this.uid, required this.message, this.maxSize, this.cancelled = false});
   final String uid;
   final NdefMessage? message;
   final int? maxSize;
+  final bool cancelled;
 }
 
 class NfcWriteResult {
@@ -40,31 +41,57 @@ class NfcService {
 
   static Future<bool> isAvailable() => NfcManager.instance.isAvailable();
 
-  static Future<NfcReadResult> readOnce() async {
+  static Completer<NfcReadResult>? _activeRead;
+
+  /// Attend un tag, le lit une seule fois et ferme toujours la session.
+  /// L'attente est annulable et limitée dans le temps pour éviter un écran bloqué.
+  static Future<NfcReadResult> readOnce({Duration timeout = const Duration(seconds: 60)}) async {
+    if (!await isAvailable()) {
+      throw const FormatException('NFC indisponible ou désactivé. Activez le NFC dans les réglages Android.');
+    }
     final completer = Completer<NfcReadResult>();
-    await NfcManager.instance.startSession(
-      pollingOptions: const {NfcPollingOption.iso14443, NfcPollingOption.iso15693, NfcPollingOption.iso18092},
-      onDiscovered: (tag) async {
-        try {
-          final ndef = Ndef.from(tag);
-          final uid = _uid(tag);
-          final message = await ndef?.read();
-          if (!completer.isCompleted) completer.complete(NfcReadResult(uid: uid, message: message, maxSize: ndef?.maxSize));
-        } catch (error) {
-          if (!completer.isCompleted) completer.completeError(error);
-        } finally {
-          await NfcManager.instance.stopSession();
-        }
-      },
-      noPlatformSoundsAndroid: false,
-    );
-    return completer.future;
+    _activeRead = completer;
+    try {
+      await NfcManager.instance.startSession(
+        pollingOptions: const {NfcPollingOption.iso14443, NfcPollingOption.iso15693, NfcPollingOption.iso18092},
+        onDiscovered: (tag) async {
+          try {
+            final ndef = Ndef.from(tag);
+            final uid = _uid(tag);
+            final message = await ndef?.read();
+            if (!completer.isCompleted) {
+              completer.complete(NfcReadResult(uid: uid, message: message, maxSize: ndef?.maxSize));
+            }
+          } catch (error) {
+            if (!completer.isCompleted) completer.completeError(error);
+          } finally {
+            await NfcManager.instance.stopSession();
+          }
+        },
+        noPlatformSoundsAndroid: false,
+      );
+      return await completer.future.timeout(
+        timeout,
+        onTimeout: () async {
+          try {
+            await NfcManager.instance.stopSession();
+          } catch (_) {}
+          throw TimeoutException('Aucun tag détecté dans le délai imparti.');
+        },
+      );
+    } finally {
+      if (identical(_activeRead, completer)) _activeRead = null;
+    }
   }
 
   static Completer<NfcWriteResult>? _active;
 
-  /// Annule l'attente d'un tag (pause, fin de série, retour arrière).
+  /// Annule proprement une lecture ou une écriture NFC en cours.
   static Future<void> cancel() async {
+    final read = _activeRead;
+    if (read != null && !read.isCompleted) {
+      read.complete(const NfcReadResult(uid: '', message: null, cancelled: true));
+    }
     final active = _active;
     if (active != null && !active.isCompleted) {
       active.complete(const NfcWriteResult(uid: '', verified: false, recordable: false, cancelled: true, error: 'Action annulée.'));
