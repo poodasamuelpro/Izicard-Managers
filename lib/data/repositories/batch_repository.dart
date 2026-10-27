@@ -26,6 +26,8 @@ class BatchRepository {
   Future<List<NfcClient>> listClients() async =>
       (await _clients.listClients()).map(NfcClient.fromMap).toList();
 
+  Future<String> ensureInternalClient() => _clients.ensureInternalClient();
+
   Future<List<CardFormat>> listActiveFormats() async =>
       (await _formats.listActiveFormats()).map(CardFormat.fromMap).toList();
 

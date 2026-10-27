@@ -15,7 +15,6 @@ import 'data/repositories/sync_repository.dart';
 import 'services/sync/sync_worker.dart';
 import 'features/auth/access_revoked_screen.dart';
 import 'features/auth/login_screen.dart';
-import 'features/auth/password_setup_screen.dart';
 
 class IzicardApp extends StatelessWidget {
   const IzicardApp({super.key, this.configurationError = false});
@@ -96,7 +95,7 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
   StreamSubscription<AuthState>? _authSubscription;
   User? _user;
   Future<NfcProfile?>? _profileFuture;
-  bool _passwordSetup = false;
+  bool _recoveryInProgress = false;
   SyncWorker? _worker;
   String? _workerUserId;
   Timer? _accessTimer;
@@ -183,10 +182,16 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
   }
 
   void _onAuthChanged(AuthState state) {
+    // Réinitialisation par code : l'écran « Mot de passe oublié » gère seul le nouveau mot de passe.
+    // Tant qu'elle est en cours, on ignore les événements de session pour ne pas ouvrir
+    // l'application ni un second écran de mot de passe.
     if (state.event == AuthChangeEvent.passwordRecovery) {
-      if (!mounted) return;
-      setState(() => _passwordSetup = true);
+      _recoveryInProgress = true;
       return;
+    }
+    if (_recoveryInProgress) {
+      if (state.event != AuthChangeEvent.signedOut) return;
+      _recoveryInProgress = false;
     }
     final nextUser = state.session?.user ?? _repository.currentUser;
     if (nextUser?.id == _user?.id) return;
@@ -217,10 +222,6 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final user = _user;
     if (user == null) return LoginScreen(repository: _repository);
-
-    if (_passwordSetup) {
-      return PasswordSetupScreen(repository: _repository);
-    }
 
     final future = _profileFuture;
     if (future == null) return LoginScreen(repository: _repository);

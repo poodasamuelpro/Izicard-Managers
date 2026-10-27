@@ -20,6 +20,7 @@ import 'import_result_screen.dart';
 import 'manual_entry_screen.dart';
 import 'mapping_screen.dart';
 import 'preview_screen.dart';
+import '../admin/batches/batch_create_screen.dart';
 
 class ImportScreen extends StatefulWidget {
   const ImportScreen({
@@ -476,12 +477,34 @@ class _ImportScreenState extends State<ImportScreen> {
                   .where((batch) => batch.status != 'archived')
                   .toList();
           if (batches.isEmpty)
-            return const Center(
+            return Center(
               child: Padding(
-                padding: EdgeInsets.all(28),
-                child: Text(
-                  'Aucun dossier actif n’est disponible pour votre compte.',
-                  textAlign: TextAlign.center,
+                padding: const EdgeInsets.all(28),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Text(
+                      'Aucun dossier actif. Créez-en un pour importer vos données.',
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: 14),
+                    FilledButton.icon(
+                      onPressed: () async {
+                        final created = await Navigator.of(context).push<bool>(
+                          MaterialPageRoute<bool>(
+                            builder:
+                                (_) => BatchCreateScreen(
+                                  profile: widget.profile,
+                                  repository: widget.repository,
+                                ),
+                          ),
+                        );
+                        if (created == true && mounted) await _refreshBatches();
+                      },
+                      icon: const Icon(Icons.create_new_folder_outlined),
+                      label: const Text('Créer un dossier'),
+                    ),
+                  ],
                 ),
               ),
             );

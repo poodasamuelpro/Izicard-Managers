@@ -12,6 +12,8 @@ import '../../data/repositories/tag_repository.dart';
 import '../batches/batch_source.dart';
 import '../cards/card_picker_screen.dart';
 import '../nfc/nfc_help_banner.dart';
+import '../admin/batches/batch_create_screen.dart';
+import 'quick_write_screen.dart';
 import 'write_controller.dart';
 
 class WriteScreen extends StatefulWidget {
@@ -242,16 +244,56 @@ class _WriteScreenState extends State<WriteScreen> {
                   ),
                 ),
               ),
+            OutlinedButton.icon(
+              onPressed:
+                  () => Navigator.of(context).push<void>(
+                    MaterialPageRoute<void>(
+                      builder: (_) => const QuickWriteScreen(),
+                    ),
+                  ),
+              icon: const Icon(Icons.nfc_rounded),
+              label: const Text('Écrire une seule carte (sans dossier)'),
+            ),
+            const SizedBox(height: 18),
             Text(
               'Dossier à encoder',
               style: Theme.of(context).textTheme.titleLarge,
             ),
             const SizedBox(height: 8),
             if (batches.isEmpty)
-              const Card(
+              Card(
                 child: Padding(
-                  padding: EdgeInsets.all(18),
-                  child: Text('Aucun dossier disponible.'),
+                  padding: const EdgeInsets.all(18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Aucun dossier disponible. Écrivez une seule carte ci-dessus, ou créez un dossier.',
+                      ),
+                      const SizedBox(height: 12),
+                      FilledButton.icon(
+                        onPressed: () async {
+                          final created = await Navigator.of(context)
+                              .push<bool>(
+                                MaterialPageRoute<bool>(
+                                  builder:
+                                      (_) => BatchCreateScreen(
+                                        profile: widget.profile,
+                                        repository: _batches,
+                                      ),
+                                ),
+                              );
+                          if (created == true && mounted) {
+                            setState(
+                              () => _batchFuture = loadBatches(_batches),
+                            );
+                          }
+                        },
+                        icon: const Icon(Icons.create_new_folder_outlined),
+                        label: const Text('Créer un dossier'),
+                      ),
+                    ],
+                  ),
                 ),
               )
             else

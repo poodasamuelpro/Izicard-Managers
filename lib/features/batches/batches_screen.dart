@@ -9,7 +9,9 @@ import '../../core/widgets/responsive_content.dart';
 import '../../data/models/nfc_batch.dart';
 import '../../data/models/nfc_profile.dart';
 import '../../data/repositories/batch_repository.dart';
+import '../../data/repositories/client_repository.dart';
 import '../admin/batches/batch_create_screen.dart';
+import '../admin/clients/client_form_screen.dart';
 import '../import/import_screen.dart';
 import 'batch_detail_screen.dart';
 import 'batch_source.dart';
@@ -122,7 +124,27 @@ class _BatchesScreenState extends State<BatchesScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(title: const Text('Dossiers NFC')),
+    appBar: AppBar(
+      title: const Text('Dossiers NFC'),
+      actions: [
+        if (widget.profile.role == NfcRole.admin)
+          IconButton(
+            tooltip: 'Nouveau client',
+            icon: const Icon(Icons.person_add_alt_1_rounded),
+            onPressed:
+                () => Navigator.of(context).push<bool>(
+                  MaterialPageRoute<bool>(
+                    builder:
+                        (_) => ClientFormScreen(
+                          repository: ClientRepository(
+                            Supabase.instance.client,
+                          ),
+                        ),
+                  ),
+                ),
+          ),
+      ],
+    ),
     floatingActionButton:
         _canCreate
             ? FloatingActionButton.extended(

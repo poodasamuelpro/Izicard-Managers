@@ -3,9 +3,12 @@ import 'package:flutter/material.dart';
 import '../../../data/repositories/client_repository.dart';
 
 class ClientFormScreen extends StatefulWidget {
-  const ClientFormScreen({super.key, required this.repository});
+  const ClientFormScreen({super.key, required this.repository, this.onCreated});
 
   final ClientRepository repository;
+
+  /// Appelé avec l'identifiant du client créé (pour le présélectionner ailleurs).
+  final void Function(String clientId)? onCreated;
 
   @override
   State<ClientFormScreen> createState() => _ClientFormScreenState();
@@ -42,13 +45,17 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
       _error = null;
     });
     try {
-      await widget.repository.inviteClient(
+      final created = await widget.repository.inviteClient(
         fullName: _fullName.text,
         email: _email.text,
         clientName: _clientName.text,
         contactName: _contactName.text,
         phone: _phone.text,
       );
+      final createdId = created['client_id']?.toString();
+      if (createdId != null && createdId.isNotEmpty) {
+        widget.onCreated?.call(createdId);
+      }
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Invitation envoyée à ${_email.text.trim()}.')),

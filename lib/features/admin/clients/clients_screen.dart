@@ -3,13 +3,19 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/theme/izicard_colors.dart';
 import '../../../data/models/nfc_client.dart';
+import '../../../data/models/nfc_profile.dart';
+import '../../../data/repositories/batch_repository.dart';
 import '../../../data/repositories/client_repository.dart';
+import '../batches/batch_create_screen.dart';
 import 'client_edit_screen.dart';
 import 'client_form_screen.dart';
 
 class ClientsScreen extends StatefulWidget {
-  const ClientsScreen({super.key, required this.repository});
+  const ClientsScreen({super.key, required this.repository, this.profile});
   final ClientRepository repository;
+
+  /// Profil administrateur : permet de créer un dossier depuis la fiche d'un client.
+  final NfcProfile? profile;
 
   @override
   State<ClientsScreen> createState() => _ClientsScreenState();
@@ -40,6 +46,22 @@ class _ClientsScreenState extends State<ClientsScreen> {
     if (created == true && mounted) await _refresh();
   }
 
+  Future<void> _createBatchFor(NfcClient client) async {
+    final profile = widget.profile;
+    if (profile == null) return;
+    final created = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder:
+            (_) => BatchCreateScreen(
+              profile: profile,
+              repository: BatchRepository(Supabase.instance.client),
+              initialClientId: client.id,
+            ),
+      ),
+    );
+    if (created == true && mounted) await _refresh();
+  }
+
   Future<void> _edit(NfcClient client) async {
     final saved = await Navigator.of(context).push<bool>(
       MaterialPageRoute<bool>(
@@ -53,7 +75,6 @@ class _ClientsScreenState extends State<ClientsScreen> {
 
   Future<void> _manageAccess(NfcClient client) async {
     var active = client.active;
-    var canCreateBatches = client.canCreateBatches;
     DateTime? expires = client.accessExpiresAt;
     final save = await showDialog<bool>(
       context: context,
@@ -72,17 +93,6 @@ class _ClientsScreenState extends State<ClientsScreen> {
                         title: const Text('Accès actif'),
                         onChanged:
                             (value) => setDialogState(() => active = value),
-                      ),
-                      SwitchListTile.adaptive(
-                        contentPadding: EdgeInsets.zero,
-                        value: canCreateBatches,
-                        title: const Text('Autoriser la création de dossiers'),
-                        subtitle: const Text(
-                          'Le client ne peut créer que pour son propre compte.',
-                        ),
-                        onChanged:
-                            (value) =>
-                                setDialogState(() => canCreateBatches = value),
                       ),
                       const SizedBox(height: 8),
                       Text(
@@ -157,10 +167,6 @@ class _ClientsScreenState extends State<ClientsScreen> {
         clientId: client.id,
         active: active,
         expiresAt: expires,
-      );
-      await widget.repository.setCanCreateBatches(
-        clientId: client.id,
-        allowed: canCreateBatches,
       );
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -275,8 +281,6 @@ class _ClientsScreenState extends State<ClientsScreen> {
                               if (client.contactName?.isNotEmpty == true)
                                 client.contactName!,
                               'Accès : ${client.accessLabel}',
-                              if (client.canCreateBatches)
-                                'Création de dossiers autorisée',
                             ].join(' · '),
                           ),
                         ),
@@ -284,6 +288,14 @@ class _ClientsScreenState extends State<ClientsScreen> {
                         trailing: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            if (widget.profile != null)
+                              IconButton(
+                                tooltip: 'Créer un dossier',
+                                onPressed: () => _createBatchFor(client),
+                                icon: const Icon(
+                                  Icons.create_new_folder_outlined,
+                                ),
+                              ),
                             IconButton(
                               tooltip: 'Modifier le client',
                               onPressed: () => _edit(client),

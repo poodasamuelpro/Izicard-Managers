@@ -6,15 +6,21 @@ import '../../../data/models/card_format.dart';
 import '../../../data/models/nfc_client.dart';
 import '../../../data/models/nfc_profile.dart';
 import '../../../data/repositories/batch_repository.dart';
+import '../../../data/repositories/client_repository.dart';
+import '../clients/client_form_screen.dart';
 
 class BatchCreateScreen extends StatefulWidget {
   const BatchCreateScreen({
     super.key,
     required this.profile,
     required this.repository,
+    this.initialClientId,
   });
   final NfcProfile profile;
   final BatchRepository repository;
+
+  /// Client présélectionné (ex. depuis la fiche d'un client).
+  final String? initialClientId;
 
   @override
   State<BatchCreateScreen> createState() => _BatchCreateScreenState();
@@ -27,6 +33,7 @@ class _BatchCreateScreenState extends State<BatchCreateScreen> {
   final _codeMaxController = TextEditingController(text: '16');
   late Future<_FormOptions> _optionsFuture;
   String? _selectedClientId;
+  String? _internalClientId;
   CardFormat? _selectedFormat;
   String _codeCharset = 'digits';
   bool _lockAfterWrite = false;
@@ -59,12 +66,33 @@ class _BatchCreateScreenState extends State<BatchCreateScreen> {
   Future<_FormOptions> _loadOptions() async {
     final formats = await widget.repository.listActiveFormats();
     if (widget.profile.role == NfcRole.admin) {
+      try {
+        _internalClientId = await widget.repository.ensureInternalClient();
+      } catch (_) {
+        _internalClientId = null; // l'admin peut toujours choisir un client existant
+      }
       return _FormOptions(
         clients: await widget.repository.listClients(),
         formats: formats,
       );
     }
     return _FormOptions(clients: const [], formats: formats);
+  }
+
+  /// Crée un client sans quitter la page, puis le présélectionne.
+  Future<void> _inviteClient() async {
+    final created = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder:
+            (_) => ClientFormScreen(
+              repository: ClientRepository(Supabase.instance.client),
+              onCreated: (id) => _selectedClientId = id,
+            ),
+      ),
+    );
+    if (created == true && mounted) {
+      setState(() => _optionsFuture = _loadOptions());
+    }
   }
 
   @override
@@ -184,9 +212,25 @@ class _BatchCreateScreenState extends State<BatchCreateScreen> {
                     'Un administrateur doit activer au moins un format dans Supabase.',
               );
             if (widget.profile.role == NfcRole.admin && clients.isEmpty)
-              return const _EmptyOptions(
-                title: 'Aucun client disponible',
-                message: 'Ajoutez un client avant de créer un dossier.',
+              return Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(28),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Aucun client disponible. Invitez un client, puis revenez ici.',
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 14),
+                      FilledButton.icon(
+                        onPressed: _inviteClient,
+                        icon: const Icon(Icons.person_add_alt_1_rounded),
+                        label: const Text('Nouveau client'),
+                      ),
+                    ],
+                  ),
+                ),
               );
             if (_selectedFormat == null ||
                 !options.formats.any(
@@ -197,7 +241,11 @@ class _BatchCreateScreenState extends State<BatchCreateScreen> {
             }
             if (widget.profile.role == NfcRole.admin &&
                 !clients.any((client) => client.id == _selectedClientId)) {
-              _selectedClientId = clients.first.id;
+              final preferred = [widget.initialClientId, _internalClientId]
+                  .whereType<String>()
+                  .where((id) => clients.any((client) => client.id == id));
+              _selectedClientId =
+                  preferred.isNotEmpty ? preferred.first : clients.first.id;
             }
 
             return ListView(
@@ -213,8 +261,8 @@ class _BatchCreateScreenState extends State<BatchCreateScreen> {
                   ),
                   child: Text(
                     widget.profile.role == NfcRole.admin
-                        ? 'Choisissez le client destinataire. Le rôle et les autorisations seront vérifiés par la RPC Supabase nfc_create_batch.'
-                        : 'Ce dossier sera attribué à votre client. La RPC Supabase vérifie côté serveur que votre Admin vous a accordé ce droit.',
+                        ? 'Choisissez le client destinataire, ou « Mes propres cartes » pour vos cartes personnelles (sans client externe).'
+                        : 'Ce dossier sera créé pour votre propre compte client.',
                   ),
                 ),
                 const SizedBox(height: 20),
@@ -232,7 +280,9 @@ class _BatchCreateScreenState extends State<BatchCreateScreen> {
                               (client) => DropdownMenuItem(
                                 value: client.id,
                                 child: Text(
-                                  client.name,
+                                  client.id == _internalClientId
+                                      ? 'Mes propres cartes (usage interne)'
+                                      : client.name,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
@@ -244,7 +294,15 @@ class _BatchCreateScreenState extends State<BatchCreateScreen> {
                             : (value) =>
                                 setState(() => _selectedClientId = value),
                   ),
-                  const SizedBox(height: 16),
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: TextButton.icon(
+                      onPressed: _saving ? null : _inviteClient,
+                      icon: const Icon(Icons.person_add_alt_1_rounded),
+                      label: const Text('Nouveau client'),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                 ],
                 TextFormField(
                   controller: _nameController,

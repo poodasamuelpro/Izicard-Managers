@@ -16,6 +16,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
   final _codeController = TextEditingController();
   final _passwordController = TextEditingController();
   int _step = 0;
+  bool _completed = false;
   bool _loading = false;
   String? _error;
 
@@ -76,6 +77,9 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
     });
     try {
       await widget.repository.updatePassword(password);
+      _completed = true;
+      // Ferme la session ouverte par le code : l'utilisateur se reconnecte avec son nouveau mot de passe.
+      await widget.repository.signOut();
       if (mounted) {
         Navigator.of(context).pop();
         ScaffoldMessenger.of(context).showSnackBar(
@@ -91,6 +95,10 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
 
   @override
   void dispose() {
+    // Abandon après la vérification du code : ne pas laisser une session ouverte.
+    if (_step == 2 && !_completed) {
+      widget.repository.signOut();
+    }
     _emailController.dispose();
     _codeController.dispose();
     _passwordController.dispose();

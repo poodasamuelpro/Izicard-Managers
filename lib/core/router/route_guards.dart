@@ -134,6 +134,7 @@ class NfcRouteGuard {
                   repository: batches,
                 ),
                 NfcDestination.clients => ClientsScreen(
+                  profile: profile,
                   repository: ClientRepository(client),
                 ),
                 NfcDestination.write => WriteScreen(profile: profile),

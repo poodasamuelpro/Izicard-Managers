@@ -1,5 +1,7 @@
 # Audit des retours terrain (27/10/2026)
 
+> **Mise à jour (lot M25) : tout est corrigé dans le code SAUF le nom (IziCardOuaga) et le design, laissés à part sur demande.** Les corrections ne sont ni compilées ni testées (pas de Flutter ici) : contrôler par un build GitHub puis un essai sur le téléphone. La migration SQL 007 du dépôt web doit être exécutée dans Supabase. Détail du correctif par point : section « Corrigé (M25) » en fin de document. Le texte ci-dessous décrit l'état avant correction.
+
 Méthode : lecture du code (mobile `Izicard-Managers`, web `izicard-managers-web`, migrations SQL) et des 8 captures d'écran de l'APK installé. **Rien n'a été modifié** hors le lien d'invitation (corrigé côté web, lot W6). Aucun correctif ci-dessous n'est testé.
 Priorité : P1 bloque l'usage, P2 gêne fortement, P3 confort.
 
@@ -55,3 +57,19 @@ Le code de récupération (OTP) déclenche l'événement Supabase `passwordRecov
 
 ## Ordre conseillé
 1. Publier le lien d'invitation (§0) et vérifier.  2. Mot de passe (§4, petit).  3. Dossier personnel + création client à la volée + écriture carte unique + import libre (§3).  4. Vérification de tag enrichie (§1).  5. Nom + accueil (§5).  6. Puces (§2).
+
+## Corrigé (M25)
+- **§0 Lien d'invitation** : voir lot W6 (web).
+- **§1 Vérification de tag** : deux résultats séparés, « 1. Appartenance » (UID enregistré ou non) et « 2. Contenu » (conforme / différent / non comparé), contenu réellement lu affiché (lien, texte, vCard), puce probable déduite de la capacité. Non fait : détection fiable de l'état verrouillé et comparaison avec la puce prévue par le format. Le doute sur l'UID `04C19401700000` reste à vérifier avec un autre tag.
+- **§2 Puces** : question répondue (valeur par défaut des formats en base) ; aucun changement de code.
+- **§3 Dossiers / clients / pages reliées** :
+  - Dossier « Mes propres cartes (usage interne) » : un client interne « IziCardOuaga — usage interne » est créé automatiquement (admin) et présélectionné. Choix fait sans attendre votre réponse : pas de changement de schéma.
+  - Création de dossier : bouton « Nouveau client » qui crée le client puis le présélectionne ; plus de blocage si aucun client.
+  - Liste des clients : bouton « Créer un dossier » par client.
+  - Page Dossiers : bouton « Nouveau client » (admin).
+  - Écriture : « Écrire une seule carte (sans dossier) » (nouvel écran, écriture non enregistrée en base) et bouton « Créer un dossier » quand aucun dossier.
+  - Import : bouton « Créer un dossier » quand aucun dossier ; plus besoin d'un client existant grâce au client interne.
+  - Un client actif crée librement ses dossiers (profil mobile, accès web et migration SQL 007). L'interrupteur « autoriser la création » est retiré de l'application mobile.
+- **§4 Mot de passe** : un seul écran ; les événements de session sont ignorés pendant la réinitialisation, la session ouverte par le code est fermée après le changement ou si l'écran est abandonné, retour à la connexion avec le message « Mot de passe mis à jour ».
+- **§5 Nom et design** : non traités (demande de l'utilisateur).
+- **Limites** : l'import reste attaché à un dossier (créé à la volée) ; l'écriture d'une seule carte n'enregistre rien dans la base ; l'interrupteur « can_create_batches » du web (`clients.js`) existe encore mais n'a plus d'effet.

@@ -1026,3 +1026,10 @@ Créer les secrets GitHub, lancer le workflow Build APK, installer l'APK et vér
 ## Lot M24 : audit des retours terrain (aucun code modifié)
 - Document `AUDIT_RETOURS_TERRAIN.md` : vérification de tag, puces NTAG, dossiers/clients non reliés, import/écriture sans dossier, bug de double écran de réinitialisation du mot de passe (`_passwordSetup` jamais remis à faux), nom IziCardOuaga, design, avec propositions et ordre conseillé.
 - Seul changement réalisé : lien d'invitation (dépôt web, lot W6). Rien n'est testé.
+
+## Lot M25 : corrections des retours terrain (hors nom et design)
+- Vérification de tag en deux volets ; dossier « usage interne » ; « Nouveau client » depuis la création de dossier et la page Dossiers ; « Créer un dossier » depuis la liste des clients, l'écriture et l'import ; écriture d'une seule carte (`quick_write_screen.dart`) ; client libre de créer ses dossiers ; un seul écran de réinitialisation du mot de passe.
+- Fichiers touchés : `app.dart`, `route_guards.dart`, `nfc_profile.dart`, `clients_remote.dart`, `batch_repository.dart`, `batch_create_screen.dart`, `client_form_screen.dart`, `clients_screen.dart`, `password_reset_screen.dart`, `batches_screen.dart`, `import_screen.dart`, `verify_tag_screen.dart`, `write_screen.dart`, `quick_write_screen.dart` (nouveau).
+- À faire : exécuter `007_nfc_client_create_batches.sql` (dépôt web) dans Supabase ; coller le nouveau modèle d'e-mail d'invitation ; relancer Build APK ; tester sur téléphone.
+- Non vérifié : rien n'est compilé ni testé (Flutter absent) ; seule une vérification des parenthèses a été faite. Nom (IziCardOuaga) et design non traités.
+

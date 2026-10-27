@@ -78,7 +78,8 @@ class NfcProfile {
       accessExpiresAt: _date(map['access_expires_at']),
       clientActive: role == NfcRole.admin ? true : client?['active'] == true,
       clientAccessExpiresAt: _date(client?['access_expires_at']),
-      canCreateBatches: client?['can_create_batches'] == true,
+      // Un client actif crée librement ses propres dossiers (plus de réglage par client).
+      canCreateBatches: client != null,
     );
   }
 }
