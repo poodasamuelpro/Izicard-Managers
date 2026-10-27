@@ -57,7 +57,7 @@ Aucune ligne ✅ n'a été compilée ni testée.
 |---|---|
 | Charte IziCard, états chargement / vide / erreur, couleurs d'état | ✅ |
 | Tablette et paysage : largeur de contenu limitée, mise en page à deux colonnes | ⚠️ (seulement connexion et accueil) |
-| Thème sombre (réglage système / clair / sombre, couleurs d'état lisibles, barre d'état) | ✅ codé et branché sur tous les écrans — non vérifié visuellement sur appareil |
+| Thème sombre (réglage système / clair / sombre, couleurs d'état lisibles, barre d'état) | ✅ 24 écrans actifs relus un par un (aucun texte ou fond clair fixe restant) ; 6 widgets jamais utilisés (`batch_progress_card`, `tag_list_tile`, `last_tags_list`, `lock_confirm_dialog`, `tag_status_banner`, `access_dialog`) non adaptés ; rendu non vérifié sur appareil |
 | Audit d'accessibilité (contrastes, lecteur d'écran, grandes polices) | ❌ |
 | Icône, nom et écran de démarrage de l'application | ❌ 🛠 |
 

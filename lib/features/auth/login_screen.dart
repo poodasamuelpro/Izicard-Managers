@@ -72,10 +72,15 @@ class _LoginScreenState extends State<LoginScreen> {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               Center(
-                                child: Image.asset(
-                                  'assets/images/logo.jpg',
-                                  height: 74,
-                                  fit: BoxFit.contain,
+                                // Le logo est un JPG à fond blanc : pastille arrondie pour qu'il
+                                // reste propre sur la carte sombre.
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(18),
+                                  child: Image.asset(
+                                    'assets/images/logo.jpg',
+                                    height: 78,
+                                    fit: BoxFit.contain,
+                                  ),
                                 ),
                               ),
                               const SizedBox(height: 28),
