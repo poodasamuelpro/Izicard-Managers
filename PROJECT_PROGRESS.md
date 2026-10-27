@@ -836,3 +836,12 @@ Commit : f5bfcce — docs: record Supabase NFC deployment
 - Tester les deux parcours avec un compte Admin de test et valider l’isolation par `nfc_profiles`/`nfc_clients`.
 ### Commit
 À renseigner après le commit de ce lot.
+
+
+## Lot M14 — configuration Auth/Resend partagée — 2026-10-27 01:31 UTC
+- ✅ Secrets `INVITE_REDIRECT_URLS` et `INVITE_REDIRECT_TO` créés avec les trois URLs Manager.
+- ✅ Les trois URLs `set-password.html` sont dans l’allow-list Auth.
+- ✅ Templates Invite et Recovery IziCard enregistrés dans Auth.
+- ✅ SMTP Resend et OTP 8 chiffres vérifiés ; inscription publique conservée (`disable_signup=false`) pour les autres applications.
+- ✅ Le `site_url` historique n’a pas été changé afin de ne pas perturber l’autre application ; les invitations Manager transmettent explicitement leur URL autorisée.
+- ⚠️ Tester un email réel et un compte Auth existant.
