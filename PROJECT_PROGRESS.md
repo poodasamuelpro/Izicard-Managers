@@ -747,3 +747,25 @@ La compilation Flutter et le rendu sur une vraie tablette Android restent à vé
 ### Commit
 
 `3ddbd2c` — poussé sur `master`.
+
+
+## Lot M10 — comparaison Web/mobile et cahier Android — 2026-10-27 00:17 UTC
+
+### Terminé
+
+- Lecture comparative des dépôts `izicard-managers-web` et `Izicard-Managers`; résumé des domaines fonctionnels communs, différences plateforme, éléments présents et validations manquantes.
+- Document de référence ajouté : `MOBILE_ANDROID_RELEASE_BRIEF.md`. Il fixe le nom proposé « IziCard Manager », les frontières du schéma `nfc`, les risques autour de la base Supabase partagée, les contrôles à réaliser pour Android, le thème sombre, les icônes/splash, les liens profonds, l’authentification/email, les tests et le build/signature; il contient le prompt d’exécution complet pour l’agent IA.
+- Inspection Supabase en lecture : projet cible `IziCard` (`thsedbhzhonemdhbndpf`), objets du schéma `nfc` présents; l’Edge Function existante `send-activation-emails` est explicitement hors périmètre et ne doit pas être modifiée. `create-client-user` est référencée par les clients et son code local est présent dans le dépôt Web, mais la liste distante ne la montre pas déployée.
+- Migration NFC 003 (`nfc_data_type` ajoute `code`) appliquée séparément au projet cible via le connecteur. Les scripts 004–006 et leur état restent à confirmer avant exécution; aucune fonction d’activation/vente n’a été touchée.
+
+### Partiel / non vérifié
+
+La comparaison est statique. Les builds, Auth, emails et fonctionnalités NFC en production n’ont pas été testés. Le nom de package Android reste à confirmer avant publication. SMTP Resend, URLs de redirection et secrets de la fonction d’invitation ne sont pas encore configurés ou vérifiés.
+
+### Reste à faire
+
+Ajouter une bascule de thème système/clair/sombre avec prise en charge lisible sur toutes les pages, générer et valider la plateforme Android avec icône et splash, vérifier les migrations NFC restantes et les réglages Auth pertinents, puis lancer les analyses/builds/tests disponibles. Après chaque lot, consigner le résultat et pousser le commit.
+
+### Commit
+
+À renseigner après commit/push du lot documentaire.
