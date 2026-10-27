@@ -796,4 +796,4 @@ Générer puis configurer la plateforme Android (identifiant, SDK, permission NF
 
 ### Commit
 
-À renseigner après commit/push de ce lot.
+`c3b1d4f` — `feat(mobile): add adaptive light and dark themes`, poussé sur `master`.
