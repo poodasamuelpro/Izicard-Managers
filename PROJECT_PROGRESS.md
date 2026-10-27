@@ -996,3 +996,9 @@ Aucun `flutter build` exécuté, aucun workflow GitHub lancé. Le contrôle « a
 
 ### Reste à faire
 Créer les secrets GitHub, lancer le workflow Build APK, installer l'APK et vérifier la connexion. Remplacer la clé de signature temporaire par la clé de production.
+
+## Lot M19 : audit android/ et documentation du build GitHub
+- Audit en lecture seule du dossier `android/` : écarts listés dans `GUIDE_DEPLOIEMENT.md` section 7 (release signée en debug sans keystore, minSdk dépendant de Flutter, versionCode fixe, pas de deep link, wrapper non versionné).
+- `GUIDE_DEPLOIEMENT.md` section 2.C : secrets GitHub à créer (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, signature en option), lancement du workflow, étapes, récupération de l'APK.
+- Non vérifié : présence réelle des secrets sur GitHub (je ne peux pas les créer ni les lire), aucun workflow lancé, aucun build exécuté.
+

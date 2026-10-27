@@ -36,10 +36,28 @@ flutter run                 --dart-define-from-file=env.json
 Un `flutter build apk` ou un `flutter run` **sans** `--dart-define-from-file` (ou sans les deux `--dart-define`) produit un APK inutilisable. Dans Android Studio / VS Code, ajouter l'argument de lancement `--dart-define-from-file=env.json`.
 
 ### C. Avec GitHub Actions
-1. GitHub > Settings > Secrets and variables > Actions : créer `SUPABASE_URL` et `SUPABASE_ANON_KEY`.
-2. Actions > **Build APK** > Run workflow (ou pousser un tag `v1.0.0`).
-3. Le travail échoue **avant toute compilation** si les secrets manquent. L'APK est téléchargeable dans les artefacts du run.
-4. Signature release (facultatif mais indispensable pour publier) : secrets `ANDROID_KEYSTORE_BASE64` (`base64 -w0 release-key.jks`), `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD`. Sans eux, le build release est signé avec la clé debug : à ne pas publier.
+
+**Configuration obligatoire (une seule fois).** Sur GitHub, dépôt `Izicard-Managers` > Settings > Secrets and variables > Actions > onglet **Secrets** > New repository secret :
+
+| Nom exact | Valeur | Obligatoire |
+|---|---|---|
+| `SUPABASE_URL` | `https://thsedbhzhonemdhbndpf.supabase.co` | Oui |
+| `SUPABASE_ANON_KEY` | clé `anon` / publishable du projet | Oui |
+| `ANDROID_KEYSTORE_BASE64` | `base64 -w0 release-key.jks` | Pour une release publiable |
+| `ANDROID_KEYSTORE_PASSWORD`, `ANDROID_KEY_ALIAS`, `ANDROID_KEY_PASSWORD` | infos du keystore | Avec la ligne précédente |
+
+Les noms doivent être identiques, en majuscules. Les créer dans l'onglet **Secrets** (pas **Variables** : le workflow lit `secrets.*`). Le dépôt ne peut pas vérifier leur présence à votre place ; le workflow, lui, la vérifie à chaque lancement et s'arrête avec un message clair s'ils manquent.
+
+**Lancer le build.** Onglet **Actions** > workflow **Build APK** > bouton **Run workflow** > choisir la branche `master` et le type `release` ou `debug` > **Run workflow**. Autre façon : pousser un tag (`git tag v1.0.0 && git push origin v1.0.0`) lance un build release.
+
+**Ce que fait le workflow, dans l'ordre :**
+1. Vérifie les variables (`scripts/build_apk.sh --check-only`) : secrets absents, valeurs d'exemple, clé `service_role` ou `sb_secret_` -> échec immédiat, rien n'est compilé.
+2. Installe Java 17 et Flutter (canal stable).
+3. Si les secrets de signature existent, crée le keystore et `android/key.properties` ; sinon avertit que la release sera signée avec la clé debug.
+4. Lance `bash scripts/build_apk.sh <mode>` : `flutter pub get` puis `flutter build apk` avec les variables injectées par `--dart-define-from-file`.
+5. Publie l'APK en artefact `izicard-manager-apk-<mode>`.
+
+**Récupérer l'APK.** Actions > le run terminé (coche verte) > section **Artifacts** en bas de page > télécharger le zip > l'extraire > installer `app-release.apk` (ou `app-debug.apk`). Les artefacts expirent au bout d'un délai fixé par GitHub (90 jours par défaut).
 
 Le workflow **Analyse et tests** n'a pas besoin des variables (il ne construit pas d'APK).
 
@@ -67,3 +85,24 @@ Le contrôle automatique du script est indicatif ; seul le lancement sur un tél
 | Connexion refusée / erreur réseau | URL ou clé d'un autre projet, ou projet en pause | Comparer avec Supabase > Project Settings > API |
 | L'e-mail de récupération n'arrive pas | SMTP Resend ou OTP non configurés | Voir `SUPABASE_SETUP.md` |
 | Le build GitHub échoue tout de suite | Secrets absents | Créer `SUPABASE_URL` et `SUPABASE_ANON_KEY` |
+
+## 7. Audit du dossier `android/` (écarts constatés)
+Lecture seule des fichiers, sans compilation (Flutter et Android SDK absents de l'environnement d'audit).
+
+**Conforme :**
+- Nom `IziCard Manager`, `namespace` et `applicationId` = `com.izicardouaga.izicardmanager`, identiques à `MainActivity.kt` (même paquet).
+- Manifeste : permission NFC, `android.hardware.nfc` avec `required="false"`, `INTERNET`, `allowBackup="false"`, `usesCleartextTraffic="false"`, activité `exported="true"` avec le filtre MAIN/LAUNCHER, `flutterEmbedding=2`. Le manifeste debug ne contient que `INTERNET`.
+- Icône adaptative avec variante monochrome ; écran de démarrage clair et sombre (dossiers `drawable-night*`, `values-night*`, Android 12+).
+- Signature : `key.properties`, `*.jks`, `*.keystore`, `local.properties` ignorés par Git ; aucun secret dans `android/`.
+- Dépendance NFC en lecture/écriture côté Flutter déclarée (`nfc_manager`).
+
+**Écarts :**
+1. **Aucune variable Supabase dans `android/`** : normal, elles sont injectées à la compilation Dart (`--dart-define`). L'APK debug déjà construit sans elles est donc inutilisable (cause du dysfonctionnement constaté).
+2. **Release signée avec la clé debug** tant que `key.properties` est absent (repli prévu dans `app/build.gradle.kts`) : APK non publiable. La clé temporaire de M17 doit être remplacée.
+3. **`minSdk = flutter.minSdkVersion`** alors que `pubspec.yaml` indique `min_sdk_android: 24` : la valeur réelle dépend de la version de Flutter installée. Compatibilité avec `nfc_manager 4.0.2` non vérifiée ; à confirmer au premier build.
+4. **`versionCode` = 1** (`version: 0.1.0+1`) : à incrémenter dans `pubspec.yaml` à chaque publication.
+5. **Pas de lien profond (deep link)** : aucun schéma ni domaine n'est défini dans le dépôt, rien n'a été inventé. À fournir par le propriétaire.
+6. **Pas de réduction/obfuscation** (`minifyEnabled` absent) : choix par défaut, non justifié par écrit jusqu'ici.
+7. **`gradlew`, `gradlew.bat`, `gradle-wrapper.jar` non versionnés** (ignorés par `android/.gitignore`) : Flutter les régénère au build ; sans impact avec Flutter/GitHub Actions, mais `./gradlew` seul ne marche pas sur un clone neuf.
+8. **Aucun filtre NFC (découverte de tag à l'ouverture de l'app)** : la lecture/écriture se fait uniquement quand l'écran NFC de l'application est ouvert.
+9. **Rien n'a été compilé ni installé** : tous les points ci-dessus sont issus de la lecture des fichiers.
