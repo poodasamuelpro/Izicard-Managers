@@ -1,1 +1,71 @@
-# Construit l'APK/AAB signé à chaque tag (aucun terminal local nécessaire)
+# Construit l'APK IziCard Manager. Lancement manuel (Actions > Build APK > Run workflow) ou sur tag v*.
+# EXIGE les secrets GitHub SUPABASE_URL et SUPABASE_ANON_KEY : sans eux le travail ÉCHOUE avant toute compilation
+# (un APK construit sans ces variables n'a aucune configuration et affiche « Configuration Supabase manquante »).
+# Voir GUIDE_DEPLOIEMENT.md.
+name: Build APK
+
+on:
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "Type de build"
+        type: choice
+        options: [release, debug]
+        default: release
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      BUILD_MODE: ${{ github.event.inputs.mode || 'release' }}
+    steps:
+      - uses: actions/checkout@v4
+
+      # 1) Bloque tout si les variables Supabase manquent ou sont invalides (clé service_role refusée).
+      - name: Exiger les variables Supabase
+        run: bash scripts/build_apk.sh --check-only
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      # 2) Signature release facultative : sans ces secrets, le build release retombe sur la clé debug (non publiable).
+      - name: Préparer la signature release (si les secrets existent)
+        env:
+          KS_B64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KS_PASS: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KEY_PASS: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          if [ -n "$KS_B64" ] && [ -n "$KS_PASS" ] && [ -n "$KEY_ALIAS" ] && [ -n "$KEY_PASS" ]; then
+            echo "$KS_B64" | base64 -d > android/app/release-key.jks
+            {
+              echo "storeFile=release-key.jks"
+              echo "storePassword=$KS_PASS"
+              echo "keyAlias=$KEY_ALIAS"
+              echo "keyPassword=$KEY_PASS"
+            } > android/key.properties
+            echo "Signature release configurée."
+          else
+            echo "::warning::Secrets de signature absents : l'APK release sera signé avec la clé debug (non publiable sur le Play Store)."
+          fi
+
+      # 3) Construction avec les variables injectées + contrôle de l'APK.
+      - name: Construire l'APK
+        run: bash scripts/build_apk.sh "$BUILD_MODE"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: izicard-manager-apk-${{ env.BUILD_MODE }}
+          path: build/app/outputs/flutter-apk/app-${{ env.BUILD_MODE }}.apk
+          if-no-files-found: error

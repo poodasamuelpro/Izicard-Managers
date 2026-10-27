@@ -977,3 +977,22 @@ La clé de signature utilisée (`android/release-key.jks` / `android/key.propert
 
 ### Commit
 À renseigner juste après le commit/push de ce lot.
+
+
+## Lot M18 — variables Supabase exigées au build + guide de déploiement — 2026-10-27 UTC
+
+### Constat
+Les APK debug (M16) et release (M17) ont été construits sans `--dart-define` : `AppEnv.isConfigured` est faux et l'application affiche « Configuration Supabase manquante ». Les deux workflows GitHub (`analyze_test.yml`, `build_apk.yml`) ne contenaient qu'un commentaire d'une ligne et ne construisaient rien.
+
+### Terminé
+- `scripts/build_apk.sh` : refuse le build si `SUPABASE_URL` / `SUPABASE_ANON_KEY` manquent, valent l'exemple, ou si la clé est `service_role` / `sb_secret_` ; construit avec `--dart-define-from-file` ; contrôle ensuite la présence de l'adresse dans l'APK (indicatif). Validation essayée sans Flutter : 5 cas (aucune variable, valeurs d'exemple, `service_role`, `anon` valide, build sans variables) comportent le résultat attendu.
+- `.github/workflows/build_apk.yml` : échoue avant toute compilation si les secrets GitHub manquent ; signature release optionnelle par secrets ; artefact APK. `analyze_test.yml` : analyse + tests.
+- `env.example.json` (nouveau), `.env.example` et `.gitignore` (`env.json`) mis à jour.
+- `lib/app.dart` : l'écran d'erreur de configuration explique que les variables sont obligatoires au build et donne la commande.
+- `GUIDE_DEPLOIEMENT.md` (nouveau), README et `SUPABASE_SETUP.md` mis à jour.
+
+### Non vérifié
+Aucun `flutter build` exécuté, aucun workflow GitHub lancé. Le contrôle « adresse présente dans l'APK » n'a pas été essayé sur un vrai APK. L'APK déjà livré en M17 reste inutilisable : il faut le reconstruire avec les variables.
+
+### Reste à faire
+Créer les secrets GitHub, lancer le workflow Build APK, installer l'APK et vérifier la connexion. Remplacer la clé de signature temporaire par la clé de production.

@@ -16,3 +16,4 @@ android/key.properties
 
 # Local environment secrets
 .env
+env.json

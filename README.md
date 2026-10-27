@@ -20,15 +20,18 @@ Le mobile utilise Supabase Auth pour la connexion par adresse email et mot de pa
 
 Les emails nécessaires sont celui de récupération avec code OTP et, si activée, la confirmation de compte. Les messages seront envoyés par Supabase Auth via SMTP Resend configuré dans le tableau de bord Supabase. La clé API Resend ne sera jamais stockée dans Flutter.
 
-## Configuration locale
+## Configuration locale — variables OBLIGATOIRES au build
 
-Copier [`.env.example`](.env.example) vers un fichier local ignoré par Git, ou fournir les mêmes valeurs par `--dart-define` lors du build. Le lecteur XLS legacy nécessite Flutter >= 3.29.2 / Dart >= 3.7.2. Ne jamais ajouter de secret serveur au dépôt.
+`SUPABASE_URL` et `SUPABASE_ANON_KEY` doivent être fournies **à la compilation** (debug comme release) : elles sont figées dans l'APK. Un APK construit sans elles affiche « Configuration Supabase manquante » et ne peut pas être corrigé sans reconstruction. Le lecteur XLS legacy nécessite Flutter >= 3.29.2 / Dart >= 3.7.2. Ne jamais ajouter de secret serveur (`service_role`, Resend, token de gestion) au dépôt ni à l'application.
 
 ```bash
-flutter pub get
-flutter run --dart-define=SUPABASE_URL=https://votre-projet.supabase.co \
-  --dart-define=SUPABASE_ANON_KEY=votre_cle_anon
+cp env.example.json env.json            # remplir les 2 valeurs (fichier ignoré par Git)
+bash scripts/build_apk.sh debug         # refuse de construire si une variable manque ; ou : release
+# équivalent manuel :
+flutter run --dart-define-from-file=env.json
 ```
+
+Procédure complète (GitHub Actions, signature, vérification, dépannage) : [`GUIDE_DEPLOIEMENT.md`](GUIDE_DEPLOIEMENT.md).
 
 ## Responsabilités prévues
 

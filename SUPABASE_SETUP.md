@@ -1,5 +1,9 @@
 # Configuration Supabase obligatoire
 
+## 0. Variables de l'application (obligatoires au build)
+
+L'application Flutter exige `SUPABASE_URL` (Project URL) et `SUPABASE_ANON_KEY` (clé `anon` / public) **au moment de la compilation** (`--dart-define-from-file=env.json`), pour les builds debug et release. Jamais la clé `service_role`. Voir [`GUIDE_DEPLOIEMENT.md`](GUIDE_DEPLOIEMENT.md).
+
 ## 1. Authentification
 
 Dans le projet Supabase `thsedbhzhonemdhbndpf`, ouvrir **Authentication > Providers > Email** et activer Email provider. Le parcours de l’application utilise `signInWithPassword`, `resetPasswordForEmail`, `verifyOTP` avec `OtpType.recovery`, puis `updateUser`. Les utilisateurs sont créés depuis **Authentication > Users** ou par le processus d’administration prévu ; l’application ne crée pas automatiquement de compte.

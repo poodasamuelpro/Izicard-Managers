@@ -66,9 +66,12 @@ class ConfigurationErrorScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'Ajoutez SUPABASE_URL et SUPABASE_ANON_KEY à la '
-                  'configuration de build. Aucun secret serveur ne doit être '
-                  'embarqué dans l’application.',
+                  'Cet APK a été construit sans SUPABASE_URL et '
+                  'SUPABASE_ANON_KEY : ces variables sont obligatoires au '
+                  'build et ne peuvent pas être ajoutées après coup.\n\n'
+                  'Reconstruisez l’APK avec : bash scripts/build_apk.sh debug '
+                  '(voir GUIDE_DEPLOIEMENT.md). Aucun secret serveur ne doit '
+                  'être embarqué dans l’application.',
                   textAlign: TextAlign.center,
                 ),
               ],
