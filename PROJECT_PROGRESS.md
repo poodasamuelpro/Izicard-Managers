@@ -820,4 +820,4 @@ Générer puis configurer la plateforme Android (identifiant, SDK, permission NF
 - Configurer les éléments Auth/SMTP manuels, puis tester invitation et récupération avec un compte réel.
 - Compiler l’application Android et tester les RPC/RLS, import, archivage/audit, Realtime, écriture et synchronisation sur appareil.
 ### Commit
-Commit : 105271e — docs: record Supabase NFC deployment
+Commit : f5bfcce — docs: record Supabase NFC deployment
