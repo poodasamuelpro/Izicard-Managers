@@ -797,3 +797,10 @@ Générer puis configurer la plateforme Android (identifiant, SDK, permission NF
 ### Commit
 
 `c3b1d4f` — `feat(mobile): add adaptive light and dark themes`, poussé sur `master`.
+
+
+## Correction du prompt Android — 2026-10-27 00:45 UTC
+
+`MOBILE_ANDROID_RELEASE_BRIEF.md` a été remplacé par un prompt limité à la génération du dossier Android, à la configuration, aux icônes/splash, aux permissions, aux liens d’application, aux vérifications, au build et à la remise de l’APK. La comparaison de dépôts et les sujets hors de ce périmètre ont été retirés. Le document a été vérifié : aucune mention du service externe n’y reste.
+
+Commit à renseigner après push de cette correction.
