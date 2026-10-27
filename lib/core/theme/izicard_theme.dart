@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import 'izicard_colors.dart';
 
@@ -85,6 +86,14 @@ class IzicardTheme {
         elevation: 0,
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
+        // Icônes de la barre d'état claires en sombre, foncées en clair.
+        systemOverlayStyle: (dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark).copyWith(
+          statusBarColor: Colors.transparent,
+          systemNavigationBarColor: scheme.surface,
+          systemNavigationBarIconBrightness: dark ? Brightness.light : Brightness.dark,
+        ),
+        iconTheme: IconThemeData(color: scheme.onSurface),
+        actionsIconTheme: IconThemeData(color: scheme.onSurface),
         titleTextStyle: base.textTheme.titleLarge?.copyWith(
           color: scheme.onSurface,
           fontWeight: FontWeight.w700,
@@ -184,6 +193,61 @@ class IzicardTheme {
                   ? scheme.primary
                   : scheme.surfaceContainerHigh,
         ),
+      ),
+      chipTheme: ChipThemeData(
+        backgroundColor: scheme.surfaceContainerLow,
+        selectedColor: scheme.primaryContainer,
+        disabledColor: scheme.surfaceContainer,
+        side: BorderSide(color: scheme.outlineVariant),
+        labelStyle: TextStyle(color: scheme.onSurface),
+        secondaryLabelStyle: TextStyle(color: scheme.onPrimaryContainer),
+        checkmarkColor: scheme.onPrimaryContainer,
+        iconTheme: IconThemeData(color: scheme.onSurfaceVariant),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: scheme.primaryContainer,
+        foregroundColor: scheme.onPrimaryContainer,
+        elevation: dark ? 2 : 3,
+      ),
+      bottomSheetTheme: BottomSheetThemeData(
+        backgroundColor: scheme.surfaceContainerLow,
+        surfaceTintColor: Colors.transparent,
+        modalBackgroundColor: scheme.surfaceContainerLow,
+      ),
+      dropdownMenuTheme: DropdownMenuThemeData(
+        menuStyle: MenuStyle(
+          backgroundColor: WidgetStatePropertyAll(scheme.surfaceContainerLow),
+          surfaceTintColor: const WidgetStatePropertyAll(Colors.transparent),
+        ),
+        textStyle: TextStyle(color: scheme.onSurface),
+      ),
+      checkboxTheme: CheckboxThemeData(
+        fillColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? scheme.primary : Colors.transparent,
+        ),
+        checkColor: WidgetStatePropertyAll(scheme.onPrimary),
+        side: BorderSide(color: scheme.outline, width: 1.5),
+      ),
+      radioTheme: RadioThemeData(
+        fillColor: WidgetStateProperty.resolveWith(
+          (states) => states.contains(WidgetState.selected) ? scheme.primary : scheme.outline,
+        ),
+      ),
+      segmentedButtonTheme: SegmentedButtonThemeData(
+        style: SegmentedButton.styleFrom(
+          backgroundColor: scheme.surfaceContainerLow,
+          foregroundColor: scheme.onSurface,
+          selectedBackgroundColor: scheme.primaryContainer,
+          selectedForegroundColor: scheme.onPrimaryContainer,
+          side: BorderSide(color: scheme.outline),
+        ),
+      ),
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: scheme.surfaceContainerLow,
+        surfaceTintColor: Colors.transparent,
+        headerBackgroundColor: scheme.surfaceContainer,
+        headerForegroundColor: scheme.onSurface,
       ),
       dividerTheme: DividerThemeData(
         color: scheme.outlineVariant,

@@ -212,15 +212,15 @@ class _WelcomeCard extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(isWide ? 28 : 22),
       decoration: BoxDecoration(
-        gradient: const LinearGradient(
-          colors: [Color(0xFF007F9E), Color(0xFF006EAA)],
+        gradient: LinearGradient(
+          colors: context.ink.hero,
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: IzicardColors.cyan.withOpacity(0.16),
+            color: colors.primary.withOpacity(0.16),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),

@@ -60,7 +60,7 @@ class _PasswordSetupScreenState extends State<PasswordSetupScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
-                          const Icon(Icons.lock_reset_rounded, size: 46, color: IzicardColors.cyan),
+                          Icon(Icons.lock_reset_rounded, size: 46, color: Theme.of(context).colorScheme.primary),
                           const SizedBox(height: 18),
                           Text('Activez votre accès IziCard', textAlign: TextAlign.center,
                               style: Theme.of(context).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w800)),

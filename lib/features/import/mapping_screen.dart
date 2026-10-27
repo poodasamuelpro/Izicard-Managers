@@ -77,7 +77,7 @@ class ColumnMappingStep extends StatelessWidget {
         else
           Container(
             padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(color: IzicardColors.cyan.withOpacity(.08), borderRadius: BorderRadius.circular(14)),
+            decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(.1), borderRadius: BorderRadius.circular(14)),
             child: const Text('Les règles de validation finales sont celles du schéma nfc. Les lignes invalides seront signalées sans empêcher les autres d’être importées.'),
           ),
         const SizedBox(height: 14),

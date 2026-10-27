@@ -845,3 +845,14 @@ Commit : f5bfcce — docs: record Supabase NFC deployment
 - ✅ SMTP Resend et OTP 8 chiffres vérifiés ; inscription publique conservée (`disable_signup=false`) pour les autres applications.
 - ✅ Le `site_url` historique n’a pas été changé afin de ne pas perturber l’autre application ; les invitations Manager transmettent explicitement leur URL autorisée.
 - ⚠️ Tester un email réel et un compte Auth existant.
+
+
+## Lot M15 — harmonisation du mode sombre — 2026-10-27 UTC
+### Terminé
+- `IzicardInk` / `context.ink` (`izicard_colors.dart`) : couleurs d'état, texte/icônes et dégradé d'en-tête adaptés au thème clair ou sombre.
+- Remplacement des couleurs fixes illisibles en sombre : textes et icônes d'état (tableau de bord, détail dossier, écriture, synchronisation, export), icônes et fonds teintés `cyan` (clients, création de dossier, mapping, dossiers, connexion, activation, réinitialisation), erreurs de formulaire, bandeaux d'en-tête (accueil, dossiers, tableau de bord), carte « prêt à encoder » (bleu trop clair pour du texte blanc).
+- Thème : barre d'état et de navigation, icônes d'AppBar, chips, bouton flottant, feuilles, menus déroulants, cases, boutons radio, boutons segmentés, sélecteur de date.
+### Non vérifié
+Ni `flutter analyze`, ni test, ni rendu sur appareil dans cet environnement (Flutter absent). Contrastes choisis, non mesurés.
+### Reste à faire
+Relire chaque écran en sombre sur un appareil ou émulateur ; thème de l'écran de démarrage Android (dossier `android/` sans ressources).

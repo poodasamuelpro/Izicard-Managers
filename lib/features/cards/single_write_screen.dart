@@ -163,7 +163,7 @@ class _SingleWriteScreenState extends State<SingleWriteScreen> {
       _Phase.success => (IzicardColors.statusVerified, Icons.check_circle_rounded),
       _Phase.error => (IzicardColors.statusError, Icons.error_rounded),
       _Phase.waiting => (IzicardColors.statusPending, Icons.nfc_rounded),
-      _Phase.idle => (IzicardColors.blue, Icons.nfc_rounded),
+      _Phase.idle => (IzicardColors.statusWritten, Icons.nfc_rounded),
     };
     return PopScope(
       canPop: _phase != _Phase.waiting,

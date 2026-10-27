@@ -190,7 +190,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: IzicardColors.cyan.withOpacity(.08),
+                        color: Theme.of(context).colorScheme.primary.withOpacity(.1),
                         borderRadius: BorderRadius.circular(16),
                       ),
                       child: const Text(
@@ -218,8 +218,8 @@ class _ClientsScreenState extends State<ClientsScreen> {
                             child: ListTile(
                               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                               leading: CircleAvatar(
-                                backgroundColor: IzicardColors.cyan.withOpacity(.1),
-                                child: const Icon(Icons.business_rounded, color: IzicardColors.cyan),
+                                backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(.14),
+                                child: Icon(Icons.business_rounded, color: Theme.of(context).colorScheme.primary),
                               ),
                               title: Text(client.name,
                                   maxLines: 1, overflow: TextOverflow.ellipsis,

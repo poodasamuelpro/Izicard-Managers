@@ -137,7 +137,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
               ),
             if (_error != null) ...[
               const SizedBox(height: 12),
-              Text(_error!, style: const TextStyle(color: Color(0xFFC62828))),
+              Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
             ],
             const SizedBox(height: 20),
             FilledButton(

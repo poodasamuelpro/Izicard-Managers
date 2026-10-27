@@ -50,4 +50,4 @@ La liste des dossiers écoute également les changements Realtime Supabase sur `
 
 Un administrateur peut archiver ou réactiver un dossier après confirmation. L’opération utilise la RPC partagée `nfc_archive_batch`; l’historique du dossier est consultable via `nfc_list_audit`. Appliquer `006_nfc_archive_history.sql` avant d’utiliser ces commandes.
 
-L’application est exclusivement en français : aucune interface anglaise n’est autorisée. Le thème clair est obligatoire et le mode sombre n’est pas proposé. Les écrans d’accueil, dossiers, tableau de bord, détail et réglages utilisent une mise en page responsive centrée, avec grilles à deux colonnes sur tablette et paysage lorsque l’espace le permet.
+L’application est exclusivement en français : aucune interface anglaise n’est autorisée. Le thème est clair, sombre ou suivi du système (Réglages) ; les couleurs sémantiques passent par `IzicardInk` pour rester lisibles dans les deux. Les écrans d’accueil, dossiers, tableau de bord, détail et réglages utilisent une mise en page responsive centrée, avec grilles à deux colonnes sur tablette et paysage lorsque l’espace le permet.

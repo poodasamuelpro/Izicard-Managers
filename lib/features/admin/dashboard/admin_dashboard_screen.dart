@@ -172,9 +172,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFF007F9E), Color(0xFF006EAA)],
-              ),
+              gradient: LinearGradient(colors: context.ink.hero),
               borderRadius: BorderRadius.circular(22),
             ),
             child: Column(
@@ -214,11 +212,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _Tile('À écrire', pending, IzicardColors.statusPending),
-              _Tile('Écrites', written, IzicardColors.statusWritten),
-              _Tile('Vérifiées', verified, IzicardColors.statusVerified),
-              _Tile('Erreurs', errors, IzicardColors.statusError),
-              _Tile('Annulées', voided, IzicardColors.statusVoid),
+              _Tile('À écrire', pending, context.ink.pending),
+              _Tile('Écrites', written, context.ink.written),
+              _Tile('Vérifiées', verified, context.ink.verified),
+              _Tile('Erreurs', errors, context.ink.error),
+              _Tile('Annulées', voided, context.ink.voided),
             ],
           ),
           const SizedBox(height: 18),
@@ -228,9 +226,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             spacing: 8,
             runSpacing: 8,
             children: [
-              _Tile('Actifs', activeClients, IzicardColors.statusVerified),
-              _Tile('Suspendus', suspended, IzicardColors.statusError),
-              _Tile('Expirés', expired, IzicardColors.statusPending),
+              _Tile('Actifs', activeClients, context.ink.verified),
+              _Tile('Suspendus', suspended, context.ink.error),
+              _Tile('Expirés', expired, context.ink.pending),
             ],
           ),
           const SizedBox(height: 22),
@@ -250,9 +248,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                   (b) => Card(
                     child: ListTile(
                       onTap: () => _openBatch(b),
-                      leading: const Icon(
+                      leading: Icon(
                         Icons.error_outline_rounded,
-                        color: IzicardColors.statusError,
+                        color: context.ink.error,
                       ),
                       title: Text(
                         b.name,
@@ -312,7 +310,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                   ? 0
                                   : stats.verified / stats.total,
                           minHeight: 7,
-                          backgroundColor: IzicardColors.cyan.withOpacity(.12),
+                          backgroundColor: theme.colorScheme.surfaceContainerHigh,
                         ),
                       ),
                       const SizedBox(height: 6),

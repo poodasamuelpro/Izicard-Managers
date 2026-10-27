@@ -147,7 +147,7 @@ class _BatchCreateScreenState extends State<BatchCreateScreen> {
               children: [
                 Container(
                   padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(color: IzicardColors.cyan.withOpacity(.08), borderRadius: BorderRadius.circular(18)),
+                  decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(.1), borderRadius: BorderRadius.circular(18)),
                   child: Text(widget.profile.role == NfcRole.admin
                       ? 'Choisissez le client destinataire. Le rôle et les autorisations seront vérifiés par la RPC Supabase nfc_create_batch.'
                       : 'Ce dossier sera attribué à votre client. La RPC Supabase vérifie côté serveur que votre Admin vous a accordé ce droit.'),
@@ -233,7 +233,7 @@ class _FormatInfo extends StatelessWidget {
   @override
   Widget build(BuildContext context) => Container(
         padding: const EdgeInsets.all(14),
-        decoration: BoxDecoration(color: IzicardColors.cyan.withOpacity(.06), borderRadius: BorderRadius.circular(14)),
+        decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(.08), borderRadius: BorderRadius.circular(14)),
         child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
           Text('${format.chip} · ${format.capacityBytes} octets disponibles', style: Theme.of(context).textTheme.titleSmall),
           if (format.fields.isNotEmpty) ...[

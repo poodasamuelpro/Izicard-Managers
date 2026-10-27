@@ -182,15 +182,15 @@ class _LoginScreenState extends State<LoginScreen> {
                                 Container(
                                   padding: const EdgeInsets.all(12),
                                   decoration: BoxDecoration(
-                                    color: IzicardColors.error.withOpacity(
-                                      0.08,
+                                    color: Theme.of(context).colorScheme.error.withOpacity(
+                                      0.12,
                                     ),
                                     borderRadius: BorderRadius.circular(12),
                                   ),
                                   child: Text(
                                     _error!,
-                                    style: const TextStyle(
-                                      color: IzicardColors.error,
+                                    style: TextStyle(
+                                      color: Theme.of(context).colorScheme.error,
                                     ),
                                   ),
                                 ),

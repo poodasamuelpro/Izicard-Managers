@@ -524,7 +524,7 @@ class _WriteScreenState extends State<WriteScreen> {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        const Icon(Icons.flag_rounded, size: 56, color: IzicardColors.cyan),
+        Icon(Icons.flag_rounded, size: 56, color: Theme.of(context).colorScheme.primary),
         const SizedBox(height: 10),
         Text(
           'Série terminée',
@@ -617,7 +617,7 @@ class _Message extends StatelessWidget {
       padding: const EdgeInsets.all(18),
       child: Column(
         children: [
-          Text(text, style: const TextStyle(color: IzicardColors.statusError)),
+          Text(text, style: TextStyle(color: context.ink.error)),
           if (onRetry != null) ...[
             const SizedBox(height: 10),
             OutlinedButton.icon(

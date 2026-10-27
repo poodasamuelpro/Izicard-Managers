@@ -140,7 +140,7 @@ class _SyncStatusScreenState extends State<SyncStatusScreen> {
                             child: ListTile(
                               leading: Icon(
                                 item.permanent ? Icons.error_outline_rounded : Icons.schedule_rounded,
-                                color: item.permanent ? IzicardColors.statusError : IzicardColors.statusPending,
+                                color: item.permanent ? context.ink.error : context.ink.pending,
                               ),
                               title: Text('Carte ${item.tagId.length > 8 ? item.tagId.substring(0, 8) : item.tagId} · ${IzicardColors.labelForTagStatus(item.status)}'),
                               subtitle: Text(item.permanent
@@ -173,7 +173,7 @@ class _SyncStatusScreenState extends State<SyncStatusScreen> {
                     else
                       ...data.batches.map((info) => Card(
                             child: ListTile(
-                              leading: const Icon(Icons.offline_pin_outlined, color: IzicardColors.cyan),
+                              leading: Icon(Icons.offline_pin_outlined, color: Theme.of(context).colorScheme.primary),
                               title: Text(info.batch.name),
                               subtitle: Text('${info.tagCount} carte(s) · téléchargé le ${info.syncedAt.toLocal().toString().substring(0, 16)}'),
                               trailing: IconButton(

@@ -94,13 +94,13 @@ class _ExportScreenState extends State<ExportScreen> {
                     const SizedBox(height: 12),
                     Text(_message!,
                         style: TextStyle(
-                            color: _messageIsError ? IzicardColors.statusError : IzicardColors.statusVerified,
+                            color: _messageIsError ? context.ink.error : context.ink.verified,
                             fontWeight: FontWeight.w700)),
                   ],
                   const SizedBox(height: 12),
                   ...batches.map((batch) => Card(
                         child: ListTile(
-                          leading: const Icon(Icons.inventory_2_outlined, color: IzicardColors.cyan),
+                          leading: Icon(Icons.inventory_2_outlined, color: Theme.of(context).colorScheme.primary),
                           title: Text(batch.name),
                           subtitle: Text('${batch.total} carte(s) · ${batch.verified} vérifiée(s)'),
                           trailing: _busyId == batch.id

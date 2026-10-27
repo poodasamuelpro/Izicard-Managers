@@ -300,9 +300,7 @@ class _SummaryHeader extends StatelessWidget {
   Widget build(BuildContext context) => Container(
     padding: const EdgeInsets.all(20),
     decoration: BoxDecoration(
-      gradient: const LinearGradient(
-        colors: [Color(0xFF007F9E), Color(0xFF006EAA)],
-      ),
+      gradient: LinearGradient(colors: context.ink.hero),
       borderRadius: BorderRadius.circular(22),
     ),
     child: Row(
@@ -380,7 +378,7 @@ class _BatchCard extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: batch.progress,
                   minHeight: 7,
-                  backgroundColor: IzicardColors.cyan.withOpacity(.12),
+                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
                 ),
               ),
               const SizedBox(height: 8),
@@ -489,7 +487,7 @@ class _EmptyBatches extends StatelessWidget {
               ? Icons.filter_alt_off_rounded
               : Icons.inventory_2_outlined,
           size: 48,
-          color: IzicardColors.cyan,
+          color: Theme.of(context).colorScheme.primary,
         ),
         const SizedBox(height: 14),
         Text(

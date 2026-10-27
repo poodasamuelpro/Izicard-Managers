@@ -406,7 +406,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                   child: LinearProgressIndicator(
                     value: _batch.progress,
                     minHeight: 8,
-                    backgroundColor: IzicardColors.cyan.withOpacity(.12),
+                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
                   ),
                 ),
                 const SizedBox(height: 6),
@@ -427,22 +427,22 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                     _Stat(
                       label: 'À écrire',
                       value: _batch.pending,
-                      color: IzicardColors.statusPending,
+                      color: context.ink.pending,
                     ),
                     _Stat(
                       label: 'Écrites',
                       value: _batch.written,
-                      color: IzicardColors.statusWritten,
+                      color: context.ink.written,
                     ),
                     _Stat(
                       label: 'Vérifiées',
                       value: _batch.verified,
-                      color: IzicardColors.statusVerified,
+                      color: context.ink.verified,
                     ),
                     _Stat(
                       label: 'Erreurs',
                       value: _batch.errors,
-                      color: IzicardColors.statusError,
+                      color: context.ink.error,
                     ),
                   ],
                 ),
