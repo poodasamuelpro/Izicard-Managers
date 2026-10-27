@@ -114,3 +114,12 @@ La lecture du contenu NDEF existant et la confirmation utilisateur sont maintena
 ## 12. Lot M8 — archivage et historique — 2026-10-26 23:19 UTC
 
 ✅ Archivage/réactivation réversible d’un dossier avec confirmation admin via RPC partagée. ✅ Consultation de l’historique d’audit d’un dossier via RPC sécurisée réservée aux admins. Le backend Web contient la migration `006_nfc_archive_history.sql`. À faire : appliquer les migrations Supabase 005/006 et compiler/tester avec des droits réels.
+
+
+## 13. Lot M12 — backend Supabase appliqué — 2026-10-27 00:56 UTC
+- ✅ `004_nfc_formats_rules.sql` appliquée dans `nfc`.
+- ✅ `005_nfc_realtime.sql` appliquée pour `nfc_batches` et `nfc_tags`.
+- ✅ `006_nfc_archive_history.sql` appliquée.
+- ✅ Edge Function `create-client-user` déployée avec JWT obligatoire.
+- ✅ `send-activation-emails` existante conservée inchangée.
+- ⚠️ Restent à faire : configuration SMTP Resend, OTP à 8 chiffres, templates Recovery/Invite, URLs autorisées/deep link, secret `INVITE_REDIRECT_TO`, puis tests réels Auth/RLS/Realtime/NFC et build Android.

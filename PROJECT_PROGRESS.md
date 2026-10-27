@@ -804,3 +804,20 @@ Générer puis configurer la plateforme Android (identifiant, SDK, permission NF
 `MOBILE_ANDROID_RELEASE_BRIEF.md` a été remplacé par un prompt limité à la génération du dossier Android, à la configuration, aux icônes/splash, aux permissions, aux liens d’application, aux vérifications, au build et à la remise de l’APK. La comparaison de dépôts et les sujets hors de ce périmètre ont été retirés. Le document a été vérifié : aucune mention du service externe n’y reste.
 
 `a3defb3` — `docs: narrow Android delivery prompt`, poussé sur `master`.
+
+
+## Lot Supabase partagé M12 — backend NFC et invitation — 2026-10-27 00:56 UTC
+### Terminé
+- Projet cible confirmé : Supabase `IziCard` (`thsedbhzhonemdhbndpf`), schéma métier `nfc` uniquement.
+- Les migrations partagées `004_nfc_formats_rules`, `005_nfc_realtime` et `006_nfc_archive_history` sont appliquées et vérifiées.
+- Les RPC d’import, de création avec réglages, d’archivage et d’audit sont présentes ; `nfc_batches` et `nfc_tags` sont publiées dans Realtime.
+- Edge Function `create-client-user` déployée avec JWT obligatoire ; l’Edge Function historique `send-activation-emails` est restée inchangée.
+### Partiel / non vérifié
+- Aucun parcours réel d’invitation, récupération, Realtime, RLS ou NFC physique n’a été exécuté.
+- SMTP Resend, OTP à 8 chiffres, templates email, URLs Web/deep link et secret `INVITE_REDIRECT_TO` restent à configurer/vérifier dans Supabase.
+- Flutter/Android, build, liens profonds et tests sur appareil restent hors de ce lot.
+### Reste à faire
+- Configurer les éléments Auth/SMTP manuels, puis tester invitation et récupération avec un compte réel.
+- Compiler l’application Android et tester les RPC/RLS, import, archivage/audit, Realtime, écriture et synchronisation sur appareil.
+### Commit
+Commit : 105271e — docs: record Supabase NFC deployment
