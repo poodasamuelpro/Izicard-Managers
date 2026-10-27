@@ -1002,3 +1002,9 @@ Créer les secrets GitHub, lancer le workflow Build APK, installer l'APK et vér
 - `GUIDE_DEPLOIEMENT.md` section 2.C : secrets GitHub à créer (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, signature en option), lancement du workflow, étapes, récupération de l'APK.
 - Non vérifié : présence réelle des secrets sur GitHub (je ne peux pas les créer ni les lire), aucun workflow lancé, aucun build exécuté.
 
+## Lot M20 : domaines et lien profond
+- Filtre App Links (`https`, `autoVerify`) ajouté au manifeste pour `manager.izicardouaga.com` et `izicard-managers-web.izicardouaga.workers.dev`.
+- Le workflow *Build APK* injecte déjà `SUPABASE_URL` / `SUPABASE_ANON_KEY` (secrets GitHub) à la compilation et échoue s'ils manquent.
+- Documenté : `GUIDE_DEPLOIEMENT.md` section 8, README.
+- Reste : créer les secrets GitHub, publier `public/.well-known/assetlinks.json` dans le dépôt web avec l'empreinte SHA-256 du keystore release, vérifier les domaines dans Cloudflare, contrôler les routes qui reçoivent le lien. Rien n'a été compilé ni testé.
+

@@ -101,8 +101,27 @@ Lecture seule des fichiers, sans compilation (Flutter et Android SDK absents de 
 2. **Release signée avec la clé debug** tant que `key.properties` est absent (repli prévu dans `app/build.gradle.kts`) : APK non publiable. La clé temporaire de M17 doit être remplacée.
 3. **`minSdk = flutter.minSdkVersion`** alors que `pubspec.yaml` indique `min_sdk_android: 24` : la valeur réelle dépend de la version de Flutter installée. Compatibilité avec `nfc_manager 4.0.2` non vérifiée ; à confirmer au premier build.
 4. **`versionCode` = 1** (`version: 0.1.0+1`) : à incrémenter dans `pubspec.yaml` à chaque publication.
-5. **Pas de lien profond (deep link)** : aucun schéma ni domaine n'est défini dans le dépôt, rien n'a été inventé. À fournir par le propriétaire.
+5. **Lien profond** : filtre ajouté pour les 2 domaines (`manager.izicardouaga.com`, `izicard-managers-web.izicardouaga.workers.dev`) ; il reste `assetlinks.json` + empreinte de signature (section 8).
 6. **Pas de réduction/obfuscation** (`minifyEnabled` absent) : choix par défaut, non justifié par écrit jusqu'ici.
 7. **`gradlew`, `gradlew.bat`, `gradle-wrapper.jar` non versionnés** (ignorés par `android/.gitignore`) : Flutter les régénère au build ; sans impact avec Flutter/GitHub Actions, mais `./gradlew` seul ne marche pas sur un clone neuf.
 8. **Aucun filtre NFC (découverte de tag à l'ouverture de l'app)** : la lecture/écriture se fait uniquement quand l'écran NFC de l'application est ouvert.
 9. **Rien n'a été compilé ni installé** : tous les points ci-dessus sont issus de la lecture des fichiers.
+
+## 8. Domaines et lien profond (App Links)
+**Domaines du web Managers (dépôt `izicard-managers-web`, Worker Cloudflare) :**
+- `manager.izicardouaga.com` (domaine principal)
+- `izicard-managers-web.izicardouaga.workers.dev` (adresse Workers)
+
+Les deux sont déclarés dans le manifeste Android (`android/app/src/main/AndroidManifest.xml`) : un lien `https://` vers l'un d'eux peut ouvrir l'application. Je n'ai pas pu vérifier que ces domaines sont bien rattachés au Worker dans Cloudflare : à contrôler (Workers & Pages > izicard-managers-web > Settings > Domains & Routes).
+
+**Ce qu'il faut pour que le lien profond fonctionne (3 choses) :**
+1. **Manifeste** : fait (filtre `autoVerify` sur les 2 domaines ci-dessus).
+2. **Fichier `assetlinks.json`** à servir en HTTPS, sans redirection, sur chaque domaine : `https://manager.izicardouaga.com/.well-known/assetlinks.json` et la même adresse sur `workers.dev`. Comme le même Worker sert les deux, il suffit de placer le fichier dans `public/.well-known/assetlinks.json` du dépôt web :
+```json
+[{"relation":["delegate_permission/common.handle_all_urls"],
+  "target":{"namespace":"android_app","package_name":"com.izicardouaga.izicardmanager",
+  "sha256_cert_fingerprints":["EMPREINTE_SHA256_DU_CERTIFICAT_DE_SIGNATURE"]}}]
+```
+3. **Empreinte SHA-256** : celle du keystore release (`keytool -list -v -keystore release-key.jks`). Je ne l'ai pas : l'APK actuel est signé avec une clé temporaire, donc l'empreinte changera quand la vraie clé sera en place. À ajouter ensuite (plusieurs empreintes possibles dans la liste).
+
+**Non fait / non vérifié :** le fichier `assetlinks.json` (empreinte inconnue, dépôt web non modifié) ; les routes de l'application qui reçoivent le lien (non vérifiées dans le code) ; aucun test sur appareil. Tant que le fichier n'est pas en ligne, un lien ouvre le navigateur et non l'application.

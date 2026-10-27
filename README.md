@@ -54,3 +54,8 @@ La liste des dossiers écoute également les changements Realtime Supabase sur `
 Un administrateur peut archiver ou réactiver un dossier après confirmation. L’opération utilise la RPC partagée `nfc_archive_batch`; l’historique du dossier est consultable via `nfc_list_audit`. Appliquer `006_nfc_archive_history.sql` avant d’utiliser ces commandes.
 
 L’application est exclusivement en français : aucune interface anglaise n’est autorisée. Le thème est clair, sombre ou suivi du système (Réglages) ; les couleurs sémantiques passent par `IzicardInk` pour rester lisibles dans les deux. Les écrans d’accueil, dossiers, tableau de bord, détail et réglages utilisent une mise en page responsive centrée, avec grilles à deux colonnes sur tablette et paysage lorsque l’espace le permet.
+
+## Domaines et liens profonds
+Web Managers : `manager.izicardouaga.com` et `izicard-managers-web.izicardouaga.workers.dev`. Les deux sont déclarés comme App Links dans le manifeste Android ; `assetlinks.json` + empreinte de signature restent à publier (voir `GUIDE_DEPLOIEMENT.md` section 8).
+Build GitHub : secrets `SUPABASE_URL` et `SUPABASE_ANON_KEY` obligatoires (Settings > Secrets and variables > Actions > Secrets), injectés au build par le workflow *Build APK*.
+
