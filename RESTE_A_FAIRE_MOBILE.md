@@ -67,7 +67,7 @@ Aucune ligne ✅ n'a été compilée ni testée.
 | Dossier `android/` et permission NFC (`android.permission.NFC`, `android.hardware.nfc`), `minSdk` | ✅ lot M16 — généré, NFC facultatif déclaré, vérifié avec aapt2 |
 | Compilation, `flutter analyze`, noms exacts de l'API `nfc_manager` | ✅ lot M16 — `flutter analyze` 0 erreur, `flutter test` 11/11, APK debug construit et vérifié |
 | Workflows GitHub Actions (`analyze_test.yml`, `build_apk.yml`) | présents, jamais exécutés |
-| Signature de l'APK | ❌ 🛠 build debug non signé livré (lot M16) ; signature release à fournir par le propriétaire |
+| Signature de l'APK | ⚠️ APK release signé et livré avec lien de téléchargement (lot M17) ; clé actuelle générée automatiquement par l'environnement de dev, à remplacer par la vraie clé de production du propriétaire avant publication Play Store |
 | Tests (`test/` = 4 fichiers vides) | ✅ tests écrits (lots précédents), tous passent (lot M16) |
 | Essais sur 5 à 10 vrais tags (écriture, relecture, verrouillage, hors-ligne, révocation) | ❌ 🛠 |
 

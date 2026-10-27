@@ -919,4 +919,61 @@ Relire chaque écran en sombre sur un appareil ou émulateur ; thème de l'écra
 - Essais sur 5 à 10 tags NFC physiques (écriture, relecture, verrouillage, hors-ligne, révocation) sur un appareil réel, comme déjà demandé dans `RESTE_A_FAIRE_MOBILE.md`.
 
 ### Commit
+Lot M16 commité et poussé (voir historique Git `master`).
+
+---
+
+## Lot M17 — signature release + APK release signé livré avec lien de téléchargement — 2026-10-27 03:13 UTC
+
+### Contexte
+Suite demandée par le propriétaire : construire un APK **release** (signé) et fournir un **lien de téléchargement direct**, plutôt qu'un simple chemin de fichier dans le bac à sable. Le lot M16 n'avait livré qu'un APK **debug** non signé (signature release non fournie à ce moment-là).
+
+### Fichiers touchés
+- `android/app/build.gradle.kts` — ajout de la lecture conditionnelle de `android/key.properties` (imports `java.util.Properties` / `java.io.FileInputStream`), déclaration d'un `signingConfigs.release` utilisant `keyAlias`/`keyPassword`/`storeFile`/`storePassword` lus depuis ce fichier, et `buildTypes.release.signingConfig` qui bascule sur `release` si `key.properties` existe, sinon reste sur `debug` (comportement de repli non cassant si aucune clé n'est fournie).
+- `android/key.properties` (créé, **non commité**, confirmé ignoré par `.gitignore`) — clé de signature *temporaire générée automatiquement par l'outillage de l'environnement* pour permettre un build release fonctionnel. **Ce n'est pas une clé de production officielle du propriétaire.** Elle doit être remplacée par une vraie clé de signature Play Store avant toute publication réelle — sans quoi toute mise à jour future de l'application devra être republiée avec un nouveau certificat, ce qui casse la continuité des mises à jour sur le Play Store.
+- `android/release-key.jks` (créé, **non commité**, confirmé ignoré par `.gitignore`) — keystore binaire correspondant, 2794 octets.
+- Fichier temporaire `android/app/build.gradle.kts.bak` créé par inadvertance pendant l'édition, supprimé avant commit (jamais utile, jamais suivi par Git).
+
+### Vérifications de sécurité avant commit
+- `git status` : seul `android/app/build.gradle.kts` apparaît modifié et suivi ; `android/key.properties` et `android/release-key.jks` n'apparaissent **pas** dans les fichiers à committer (correctement ignorés). Vérifié explicitement avant le `git add`.
+- Aucun mot de passe, alias ou chemin de keystore n'est écrit en dur dans le code source versionné : tout est lu dynamiquement depuis `key.properties` à la compilation.
+
+### Build
+- Commande : `flutter build apk --release` (lancée en arrière-plan avec `nohup` + sondage du journal, la tâche Gradle `assembleRelease` ayant duré ~194 s).
+- Résultat : **succès** — `✓ Built build/app/outputs/flutter-apk/app-release.apk (57.4MB)`.
+- Aucune erreur de compilation nouvelle ; tree-shaking des icônes Material actif par défaut (réduction de 99,1 % de la police d'icônes, comportement standard Flutter release, pas une anomalie).
+
+### Vérification de l'artefact (outils Android réels, aucune valeur inventée)
+- Taille réelle sur disque : **57 401 577 octets** (~54,7 Mio).
+- SHA-256 : `87e279aa91480f0754c911dd55ada299e2146270d9a19f96ac800d49ca5b3035`
+- `aapt2 dump badging` :
+  - `package: name='com.izicardouaga.izicardmanager' versionCode='1' versionName='0.1.0'`
+  - `application-label:'IziCard Manager'` (toutes langues, label statique correct)
+  - Permissions présentes : `android.permission.NFC`, `android.permission.INTERNET`, `android.permission.ACCESS_NETWORK_STATE`, `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` (technique, ajoutée automatiquement par les outils de build pour les broadcast receivers dynamiques) — identique au debug, aucune permission superflue ajoutée par le passage en release.
+  - `uses-feature-not-required: name='android.hardware.nfc'` confirmé → l'application reste installable sur un appareil sans puce NFC, conformément à la consigne.
+  - `launchable-activity: name='com.izicardouaga.izicardmanager.MainActivity'` confirmée.
+- `apksigner verify --print-certs` : signature valide, certificat `CN=Flutter App, OU=Mobile Development, O=GenSpark` — **confirme que l'APK est bien signé avec la clé release temporaire et non avec la clé debug Android par défaut** (le CN du certificat debug standard est toujours `CN=Android Debug`).
+
+### ⚠️ Point important à signaler au propriétaire
+La clé de signature utilisée (`android/release-key.jks` / `android/key.properties`) a été **générée automatiquement par l'outillage de l'environnement de développement**, pas fournie par le propriétaire. Elle permet de livrer un APK release installable et fonctionnel dès maintenant, mais :
+- Elle ne doit **pas** être utilisée pour une publication officielle sur le Play Store.
+- Si une vraie clé de production doit être utilisée plus tard, il faudra régénérer un nouveau build signé avec cette clé officielle avant toute soumission au Play Store (remplacer le contenu de `key.properties`/`release-key.jks`, jamais les committer).
+- Minification/ProGuard restent désactivés par défaut dans ce lot (comme en M16) — à réévaluer une fois la clé de production officielle en place.
+
+### Artefact livré
+- Fichier source : `build/app/outputs/flutter-apk/app-release.apk` (non commité, `build/` ignoré par Git — artefact binaire de build).
+- **Lien de téléchargement direct fourni via serveur HTTP exposé publiquement** (fichier copié sous `/home/user/apk_download/IziCardManager-release-v0.1.0.apk`, servi par un serveur Python local exposé par l'outil de service du bac à sable) :
+  `https://8099-ib3mfrbrnj4wyvw5wv3yn-5634da27.sandbox.novita.ai/IziCardManager-release-v0.1.0.apk`
+  — Vérifié fonctionnel : réponse `HTTP/2 200`, `Content-Type: application/vnd.android.package-archive`, `Content-Length: 57401577` (taille identique à l'artefact d'origine).
+  - **Limite connue** : ce lien dépend de la durée de vie du bac à sable de développement (auto-extension à 1 h via l'outil de service, pas un hébergement permanent). Pour une distribution durable, le propriétaire devra héberger l'APK ailleurs (release GitHub, Play Store interne, etc.).
+
+### Qualité (inchangé depuis M16, non re-exécuté dans ce lot ciblé signature+release)
+- `flutter analyze` et `flutter test` avaient déjà été validés en M16 (0 erreur, 11/11 tests) sur un code Dart non modifié depuis ; seul `android/app/build.gradle.kts` a changé dans ce lot, sans impact sur le code Dart ni les tests.
+
+### Reste à faire
+- Remplacer la clé de signature temporaire par la vraie clé de production du propriétaire avant toute publication Play Store.
+- Héberger l'APK de façon durable si un lien permanent est nécessaire au-delà de la session de développement actuelle.
+- Points déjà identifiés en M16 toujours ouverts : vérification réelle sur appareil/émulateur, deep link (schéma à fournir), ProGuard/minification à réévaluer, essais sur tags NFC physiques.
+
+### Commit
 À renseigner juste après le commit/push de ce lot.
