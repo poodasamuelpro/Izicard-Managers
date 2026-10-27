@@ -31,7 +31,7 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
   String? _uid;
   NfcTagRecord? _expected;
 
-  /// Appartenance : le tag est-il enregistré dans IziCardOuaga ?
+  /// Appartenance : le tag est-il enregistré dans IziCard Manager ?
   bool? _owned;
 
   /// Contenu : null = pas de verdict possible (tag inconnu).
@@ -39,6 +39,7 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
   String? _contentVerdict;
   String? _contentRead;
   String? _chip;
+  Map<String, String> _details = const {};
 
   @override
   void initState() {
@@ -55,18 +56,11 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
     super.dispose();
   }
 
-  /// Texte lisible du premier enregistrement NDEF lu sur le tag.
-  static String _describe(NdefMessage? message) {
-    if (message == null || message.records.isEmpty) {
-      return 'Aucun contenu (tag vide).';
-    }
-    final record = message.records.first;
+  /// Décrit un enregistrement NDEF (type, taille, contenu lisible).
+  static String _describeRecord(NdefRecord record) {
     final type = String.fromCharCodes(record.type);
     final payload = record.payload;
-    final extra =
-        message.records.length > 1
-            ? ' (+${message.records.length - 1} autre(s) enregistrement(s))'
-            : '';
+    final size = '${payload.length} octets';
     if (record.typeNameFormat == TypeNameFormat.wellKnown &&
         type == 'U' &&
         payload.isNotEmpty) {
@@ -81,7 +75,7 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
       ];
       final code = payload.first;
       final prefix = code < prefixes.length ? prefixes[code] : '';
-      return 'Lien : $prefix${utf8.decode(payload.sublist(1), allowMalformed: true)}$extra';
+      return 'Lien : $prefix${utf8.decode(payload.sublist(1), allowMalformed: true)} ($size)';
     }
     if (record.typeNameFormat == TypeNameFormat.wellKnown &&
         type == 'T' &&
@@ -92,10 +86,25 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
           start <= payload.length
               ? utf8.decode(payload.sublist(start), allowMalformed: true)
               : '';
-      return 'Texte : $text$extra';
+      return 'Texte : $text ($size)';
     }
-    if (type == 'text/vcard') return 'Fiche contact (vCard)$extra';
-    return 'Contenu de type ${type.isEmpty ? 'inconnu' : type}$extra';
+    if (type == 'text/vcard') {
+      return 'Fiche contact (vCard), $size :\n${utf8.decode(payload, allowMalformed: true)}';
+    }
+    final text = utf8.decode(payload, allowMalformed: true);
+    return 'Type ${type.isEmpty ? 'inconnu' : type} ($size) : $text';
+  }
+
+  /// Tous les enregistrements NDEF lus, un par ligne.
+  static String _describe(NdefMessage? message) {
+    if (message == null || message.records.isEmpty) {
+      return 'Aucun contenu (tag vide).';
+    }
+    final lines = <String>[];
+    for (var i = 0; i < message.records.length; i++) {
+      lines.add('#${i + 1} ${_describeRecord(message.records[i])}');
+    }
+    return lines.join('\n');
   }
 
   /// Modèle de puce probable d'après la capacité NDEF annoncée.
@@ -109,7 +118,7 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
             : size <= 900
             ? 'NTAG216'
             : 'autre puce';
-    return '$model probable ($size octets utilisables)';
+    return '$model probable ($size octets NDEF utilisables)';
   }
 
   Future<void> _verify() async {
@@ -123,6 +132,7 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
       _contentVerdict = null;
       _contentRead = null;
       _chip = null;
+      _details = const {};
     });
     var success = false;
     try {
@@ -172,6 +182,7 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
         _contentVerdict = verdict;
         _contentRead = _describe(message);
         _chip = _chipFromSize(read.maxSize);
+        _details = read.details;
       });
     } catch (exception) {
       if (mounted)
@@ -209,7 +220,7 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
                   ),
                   const SizedBox(height: 12),
                   const Text(
-                    'La vérification contrôle deux choses : le tag appartient-il à IziCardOuaga (UID enregistré), et son contenu est-il celui attendu.',
+                    'La vérification contrôle deux choses : le tag appartient-il à IziCard Manager (UID enregistré), et son contenu est-il celui attendu.',
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 18),
@@ -249,7 +260,7 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
               icon: _owned! ? Icons.verified_rounded : Icons.help_outline,
               title:
                   _owned!
-                      ? '1. Appartenance : tag IziCardOuaga ✔'
+                      ? '1. Appartenance : tag IziCard Manager ✔'
                       : '1. Appartenance : tag non enregistré ✖',
               message:
                   _owned!
@@ -283,11 +294,15 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
                   children: [
                     _InfoLine(label: 'UID physique', value: _uid ?? 'Inconnu'),
                     _InfoLine(
-                      label: 'Contenu lu sur le tag',
+                      label: 'Contenu NDEF lu sur le tag',
                       value: _contentRead ?? '—',
                     ),
                     if (_chip != null)
                       _InfoLine(label: 'Puce', value: _chip!),
+                    ..._details.entries.map(
+                      (entry) =>
+                          _InfoLine(label: entry.key, value: entry.value),
+                    ),
                     if (_expected != null) ...[
                       _InfoLine(label: 'Carte', value: _expected!.publicId),
                       _InfoLine(label: 'Dossier', value: _expected!.batchId),

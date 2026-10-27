@@ -14,11 +14,15 @@ class NfcReadResult {
     required this.message,
     this.maxSize,
     this.cancelled = false,
+    this.details = const <String, String>{},
   });
   final String uid;
   final NdefMessage? message;
   final int? maxSize;
   final bool cancelled;
+
+  /// Informations techniques lues sur le tag (technologies, ATQA, SAK, fabricant, NDEF…).
+  final Map<String, String> details;
 }
 
 class NfcWriteResult {
@@ -79,6 +83,7 @@ class NfcService {
                   uid: uid,
                   message: message,
                   maxSize: ndef?.maxSize,
+                  details: _collectDetails(tag, ndef, uid),
                 ),
               );
             }
@@ -308,6 +313,57 @@ class NfcService {
     } finally {
       if (identical(_active, completer)) _active = null;
     }
+  }
+
+  /// Informations techniques façon « lecteur de tags » : chaque donnée est facultative
+  /// (lue au mieux selon ce que le téléphone et la puce fournissent), jamais bloquante.
+  static Map<String, String> _collectDetails(
+    NfcTag tag,
+    Ndef? ndef,
+    String uid,
+  ) {
+    final details = <String, String>{};
+    if (uid.isNotEmpty) {
+      details['Longueur de l’UID'] = '${uid.length ~/ 2} octets';
+      if (uid.startsWith('04')) {
+        details['Fabricant (d’après l’UID)'] = 'NXP Semiconductors';
+      }
+    }
+    try {
+      final techs = (NfcTagAndroid.from(tag) as dynamic)?.techList;
+      if (techs is Iterable && techs.isNotEmpty) {
+        details['Technologies'] = techs
+            .map((item) => item.toString().split('.').last)
+            .join(', ');
+      }
+    } catch (_) {}
+    try {
+      final nfcA = NfcAAndroid.from(tag) as dynamic;
+      if (nfcA != null) {
+        final atqa = nfcA.atqa;
+        if (atqa is Uint8List) details['ATQA'] = _hex(atqa);
+        final sak = nfcA.sak;
+        if (sak is int) {
+          details['SAK'] =
+              '0x${sak.toRadixString(16).padLeft(2, '0').toUpperCase()}';
+        }
+      }
+    } catch (_) {}
+    try {
+      final mifare = MifareUltralightAndroid.from(tag) as dynamic;
+      if (mifare != null) {
+        details['Famille'] =
+            'MIFARE Ultralight / NTAG (${mifare.type.toString().split('.').last})';
+      }
+    } catch (_) {}
+    if (ndef != null) {
+      details['NDEF'] = 'pris en charge';
+      details['Écriture'] =
+          ndef.isWritable ? 'autorisée' : 'verrouillée ou protégée';
+    } else {
+      details['NDEF'] = 'non pris en charge ou tag non formaté';
+    }
+    return details;
   }
 
   static String _uid(NfcTag tag) {

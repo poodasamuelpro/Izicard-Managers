@@ -95,7 +95,7 @@ class HomeScreen extends StatelessWidget {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('IziCard'),
+        title: const Text('IziCard Manager'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8),

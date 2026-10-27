@@ -248,11 +248,15 @@ class _WriteScreenState extends State<WriteScreen> {
               onPressed:
                   () => Navigator.of(context).push<void>(
                     MaterialPageRoute<void>(
-                      builder: (_) => const QuickWriteScreen(),
+                      builder:
+                          (_) => QuickWriteScreen(
+                            profile: widget.profile,
+                            repository: _batches,
+                          ),
                     ),
                   ),
               icon: const Icon(Icons.nfc_rounded),
-              label: const Text('Écrire une seule carte (sans dossier)'),
+              label: const Text('Écrire une seule carte (enregistrée)'),
             ),
             const SizedBox(height: 18),
             Text(
@@ -268,7 +272,7 @@ class _WriteScreenState extends State<WriteScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Aucun dossier disponible. Écrivez une seule carte ci-dessus, ou créez un dossier.',
+                        'Aucun dossier disponible. Écrivez une seule carte ci-dessus (un dossier est créé pour vous), ou créez un dossier.',
                       ),
                       const SizedBox(height: 12),
                       FilledButton.icon(

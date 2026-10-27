@@ -1033,3 +1033,10 @@ Créer les secrets GitHub, lancer le workflow Build APK, installer l'APK et vér
 - À faire : exécuter `007_nfc_client_create_batches.sql` (dépôt web) dans Supabase ; coller le nouveau modèle d'e-mail d'invitation ; relancer Build APK ; tester sur téléphone.
 - Non vérifié : rien n'est compilé ni testé (Flutter absent) ; seule une vérification des parenthèses a été faite. Nom (IziCardOuaga) et design non traités.
 
+
+## Lot M26 : lecture complète, écriture enregistrée, import sans préparation
+- `nfc_service.dart` : `NfcReadResult.details` (UID, fabricant, technologies, ATQA, SAK, famille, NDEF, écriture). `verify_tag_screen.dart` : tous les enregistrements NDEF + détails + puce probable.
+- `quick_write_screen.dart` : écriture d'une carte enregistrée dans la base (dossier auto « Cartes uniques — … ») puis écrite via `SingleWriteScreen`.
+- `quick_batch_dialog.dart` + `import_screen.dart` : création rapide d'un dossier pour l'import.
+- Nom conservé « IziCard Manager » ; client interne renommé « IziCard Manager — usage interne ».
+- Non vérifié : aucun build ni test ; lecture type NXP TagInfo partielle (pas de dump mémoire).

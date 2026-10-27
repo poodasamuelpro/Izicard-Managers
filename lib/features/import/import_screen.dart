@@ -20,7 +20,7 @@ import 'import_result_screen.dart';
 import 'manual_entry_screen.dart';
 import 'mapping_screen.dart';
 import 'preview_screen.dart';
-import '../admin/batches/batch_create_screen.dart';
+import 'quick_batch_dialog.dart';
 
 class ImportScreen extends StatefulWidget {
   const ImportScreen({
@@ -63,6 +63,21 @@ class _ImportScreenState extends State<ImportScreen> {
     try {
       await future;
     } catch (_) {}
+  }
+
+  /// Crée un dossier à la volée (nom + format) puis le sélectionne pour l'import.
+  Future<void> _quickBatch() async {
+    final createdId = await showDialog<String>(
+      context: context,
+      builder:
+          (_) => QuickBatchDialog(
+            profile: widget.profile,
+            repository: widget.repository,
+          ),
+    );
+    if (createdId == null || !mounted) return;
+    await _refreshBatches();
+    if (mounted) _selectBatch(createdId);
   }
 
   void _selectBatch(String id) {
@@ -489,18 +504,7 @@ class _ImportScreenState extends State<ImportScreen> {
                     ),
                     const SizedBox(height: 14),
                     FilledButton.icon(
-                      onPressed: () async {
-                        final created = await Navigator.of(context).push<bool>(
-                          MaterialPageRoute<bool>(
-                            builder:
-                                (_) => BatchCreateScreen(
-                                  profile: widget.profile,
-                                  repository: widget.repository,
-                                ),
-                          ),
-                        );
-                        if (created == true && mounted) await _refreshBatches();
-                      },
+                      onPressed: _quickBatch,
                       icon: const Icon(Icons.create_new_folder_outlined),
                       label: const Text('Créer un dossier'),
                     ),
@@ -548,7 +552,15 @@ class _ImportScreenState extends State<ImportScreen> {
                           if (value != null) _selectBatch(value);
                         },
               ),
-              const SizedBox(height: 14),
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: _busy ? null : _quickBatch,
+                  icon: const Icon(Icons.add_rounded),
+                  label: const Text('Nouveau dossier'),
+                ),
+              ),
+              const SizedBox(height: 8),
               FutureBuilder<BatchImportContext>(
                 key: ValueKey(selectedId),
                 future: _contextFuture,

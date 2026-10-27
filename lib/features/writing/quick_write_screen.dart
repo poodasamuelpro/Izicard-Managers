@@ -1,13 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
-import '../../services/feedback/feedback_service.dart';
-import '../../services/nfc/nfc_service.dart';
+import '../../data/models/nfc_profile.dart';
+import '../../data/remote/tags_remote.dart';
+import '../../data/repositories/batch_repository.dart';
+import '../../data/repositories/tag_repository.dart';
+import '../cards/single_write_screen.dart';
 import '../nfc/nfc_help_banner.dart';
 
-/// Écriture d'une seule carte, sans dossier ni client : on saisit la donnée et on écrit.
-/// Cette écriture n'est PAS enregistrée dans la base (aucune carte, aucun historique).
+/// Écriture d'une seule carte, sans préparer de dossier à la main.
+/// La carte est ENREGISTRÉE dans la base (dossier automatique « Cartes uniques — … »),
+/// puis écrite et vérifiée par l'écran d'écriture d'une carte, qui enregistre aussi le résultat.
 class QuickWriteScreen extends StatefulWidget {
-  const QuickWriteScreen({super.key});
+  const QuickWriteScreen({
+    super.key,
+    required this.profile,
+    required this.repository,
+  });
+
+  final NfcProfile profile;
+  final BatchRepository repository;
 
   @override
   State<QuickWriteScreen> createState() => _QuickWriteScreenState();
@@ -23,88 +35,134 @@ class _QuickWriteScreenState extends State<QuickWriteScreen> {
 
   final _value = TextEditingController();
   String _type = 'url';
-  bool _lock = false;
-  bool _writing = false;
+  bool _busy = false;
   String? _message;
   bool _ok = false;
 
   @override
   void dispose() {
-    NfcService.cancel();
     _value.dispose();
     super.dispose();
   }
 
-  /// Ajoute le préfixe attendu par le tag (tel:, mailto:) si l'utilisateur ne l'a pas saisi.
-  (String, String) _payload() {
-    final raw = _value.text.trim();
+  /// (code du format, ligne envoyée à nfc_import_rows) selon le type choisi.
+  (String, Map<String, dynamic>) _spec(String raw) {
     switch (_type) {
       case 'phone':
-        return ('url', raw.startsWith('tel:') ? raw : 'tel:$raw');
+        return ('custom_phone', {'phone': raw});
       case 'email':
-        return ('url', raw.startsWith('mailto:') ? raw : 'mailto:$raw');
-      case 'url':
+        return (
+          'custom_url',
+          {'_payload': raw.startsWith('mailto:') ? raw : 'mailto:$raw'},
+        );
+      case 'text':
+        return ('custom_text', {'_payload': raw});
+      default:
         final withScheme =
             raw.startsWith('http://') || raw.startsWith('https://')
                 ? raw
                 : 'https://$raw';
-        return ('url', withScheme);
-      default:
-        return ('text', raw);
+        return ('custom_url', {'_payload': withScheme});
     }
   }
 
-  Future<bool> _confirmOverwrite(String uid, int count) async {
-    final result = await showDialog<bool>(
-      context: context,
-      builder:
-          (dialogContext) => AlertDialog(
-            title: const Text('Ce tag contient déjà des données'),
-            content: const Text('Voulez-vous les remplacer ?'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(dialogContext).pop(false),
-                child: const Text('Annuler'),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(dialogContext).pop(true),
-                child: const Text('Remplacer'),
-              ),
-            ],
-          ),
-    );
-    return result == true;
-  }
-
-  Future<void> _write() async {
-    if (_value.text.trim().isEmpty) {
+  Future<void> _prepareAndWrite() async {
+    final raw = _value.text.trim();
+    if (raw.isEmpty) {
       setState(() {
         _ok = false;
         _message = 'Saisissez d’abord la donnée à écrire.';
       });
       return;
     }
-    final (dataType, payload) = _payload();
     setState(() {
-      _writing = true;
+      _busy = true;
       _message = null;
     });
-    final result = await NfcService.writeOnce(
-      dataType: dataType,
-      payload: payload,
-      lockAfterWrite: _lock,
-      confirmOverwrite: _confirmOverwrite,
-    );
-    if (!mounted) return;
-    setState(() {
-      _writing = false;
-      _ok = result.verified;
-      _message =
-          result.verified
-              ? 'Carte écrite et vérifiée${result.locked ? ' (verrouillée)' : ''}. UID ${result.uid}.${result.error == null ? '' : ' ${result.error}'}'
-              : (result.error ?? 'Écriture annulée.');
-    });
-    FeedbackService.signal(success: result.verified);
+    try {
+      final repository = widget.repository;
+      final (formatCode, row) = _spec(raw);
+      final title = 'Cartes uniques — ${_types[_type]}';
+
+      final formats =
+          (await repository.listActiveFormats())
+              .where((format) => format.code == formatCode)
+              .toList();
+      if (formats.isEmpty) {
+        throw Exception('Le format « $formatCode » n’est pas disponible.');
+      }
+      final format = formats.first;
+
+      final clientId =
+          widget.profile.role == NfcRole.admin
+              ? await repository.ensureInternalClient()
+              : widget.profile.clientId;
+      if (clientId == null) throw Exception('Aucun client lié à ce compte.');
+
+      final existing =
+          (await repository.listBatchStats())
+              .where(
+                (batch) =>
+                    batch.clientId == clientId &&
+                    batch.name == title &&
+                    batch.status != 'archived',
+              )
+              .toList();
+      final batchId =
+          existing.isNotEmpty
+              ? existing.first.id
+              : await repository.createBatch(
+                clientId: clientId,
+                formatId: format.id,
+                name: title,
+                quantity: 0,
+                dataType: format.defaultDataType,
+                lockAfterWrite: false,
+              );
+
+      await repository.importRows(
+        batchId: batchId,
+        rows: [row],
+        filename: 'carte unique',
+      );
+
+      final tags = await TagRepository(
+        TagsRemote(Supabase.instance.client),
+      ).listWritableTags(batchId);
+      if (tags.isEmpty) {
+        throw Exception('La carte n’a pas pu être enregistrée (donnée refusée).');
+      }
+      tags.sort((a, b) => a.sequence.compareTo(b.sequence));
+      final tag = tags.last;
+
+      if (!mounted) return;
+      final changed = await Navigator.of(context).push<bool>(
+        MaterialPageRoute<bool>(
+          builder:
+              (_) => SingleWriteScreen(
+                tag: tag,
+                profile: widget.profile,
+                batchName: title,
+              ),
+        ),
+      );
+      if (!mounted) return;
+      setState(() {
+        _ok = changed == true;
+        _message =
+            changed == true
+                ? 'Carte écrite et enregistrée dans le dossier « $title ».'
+                : 'Carte enregistrée dans « $title » mais pas encore écrite : retrouvez-la dans ce dossier pour l’écrire.';
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _ok = false;
+        _message = error.toString().replaceFirst('Exception: ', '');
+      });
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
   }
 
   @override
@@ -116,7 +174,7 @@ class _QuickWriteScreenState extends State<QuickWriteScreen> {
         children: [
           const NfcHelpBanner(),
           Text(
-            'Sans dossier ni client. Cette écriture n’est pas enregistrée dans la base.',
+            'La carte est enregistrée automatiquement dans un dossier « Cartes uniques », puis écrite. Connexion requise.',
             style: Theme.of(context).textTheme.bodyMedium,
           ),
           const SizedBox(height: 16),
@@ -135,13 +193,12 @@ class _QuickWriteScreenState extends State<QuickWriteScreen> {
                       ),
                     )
                     .toList(),
-            onChanged:
-                _writing ? null : (value) => setState(() => _type = value!),
+            onChanged: _busy ? null : (value) => setState(() => _type = value!),
           ),
           const SizedBox(height: 14),
           TextField(
             controller: _value,
-            enabled: !_writing,
+            enabled: !_busy,
             keyboardType:
                 _type == 'phone'
                     ? TextInputType.phone
@@ -156,38 +213,29 @@ class _QuickWriteScreenState extends State<QuickWriteScreen> {
               border: const OutlineInputBorder(),
             ),
           ),
-          SwitchListTile.adaptive(
-            contentPadding: EdgeInsets.zero,
-            value: _lock,
-            title: const Text('Verrouiller la carte après écriture'),
-            subtitle: const Text('Action définitive sur la carte physique.'),
-            onChanged: _writing ? null : (value) => setState(() => _lock = value),
-          ),
-          const SizedBox(height: 8),
+          const SizedBox(height: 16),
           FilledButton.icon(
-            onPressed: _writing ? null : _write,
-            icon: const Icon(Icons.nfc_rounded),
-            label: Text(
-              _writing ? 'Approchez la carte…' : 'Écrire sur la carte',
-            ),
+            onPressed: _busy ? null : _prepareAndWrite,
+            icon:
+                _busy
+                    ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    )
+                    : const Icon(Icons.nfc_rounded),
+            label: Text(_busy ? 'Préparation…' : 'Enregistrer et écrire'),
           ),
-          if (_writing) ...[
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed: NfcService.cancel,
-              icon: const Icon(Icons.close_rounded),
-              label: const Text('Annuler'),
-            ),
-          ],
           if (_message != null) ...[
             const SizedBox(height: 16),
             Card(
               child: ListTile(
                 leading: Icon(
-                  _ok ? Icons.verified_rounded : Icons.error_outline,
-                  color: _ok ? Colors.green : Theme.of(context).colorScheme.error,
+                  _ok ? Icons.verified_rounded : Icons.info_outline,
+                  color:
+                      _ok ? Colors.green : Theme.of(context).colorScheme.error,
                 ),
-                title: Text(_ok ? 'Succès' : 'Échec'),
+                title: Text(_ok ? 'Succès' : 'À savoir'),
                 subtitle: Text(_message!),
               ),
             ),

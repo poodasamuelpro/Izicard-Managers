@@ -19,12 +19,16 @@ class ClientsRemote {
   }
 
   /// Nom du client interne qui porte les cartes de l'administrateur (aucun client externe).
-  static const internalClientName = 'IziCardOuaga — usage interne';
+  static const internalClientName = 'IziCard Manager — usage interne';
+  static const _legacyInternalName = 'IziCardOuaga — usage interne';
 
   /// Retourne l'identifiant du client interne, en le créant au besoin (administrateur uniquement, via la RLS).
   Future<String> ensureInternalClient() async {
     final table = _client.schema(AppConstants.nfcSchema).from('nfc_clients');
-    final found = await table.select('id').eq('name', internalClientName).limit(1);
+    final found = await table
+        .select('id')
+        .inFilter('name', [internalClientName, _legacyInternalName])
+        .limit(1);
     if (found.isNotEmpty) return found.first['id'].toString();
     final created =
         await table
