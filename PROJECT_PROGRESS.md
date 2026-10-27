@@ -1008,3 +1008,7 @@ Créer les secrets GitHub, lancer le workflow Build APK, installer l'APK et vér
 - Documenté : `GUIDE_DEPLOIEMENT.md` section 8, README.
 - Reste : créer les secrets GitHub, publier `public/.well-known/assetlinks.json` dans le dépôt web avec l'empreinte SHA-256 du keystore release, vérifier les domaines dans Cloudflare, contrôler les routes qui reçoivent le lien. Rien n'a été compilé ni testé.
 
+
+## Lot M21 : correction du build GitHub (Gradle)
+- Run #53 : échec Gradle « version 8.12.0 inférieure au minimum 8.14.0 de Flutter ». Correction : `gradle-wrapper.properties` passé à Gradle 8.14. Aucune autre modification.
+- Non vérifié : nouveau run non lancé ; d'autres erreurs peuvent apparaître ensuite (AGP 8.9.1 déclaré dans `settings.gradle.kts` non confronté à cette version de Flutter).
