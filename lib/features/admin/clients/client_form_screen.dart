@@ -85,7 +85,7 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Le compte Auth, le profil client et le lien client_id sont créés par la fonction Supabase sécurisée. La clé service_role ne quitte jamais le serveur.',
+              'Le client reçoit un e-mail pour choisir son mot de passe et accéder à son espace.',
               style: Theme.of(context).textTheme.bodyMedium,
             ),
             const SizedBox(height: 24),
@@ -102,9 +102,9 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
               keyboardType: TextInputType.emailAddress,
               textInputAction: TextInputAction.next,
               decoration: const InputDecoration(
-                labelText: 'E-mail de connexion Auth',
+                labelText: 'E-mail de connexion',
                 helperText:
-                    'Utilisé uniquement pour l’invitation et la connexion du compte.',
+                    'Utilisé pour l’invitation et la connexion du client.',
               ),
               validator: (value) {
                 final required = _required(value, 'L’email');

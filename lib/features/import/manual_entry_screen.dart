@@ -91,7 +91,7 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
                 sourceLine: 1,
                 message:
                     rawError['message']?.toString() ??
-                    'Ligne refusée par Supabase.',
+                    'Ligne refusée.',
                 sourceValues: manualValues,
               ),
             );
@@ -102,7 +102,7 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
         failures.add(
           ImportRowFailure(
             sourceLine: 1,
-            message: 'Ligne refusée par Supabase.',
+            message: 'Ligne refusée.',
             sourceValues: manualValues,
           ),
         );

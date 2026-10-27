@@ -42,7 +42,7 @@ class ImportResultScreen extends StatelessWidget {
           ),
         ],
         subject: 'Erreurs de l’import IziCard',
-        text: 'Lignes rejetées par la validation Supabase.',
+        text: 'Lignes rejetées par la validation.',
       );
     } catch (_) {
       if (context.mounted)
@@ -85,7 +85,7 @@ class ImportResultScreen extends StatelessWidget {
           ),
           const SizedBox(height: 14),
           Text(
-            'Lignes rejetées par Supabase',
+            'Lignes rejetées',
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 8),

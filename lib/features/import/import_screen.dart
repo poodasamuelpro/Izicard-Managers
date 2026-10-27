@@ -250,7 +250,7 @@ class _ImportScreenState extends State<ImportScreen> {
               sourceLine: prepared.sourceLine,
               message:
                   rawError['message']?.toString() ??
-                  'Ligne refusée par Supabase.',
+                  'Ligne refusée.',
               sourceValues: prepared.sourceValues,
             ),
           );
@@ -270,7 +270,7 @@ class _ImportScreenState extends State<ImportScreen> {
               ImportRowFailure(
                 sourceLine: prepared.sourceLine,
                 message:
-                    'Ligne rejetée par Supabase; détail non retourné par la RPC.',
+                    'Ligne rejetée (aucun détail fourni).',
                 sourceValues: prepared.sourceValues,
               ),
             );
@@ -388,7 +388,7 @@ class _ImportScreenState extends State<ImportScreen> {
         ],
         [
           'Validation',
-          'La validation et le nettoyage sont effectués par Supabase nfc_import_rows.',
+          'Les données sont vérifiées et nettoyées automatiquement à l’envoi.',
         ],
         ['Champs', 'Champ | Type | Obligatoire | Exemple | Alias'],
         ...format.fields.map(
@@ -441,7 +441,7 @@ class _ImportScreenState extends State<ImportScreen> {
         ],
         subject: 'Modèle d’import ${format.label}',
         text:
-            'Les en-têtes suivent les champs du format nfc. Les alias reconnus sont disponibles dans l’application.',
+            'Les en-têtes de colonnes sont reconnus automatiquement d’après le format choisi.',
       );
     } catch (error) {
       if (mounted) setState(() => _error = _friendlyError(error));
@@ -753,7 +753,7 @@ class _BatchSummary extends StatelessWidget {
         ),
         const SizedBox(height: 5),
         const Text(
-          'Fichier lu sur cet appareil; seules les lignes mappées sont envoyées à la RPC nfc_import_rows.',
+          'Le fichier est lu sur cet appareil ; seules les colonnes choisies sont envoyées.',
         ),
       ],
     ),

@@ -34,7 +34,7 @@ class ImportPreviewStep extends StatelessWidget {
         ),
         const SizedBox(height: 8),
         const Text(
-          'Aperçu des cinq premières lignes. Le contrôle définitif des données est effectué par Supabase.',
+          'Aperçu des cinq premières lignes. Le contrôle définitif est fait à l’envoi.',
         ),
         const SizedBox(height: 12),
         if (activeColumns.isEmpty)

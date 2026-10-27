@@ -307,11 +307,11 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
                       _InfoLine(label: 'Carte', value: _expected!.publicId),
                       _InfoLine(label: 'Dossier', value: _expected!.batchId),
                       _InfoLine(
-                        label: 'Statut backend',
+                        label: 'Statut de la carte',
                         value: _expected!.status,
                       ),
                       _InfoLine(
-                        label: 'Payload attendu',
+                        label: 'Contenu attendu',
                         value: _expected!.payload,
                       ),
                     ],

@@ -127,7 +127,7 @@ class ColumnMappingStep extends StatelessWidget {
               borderRadius: BorderRadius.circular(14),
             ),
             child: const Text(
-              'Les règles de validation finales sont celles du schéma nfc. Les lignes invalides seront signalées sans empêcher les autres d’être importées.',
+              'Les lignes invalides seront signalées sans empêcher les autres d’être importées.',
             ),
           ),
         const SizedBox(height: 14),

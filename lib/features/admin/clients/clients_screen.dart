@@ -142,7 +142,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        'La révocation est appliquée par Supabase et bloque immédiatement les opérations autorisées.',
+                        'La suspension d’un accès bloque immédiatement le client.',
                         style: Theme.of(context).textTheme.bodySmall,
                       ),
                     ],
@@ -230,7 +230,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: const Text(
-                    'Les clients et leurs droits sont lus dans nfc. La création des comptes de connexion reste dans Supabase Auth ; aucun secret administrateur n’est embarqué dans l’application.',
+                    'Invitez vos clients, suivez leurs accès et créez des dossiers pour eux depuis cette page.',
                   ),
                 ),
                 const SizedBox(height: 16),

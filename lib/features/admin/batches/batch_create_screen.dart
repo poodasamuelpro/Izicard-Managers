@@ -153,7 +153,7 @@ class _BatchCreateScreenState extends State<BatchCreateScreen> {
       );
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Dossier créé dans Supabase.')),
+        const SnackBar(content: Text('Dossier créé.')),
       );
       Navigator.of(context).pop(true);
     } catch (error) {
@@ -209,7 +209,7 @@ class _BatchCreateScreenState extends State<BatchCreateScreen> {
               return const _EmptyOptions(
                 title: 'Aucun format disponible',
                 message:
-                    'Un administrateur doit activer au moins un format dans Supabase.',
+                    'Aucun format de carte n’est actif. Contactez votre administrateur.',
               );
             if (widget.profile.role == NfcRole.admin && clients.isEmpty)
               return Center(

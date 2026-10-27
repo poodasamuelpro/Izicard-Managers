@@ -93,6 +93,16 @@ class HomeScreen extends StatelessWidget {
               NfcDestination.settings,
             ];
 
+    const quick = [NfcDestination.write, NfcDestination.verify];
+    final others = destinations.where((d) => !quick.contains(d)).toList();
+    void open(BuildContext context, NfcDestination destination) =>
+        NfcRouteGuard.open(
+          context,
+          profile: profile,
+          destination: destination,
+          repository: repository,
+        );
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('IziCard Manager'),
@@ -111,8 +121,13 @@ class HomeScreen extends StatelessWidget {
         child: ResponsiveContent(
           child: LayoutBuilder(
             builder: (context, constraints) {
-              final isGrid = constraints.maxWidth >= 760;
-              final tileWidth = (constraints.maxWidth - 16) / 2;
+              final columns = constraints.maxWidth >= 760 ? 3 : 2;
+              const gap = 12.0;
+              final tileWidth =
+                  (constraints.maxWidth - gap * (columns - 1)) / columns;
+              final titleStyle = Theme.of(
+                context,
+              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800);
               return ListView(
                 padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
                 children: [
@@ -122,63 +137,46 @@ class HomeScreen extends StatelessWidget {
                     role: profile.role,
                     isWide: constraints.maxWidth >= 600,
                   ),
-                  const SizedBox(height: 28),
-                  Text(
-                    _isAdmin ? 'Espace administration' : 'Votre espace NFC',
-                    style: Theme.of(context).textTheme.headlineSmall,
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    _isAdmin
-                        ? 'Gérez les opérations IziCard depuis votre mobile.'
-                        : 'Retrouvez vos dossiers et vos opérations NFC autorisées.',
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-                  const SizedBox(height: 18),
-                  if (isGrid)
-                    Wrap(
-                      spacing: 16,
-                      runSpacing: 16,
-                      children:
-                          destinations
-                              .map(
-                                (destination) => SizedBox(
-                                  width: tileWidth,
-                                  child: _DestinationCard(
-                                    destination: destination,
-                                    onTap:
-                                        () => NfcRouteGuard.open(
-                                          context,
-                                          profile: profile,
-                                          destination: destination,
-                                          repository: repository,
-                                        ),
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                    )
-                  else
-                    ...destinations.map(
-                      (destination) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _DestinationCard(
-                          destination: destination,
-                          onTap:
-                              () => NfcRouteGuard.open(
-                                context,
-                                profile: profile,
-                                destination: destination,
-                                repository: repository,
-                              ),
+                  const SizedBox(height: 24),
+                  Text('Actions rapides', style: titleStyle),
+                  const SizedBox(height: 12),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      for (var i = 0; i < quick.length; i++) ...[
+                        if (i > 0) const SizedBox(width: gap),
+                        Expanded(
+                          child: _QuickAction(
+                            destination: quick[i],
+                            filled: i == 0,
+                            onTap: () => open(context, quick[i]),
+                          ),
                         ),
-                      ),
-                    ),
-                  const SizedBox(height: 8),
+                      ],
+                    ],
+                  ),
+                  const SizedBox(height: 28),
+                  Text(_isAdmin ? 'Gestion' : 'Votre espace', style: titleStyle),
+                  const SizedBox(height: 12),
+                  Wrap(
+                    spacing: gap,
+                    runSpacing: gap,
+                    children:
+                        others
+                            .map(
+                              (destination) => SizedBox(
+                                width: tileWidth,
+                                child: _GridTile(
+                                  destination: destination,
+                                  onTap: () => open(context, destination),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                  ),
+                  const SizedBox(height: 24),
                   Text(
-                    'Les données et les autorisations sont gérées par le backend IziCard partagé.',
+                    'Vos données sont synchronisées et protégées par votre compte IziCard.',
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -287,71 +285,182 @@ class _WelcomeCard extends StatelessWidget {
   }
 }
 
-class _DestinationCard extends StatelessWidget {
-  const _DestinationCard({required this.destination, required this.onTap});
+IconData _destinationIcon(NfcDestination destination) => switch (destination) {
+  NfcDestination.clients => Icons.people_alt_rounded,
+  NfcDestination.batches => Icons.inventory_2_rounded,
+  NfcDestination.createBatch => Icons.create_new_folder_rounded,
+  NfcDestination.imports => Icons.upload_file_rounded,
+  NfcDestination.export => Icons.download_rounded,
+  NfcDestination.write => Icons.nfc_rounded,
+  NfcDestination.verify => Icons.fact_check_rounded,
+  NfcDestination.sync => Icons.sync_rounded,
+  NfcDestination.settings => Icons.settings_rounded,
+  NfcDestination.dashboard => Icons.dashboard_rounded,
+};
+
+String _destinationHint(NfcDestination destination) => switch (destination) {
+  NfcDestination.clients => 'Accès et invitations',
+  NfcDestination.batches => 'Vos lots de cartes',
+  NfcDestination.createBatch => 'Nouveau lot de cartes',
+  NfcDestination.imports => 'Fichier ou saisie',
+  NfcDestination.export => 'Données et rapports',
+  NfcDestination.write => 'Dossier ou carte unique',
+  NfcDestination.verify => 'Lisez et contrôlez un tag',
+  NfcDestination.sync => 'Envois en attente',
+  NfcDestination.settings => 'Compte et préférences',
+  NfcDestination.dashboard => 'Vue d’ensemble',
+};
+
+/// Grande action de l'accueil (écrire / vérifier) : pensée pour le pouce, une seule touche.
+class _QuickAction extends StatelessWidget {
+  const _QuickAction({
+    required this.destination,
+    required this.filled,
+    required this.onTap,
+  });
+  final NfcDestination destination;
+  final bool filled;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final foreground = filled ? Colors.white : colors.onSurface;
+    final secondary = filled ? Colors.white.withOpacity(0.88) : colors.onSurfaceVariant;
+    return Material(
+      color: Colors.transparent,
+      borderRadius: BorderRadius.circular(22),
+      child: Ink(
+        decoration: BoxDecoration(
+          gradient:
+              filled
+                  ? LinearGradient(
+                    colors: context.ink.hero,
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  )
+                  : null,
+          color: filled ? null : colors.surfaceContainerLowest,
+          borderRadius: BorderRadius.circular(22),
+          border: filled ? null : Border.all(color: colors.outlineVariant),
+          boxShadow:
+              filled
+                  ? [
+                    BoxShadow(
+                      color: colors.primary.withOpacity(0.18),
+                      blurRadius: 16,
+                      offset: const Offset(0, 6),
+                    ),
+                  ]
+                  : null,
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(22),
+          onTap: onTap,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 46,
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color:
+                        filled
+                            ? Colors.white.withOpacity(0.2)
+                            : colors.primaryContainer,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    _destinationIcon(destination),
+                    color: filled ? Colors.white : colors.onPrimaryContainer,
+                  ),
+                ),
+                const SizedBox(height: 14),
+                Text(
+                  destination.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: foreground,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  _destinationHint(destination),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(
+                    context,
+                  ).textTheme.bodySmall?.copyWith(color: secondary),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Tuile compacte (grille 2 colonnes sur téléphone) : icône, titre, précision courte.
+class _GridTile extends StatelessWidget {
+  const _GridTile({required this.destination, required this.onTap});
   final NfcDestination destination;
   final VoidCallback onTap;
 
-  IconData get _icon => switch (destination) {
-    NfcDestination.clients => Icons.people_alt_outlined,
-    NfcDestination.batches => Icons.inventory_2_outlined,
-    NfcDestination.createBatch => Icons.add_box_outlined,
-    NfcDestination.imports => Icons.upload_file_outlined,
-    NfcDestination.export => Icons.download_outlined,
-    NfcDestination.write => Icons.nfc_rounded,
-    NfcDestination.verify => Icons.fact_check_outlined,
-    NfcDestination.sync => Icons.sync_rounded,
-    NfcDestination.settings => Icons.settings_outlined,
-    NfcDestination.dashboard => Icons.dashboard_outlined,
-  };
-
   @override
-  Widget build(BuildContext context) => Card(
-    clipBehavior: Clip.antiAlias,
-    child: InkWell(
-      onTap: onTap,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              width: 48,
-              height: 48,
-              decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.primaryContainer,
-                borderRadius: BorderRadius.circular(15),
-              ),
-              child: Icon(
-                _icon,
-                color: Theme.of(context).colorScheme.onPrimaryContainer,
-              ),
-            ),
-            const SizedBox(width: 14),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    destination.title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onTap,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 124),
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: colors.primaryContainer,
+                    borderRadius: BorderRadius.circular(13),
                   ),
-                  const SizedBox(height: 3),
-                  Text(
-                    destination.description,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
-                    ),
+                  child: Icon(
+                    _destinationIcon(destination),
+                    size: 22,
+                    color: colors.onPrimaryContainer,
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  destination.title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  _destinationHint(destination),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: colors.onSurfaceVariant,
+                  ),
+                ),
+              ],
             ),
-            const SizedBox(width: 8),
-            const Icon(Icons.chevron_right_rounded),
-          ],
+          ),
         ),
       ),
-    ),
-  );
+    );
+  }
 }

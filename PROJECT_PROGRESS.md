@@ -1040,3 +1040,7 @@ Créer les secrets GitHub, lancer le workflow Build APK, installer l'APK et vér
 - `quick_batch_dialog.dart` + `import_screen.dart` : création rapide d'un dossier pour l'import.
 - Nom conservé « IziCard Manager » ; client interne renommé « IziCard Manager — usage interne ».
 - Non vérifié : aucun build ni test ; lecture type NXP TagInfo partielle (pas de dump mémoire).
+
+## Lot M27 : design de l'accueil et textes
+- `home_screen.dart` : actions rapides + grille de tuiles ; textes techniques remplacés par du français courant dans plusieurs écrans (clients, dossier, import, vérification).
+- Non traité : refonte des autres écrans, illustrations. Non vérifié : aucun build ni capture.
