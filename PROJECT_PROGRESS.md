@@ -1017,3 +1017,8 @@ Créer les secrets GitHub, lancer le workflow Build APK, installer l'APK et vér
 - Run suivant : Gradle 8.14 accepté, mais « Android Gradle Plugin 8.9.1 inférieur au minimum 8.11.1 de Flutter ». Correction : `settings.gradle.kts` passé à AGP 8.11.1. Aucune autre modification.
 - Avertissement Flutter (non bloquant) : Gradle 8.14 sera abandonné « bientôt » au profit de 9.1+ ; non traité (AGP 9 demande une migration du DSL).
 - Non vérifié : nouveau run non lancé.
+
+## Lot M23 : correction du build GitHub (Kotlin)
+- Run suivant : AGP 8.11.1 accepté, mais « Kotlin 2.1.0 inférieur au minimum 2.2.20 de Flutter ». Corrections : Kotlin 2.2.20 dans `settings.gradle.kts` ; dans `app/build.gradle.kts`, le bloc `kotlinOptions` (déprécié en Kotlin 2.2) remplacé par `kotlin { compilerOptions { jvmTarget = 11 } }`.
+- Les contrôles de version de Flutter portent sur Java, Gradle, AGP et Kotlin : les trois derniers sont maintenant à jour. Avertissements Flutter non bloquants : Gradle 9.1+ et AGP 9.0.1+ attendus « bientôt » (migration non faite).
+- Non vérifié : nouveau run non lancé ; les plugins tiers (nfc_manager, etc.) peuvent encore faire échouer la compilation.
