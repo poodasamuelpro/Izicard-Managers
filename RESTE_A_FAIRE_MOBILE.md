@@ -123,3 +123,9 @@ La lecture du contenu NDEF existant et la confirmation utilisateur sont maintena
 - ✅ Edge Function `create-client-user` déployée avec JWT obligatoire.
 - ✅ `send-activation-emails` existante conservée inchangée.
 - ⚠️ Restent à faire : configuration SMTP Resend, OTP à 8 chiffres, templates Recovery/Invite, URLs autorisées/deep link, secret `INVITE_REDIRECT_TO`, puis tests réels Auth/RLS/Realtime/NFC et build Android.
+
+
+## 14. Lot M13 — invitations et comptes Auth existants — 2026-10-27 01:24 UTC
+- ✅ L’Edge Function `create-client-user` vérifie le rôle admin et les URLs de redirection autorisées.
+- ✅ Un compte déjà existant dans Supabase Auth est réutilisé sans suppression ni modification de son mot de passe ; seul le profil `nfc` est créé/rattaché.
+- ⚠️ Tester avec un compte réel et vérifier les Redirect URLs du Dashboard sans retirer celles des autres applications.

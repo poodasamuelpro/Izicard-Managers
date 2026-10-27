@@ -821,3 +821,18 @@ Générer puis configurer la plateforme Android (identifiant, SDK, permission NF
 - Compiler l’application Android et tester les RPC/RLS, import, archivage/audit, Realtime, écriture et synchronisation sur appareil.
 ### Commit
 Commit : f5bfcce — docs: record Supabase NFC deployment
+
+
+## Lot M13 — invitation multi-application et comptes Auth existants — 2026-10-27 01:24 UTC
+### Terminé
+- L’Edge Function partagée `create-client-user` est en version 2 avec vérification JWT.
+- Elle valide une URL de redirection parmi les URLs Manager autorisées et accepte une liste configurée séparée par virgules.
+- Elle réutilise un utilisateur Supabase Auth existant sans toucher à son compte, puis crée ou rattache uniquement son profil `nfc`.
+- Un profil administrateur existant est refusé pour éviter toute confusion de rôle entre applications.
+### Partiel / non vérifié
+- Aucun test réel avec un compte Auth existant ni test Android d’invitation/deep link n’a été exécuté.
+- Les Redirect URLs Auth du Dashboard doivent être vérifiées sans supprimer celles des autres applications.
+### Reste à faire
+- Tester les deux parcours avec un compte Admin de test et valider l’isolation par `nfc_profiles`/`nfc_clients`.
+### Commit
+À renseigner après le commit de ce lot.
