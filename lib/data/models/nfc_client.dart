@@ -20,15 +20,15 @@ class NfcClient {
   final bool canCreateBatches;
 
   factory NfcClient.fromMap(Map<String, dynamic> map) => NfcClient(
-        id: map['id'].toString(),
-        name: map['name']?.toString() ?? 'Client sans nom',
-        contactName: map['contact_name']?.toString(),
-        email: map['email']?.toString(),
-        phone: map['phone']?.toString(),
-        active: map['active'] == true,
-        accessExpiresAt: _parseDate(map['access_expires_at']),
-        canCreateBatches: map['can_create_batches'] == true,
-      );
+    id: map['id'].toString(),
+    name: map['name']?.toString() ?? 'Client sans nom',
+    contactName: map['contact_name']?.toString(),
+    email: map['email']?.toString(),
+    phone: map['phone']?.toString(),
+    active: map['active'] == true,
+    accessExpiresAt: _parseDate(map['access_expires_at']),
+    canCreateBatches: map['can_create_batches'] == true,
+  );
 
   static DateTime? _parseDate(Object? value) =>
       value == null ? null : DateTime.tryParse(value.toString())?.toLocal();
@@ -36,9 +36,10 @@ class NfcClient {
   bool get isExpired =>
       accessExpiresAt != null && !accessExpiresAt!.isAfter(DateTime.now());
 
-  String get accessLabel => !active
-      ? 'Suspendu'
-      : isExpired
+  String get accessLabel =>
+      !active
+          ? 'Suspendu'
+          : isExpired
           ? 'Expiré'
           : 'Actif';
 }

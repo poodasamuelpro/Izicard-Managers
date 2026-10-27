@@ -7,7 +7,11 @@ import '../models/nfc_tag.dart';
 import 'app_database.dart';
 
 class OfflineBatchInfo {
-  const OfflineBatchInfo({required this.batch, required this.syncedAt, required this.tagCount});
+  const OfflineBatchInfo({
+    required this.batch,
+    required this.syncedAt,
+    required this.tagCount,
+  });
   final NfcBatch batch;
   final DateTime syncedAt;
   final int tagCount;
@@ -29,7 +33,11 @@ class OfflineTagsDao {
     final db = await _database.instance;
     final now = DateTime.now().toUtc().toIso8601String();
     await db.transaction((txn) async {
-      await txn.delete('offline_tags', where: 'user_id = ? AND batch_id = ?', whereArgs: [userId, batch.id]);
+      await txn.delete(
+        'offline_tags',
+        where: 'user_id = ? AND batch_id = ?',
+        whereArgs: [userId, batch.id],
+      );
       final batchRow = {
         'id': _batchKey(userId, batch.id),
         'name': batch.name,
@@ -50,27 +58,27 @@ class OfflineTagsDao {
           'void': batch.voided,
         }),
       };
-      await txn.insert('offline_batches', batchRow, conflictAlgorithm: ConflictAlgorithm.replace);
+      await txn.insert(
+        'offline_batches',
+        batchRow,
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
       final b = txn.batch();
       for (final tag in tags) {
-        b.insert(
-          'offline_tags',
-          {
-            'user_id': userId,
-            'tag_id': tag.id,
-            'batch_id': tag.batchId,
-            'seq': tag.sequence,
-            'public_id': tag.publicId,
-            'data_type': tag.dataType,
-            'payload': tag.payload,
-            'fields_json': jsonEncode(tag.fields),
-            'status': tag.status,
-            'uid': tag.uid,
-            'locked': tag.locked ? 1 : 0,
-            'synced_at': now,
-          },
-          conflictAlgorithm: ConflictAlgorithm.replace,
-        );
+        b.insert('offline_tags', {
+          'user_id': userId,
+          'tag_id': tag.id,
+          'batch_id': tag.batchId,
+          'seq': tag.sequence,
+          'public_id': tag.publicId,
+          'data_type': tag.dataType,
+          'payload': tag.payload,
+          'fields_json': jsonEncode(tag.fields),
+          'status': tag.status,
+          'uid': tag.uid,
+          'locked': tag.locked ? 1 : 0,
+          'synced_at': now,
+        }, conflictAlgorithm: ConflictAlgorithm.replace);
       }
       await b.commit(noResult: true);
     });
@@ -78,7 +86,12 @@ class OfflineTagsDao {
 
   Future<List<OfflineBatchInfo>> downloadedBatches(String userId) async {
     final db = await _database.instance;
-    final rows = await db.query('offline_batches', where: 'user_id = ?', whereArgs: [userId], orderBy: 'name ASC');
+    final rows = await db.query(
+      'offline_batches',
+      where: 'user_id = ?',
+      whereArgs: [userId],
+      orderBy: 'name ASC',
+    );
     final infos = <OfflineBatchInfo>[];
     for (final row in rows) {
       final decoded = jsonDecode(row['payload_json']! as String);
@@ -100,11 +113,14 @@ class OfflineTagsDao {
         errors: counts['error'] ?? 0,
         voided: counts['void'] ?? 0,
       );
-      infos.add(OfflineBatchInfo(
-        batch: batch,
-        syncedAt: DateTime.tryParse(row['synced_at']! as String) ?? DateTime.now(),
-        tagCount: batch.total,
-      ));
+      infos.add(
+        OfflineBatchInfo(
+          batch: batch,
+          syncedAt:
+              DateTime.tryParse(row['synced_at']! as String) ?? DateTime.now(),
+          tagCount: batch.total,
+        ),
+      );
     }
     return infos;
   }
@@ -127,19 +143,31 @@ class OfflineTagsDao {
     }
     final term = (search ?? '').trim();
     if (term.isNotEmpty) {
-      where.write(' AND (public_id LIKE ? OR uid LIKE ? OR fields_json LIKE ?)');
+      where.write(
+        ' AND (public_id LIKE ? OR uid LIKE ? OR fields_json LIKE ?)',
+      );
       final like = '%$term%';
       args.addAll([like, like, like]);
     }
-    final rows = await db.query('offline_tags',
-        where: where.toString(), whereArgs: args, orderBy: 'seq ASC', limit: limit, offset: offset);
+    final rows = await db.query(
+      'offline_tags',
+      where: where.toString(),
+      whereArgs: args,
+      orderBy: 'seq ASC',
+      limit: limit,
+      offset: offset,
+    );
     return rows.map(_fromRow).toList();
   }
 
   Future<List<NfcTagRecord>> allTags(String userId, String batchId) async {
     final db = await _database.instance;
-    final rows = await db.query('offline_tags',
-        where: 'user_id = ? AND batch_id = ?', whereArgs: [userId, batchId], orderBy: 'seq ASC');
+    final rows = await db.query(
+      'offline_tags',
+      where: 'user_id = ? AND batch_id = ?',
+      whereArgs: [userId, batchId],
+      orderBy: 'seq ASC',
+    );
     return rows.map(_fromRow).toList();
   }
 
@@ -154,15 +182,23 @@ class OfflineTagsDao {
 
   Future<NfcTagRecord?> tagById(String userId, String tagId) async {
     final db = await _database.instance;
-    final rows = await db.query('offline_tags',
-        where: 'user_id = ? AND tag_id = ?', whereArgs: [userId, tagId], limit: 1);
+    final rows = await db.query(
+      'offline_tags',
+      where: 'user_id = ? AND tag_id = ?',
+      whereArgs: [userId, tagId],
+      limit: 1,
+    );
     return rows.isEmpty ? null : _fromRow(rows.first);
   }
 
   Future<bool> hasBatch(String userId, String batchId) async {
     final db = await _database.instance;
-    final rows = await db.query('offline_batches',
-        where: 'id = ?', whereArgs: [_batchKey(userId, batchId)], limit: 1);
+    final rows = await db.query(
+      'offline_batches',
+      where: 'id = ?',
+      whereArgs: [_batchKey(userId, batchId)],
+      limit: 1,
+    );
     return rows.isNotEmpty;
   }
 
@@ -170,7 +206,8 @@ class OfflineTagsDao {
     final db = await _database.instance;
     final rows = await db.query(
       'offline_tags',
-      where: "user_id = ? AND batch_id = ? AND status IN ('pending','error') AND locked = 0",
+      where:
+          "user_id = ? AND batch_id = ? AND status IN ('pending','error') AND locked = 0",
       whereArgs: [userId, batchId],
       orderBy: 'seq ASC',
     );
@@ -205,8 +242,16 @@ class OfflineTagsDao {
   Future<void> removeBatch(String userId, String batchId) async {
     final db = await _database.instance;
     await db.transaction((txn) async {
-      await txn.delete('offline_tags', where: 'user_id = ? AND batch_id = ?', whereArgs: [userId, batchId]);
-      await txn.delete('offline_batches', where: 'id = ?', whereArgs: [_batchKey(userId, batchId)]);
+      await txn.delete(
+        'offline_tags',
+        where: 'user_id = ? AND batch_id = ?',
+        whereArgs: [userId, batchId],
+      );
+      await txn.delete(
+        'offline_batches',
+        where: 'id = ?',
+        whereArgs: [_batchKey(userId, batchId)],
+      );
     });
   }
 

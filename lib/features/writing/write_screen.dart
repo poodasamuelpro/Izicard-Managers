@@ -524,7 +524,11 @@ class _WriteScreenState extends State<WriteScreen> {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        Icon(Icons.flag_rounded, size: 56, color: Theme.of(context).colorScheme.primary),
+        Icon(
+          Icons.flag_rounded,
+          size: 56,
+          color: Theme.of(context).colorScheme.primary,
+        ),
         const SizedBox(height: 10),
         Text(
           'Série terminée',

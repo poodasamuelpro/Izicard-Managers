@@ -15,14 +15,18 @@ class CsvExporter {
     var text = value == null ? '' : value.toString();
     // Protection contre l'injection de formules dans Excel.
     if (RegExp(r'^[=+\-@\t\r]').hasMatch(text)) text = "'$text";
-    if (text.contains(';') || text.contains('"') || text.contains('\n') || text.contains('\r')) {
+    if (text.contains(';') ||
+        text.contains('"') ||
+        text.contains('\n') ||
+        text.contains('\r')) {
       return '"${text.replaceAll('"', '""')}"';
     }
     return text;
   }
 
   static String build(List<NfcTagRecord> tags) {
-    final keys = <String>{for (final tag in tags) ...tag.fields.keys}.toList()..sort();
+    final keys =
+        <String>{for (final tag in tags) ...tag.fields.keys}.toList()..sort();
     final header = [
       'seq',
       'public_id',
@@ -37,18 +41,20 @@ class CsvExporter {
     ];
     final lines = <String>[header.map(_cell).join(';')];
     for (final tag in tags) {
-      lines.add([
-        tag.sequence,
-        tag.publicId,
-        IzicardColors.labelForTagStatus(tag.status),
-        tag.dataType,
-        tag.payload,
-        ...keys.map((key) => tag.fields[key]),
-        tag.uid,
-        tag.attempts,
-        tag.lastError,
-        tag.writtenAt,
-      ].map(_cell).join(';'));
+      lines.add(
+        [
+          tag.sequence,
+          tag.publicId,
+          IzicardColors.labelForTagStatus(tag.status),
+          tag.dataType,
+          tag.payload,
+          ...keys.map((key) => tag.fields[key]),
+          tag.uid,
+          tag.attempts,
+          tag.lastError,
+          tag.writtenAt,
+        ].map(_cell).join(';'),
+      );
     }
     return lines.join('\r\n') + '\r\n';
   }
@@ -61,11 +67,21 @@ class CsvExporter {
   }
 
   /// Écrit le fichier dans le dossier temporaire puis ouvre le partage Android.
-  static Future<int> share({required String batchName, required List<NfcTagRecord> tags}) async {
+  static Future<int> share({
+    required String batchName,
+    required List<NfcTagRecord> tags,
+  }) async {
     final directory = await getTemporaryDirectory();
     final file = File('${directory.path}/${fileName(batchName)}');
-    await file.writeAsBytes([0xEF, 0xBB, 0xBF, ...utf8.encode(build(tags))], flush: true);
-    await Share.shareXFiles([XFile(file.path, mimeType: 'text/csv')], subject: 'Export $batchName');
+    await file.writeAsBytes([
+      0xEF,
+      0xBB,
+      0xBF,
+      ...utf8.encode(build(tags)),
+    ], flush: true);
+    await Share.shareXFiles([
+      XFile(file.path, mimeType: 'text/csv'),
+    ], subject: 'Export $batchName');
     return tags.length;
   }
 }

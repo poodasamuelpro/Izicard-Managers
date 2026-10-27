@@ -59,16 +59,16 @@ Aucune ligne ✅ n'a été compilée ni testée.
 | Tablette et paysage : largeur de contenu limitée, mise en page à deux colonnes | ⚠️ (seulement connexion et accueil) |
 | Thème sombre (réglage système / clair / sombre, couleurs d'état lisibles, barre d'état) | ✅ 24 écrans actifs relus un par un (aucun texte ou fond clair fixe restant) ; 6 widgets jamais utilisés (`batch_progress_card`, `tag_list_tile`, `last_tags_list`, `lock_confirm_dialog`, `tag_status_banner`, `access_dialog`) non adaptés ; rendu non vérifié sur appareil |
 | Audit d'accessibilité (contrastes, lecteur d'écran, grandes polices) | ❌ |
-| Icône, nom et écran de démarrage de l'application | ❌ 🛠 |
+| Icône, nom et écran de démarrage de l'application | ✅ lot M16 — icône adaptative/monochrome + splash natif générés depuis le logo, non vérifiés sur appareil réel |
 
 ## 5. Plateforme, build, qualité
 | Point | État |
 |---|---|
-| Dossier `android/` et permission NFC (`android.permission.NFC`, `android.hardware.nfc`), `minSdk` | ❌ 🛠 |
-| Compilation, `flutter analyze`, noms exacts de l'API `nfc_manager` | ❌ 🛠 non vérifiés |
+| Dossier `android/` et permission NFC (`android.permission.NFC`, `android.hardware.nfc`), `minSdk` | ✅ lot M16 — généré, NFC facultatif déclaré, vérifié avec aapt2 |
+| Compilation, `flutter analyze`, noms exacts de l'API `nfc_manager` | ✅ lot M16 — `flutter analyze` 0 erreur, `flutter test` 11/11, APK debug construit et vérifié |
 | Workflows GitHub Actions (`analyze_test.yml`, `build_apk.yml`) | présents, jamais exécutés |
-| Signature de l'APK | ❌ 🛠 |
-| Tests (`test/` = 4 fichiers vides) | ❌ à écrire après la compilation |
+| Signature de l'APK | ❌ 🛠 build debug non signé livré (lot M16) ; signature release à fournir par le propriétaire |
+| Tests (`test/` = 4 fichiers vides) | ✅ tests écrits (lots précédents), tous passent (lot M16) |
 | Essais sur 5 à 10 vrais tags (écriture, relecture, verrouillage, hors-ligne, révocation) | ❌ 🛠 |
 
 ## 6. Dépendances hors du code mobile (actions du propriétaire)

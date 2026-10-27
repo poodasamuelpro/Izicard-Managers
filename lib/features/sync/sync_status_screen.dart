@@ -6,7 +6,12 @@ import '../../data/local/pending_writes_dao.dart';
 import '../../data/repositories/sync_repository.dart';
 
 class SyncStatusScreen extends StatefulWidget {
-  const SyncStatusScreen({super.key, required this.repository, required this.offline, required this.userId});
+  const SyncStatusScreen({
+    super.key,
+    required this.repository,
+    required this.offline,
+    required this.userId,
+  });
   final SyncRepository repository;
   final OfflineTagsDao offline;
   final String userId;
@@ -26,9 +31,9 @@ class _SyncStatusScreenState extends State<SyncStatusScreen> {
   }
 
   Future<_Data> _load() async => _Data(
-        items: await widget.repository.items(),
-        batches: await widget.offline.downloadedBatches(widget.userId),
-      );
+    items: await widget.repository.items(),
+    batches: await widget.offline.downloadedBatches(widget.userId),
+  );
 
   Future<void> _refresh() async {
     final next = _load();
@@ -45,9 +50,10 @@ class _SyncStatusScreenState extends State<SyncStatusScreen> {
       _syncing = false;
       _data = _load();
     });
-    final text = result.blocked
-        ? 'Session différente de celle qui a créé ces opérations : reconnectez-vous avec le bon compte.'
-        : result.sent == 0 && result.rejected == 0
+    final text =
+        result.blocked
+            ? 'Session différente de celle qui a créé ces opérations : reconnectez-vous avec le bon compte.'
+            : result.sent == 0 && result.rejected == 0
             ? 'Aucune opération synchronisée. La file est conservée.'
             : '${result.sent} synchronisée(s)${result.rejected > 0 ? ' · ${result.rejected} refusée(s) par la base' : ''}.';
     ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(text)));
@@ -56,14 +62,23 @@ class _SyncStatusScreenState extends State<SyncStatusScreen> {
   Future<void> _discard(PendingWrite item) async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Abandonner cette opération ?'),
-        content: const Text('Le résultat d’écriture de cette carte ne sera jamais envoyé à la base.'),
-        actions: [
-          TextButton(onPressed: () => Navigator.of(context).pop(false), child: const Text('Annuler')),
-          FilledButton(onPressed: () => Navigator.of(context).pop(true), child: const Text('Abandonner')),
-        ],
-      ),
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Abandonner cette opération ?'),
+            content: const Text(
+              'Le résultat d’écriture de cette carte ne sera jamais envoyé à la base.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: const Text('Annuler'),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: const Text('Abandonner'),
+              ),
+            ],
+          ),
     );
     if (confirmed == true) {
       await widget.repository.discard(item.id);
@@ -78,118 +93,164 @@ class _SyncStatusScreenState extends State<SyncStatusScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Synchronisation')),
-        body: SafeArea(
-          child: FutureBuilder<_Data>(
-            future: _data,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState != ConnectionState.done) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snapshot.hasError) {
-                return Center(
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    const Text('Impossible de lire la file locale.'),
-                    const SizedBox(height: 10),
-                    OutlinedButton.icon(onPressed: _refresh, icon: const Icon(Icons.refresh_rounded), label: const Text('Réessayer')),
-                  ]),
-                );
-              }
-              final data = snapshot.data!;
-              final waiting = data.items.where((item) => !item.permanent).length;
-              final rejected = data.items.length - waiting;
-              return RefreshIndicator(
-                onRefresh: _refresh,
-                child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
-                  children: [
-                    Card(
-                      color: Theme.of(context).colorScheme.primaryContainer,
-                      child: Padding(
-                        padding: const EdgeInsets.all(18),
-                        child: Row(children: [
-                          const Icon(Icons.cloud_queue_rounded, size: 34),
-                          const SizedBox(width: 14),
-                          Expanded(
-                            child: Text(
-                              data.items.isEmpty
-                                  ? 'Tout est synchronisé.'
-                                  : '$waiting en attente de connexion${rejected > 0 ? ' · $rejected refusée(s) par la base' : ''}.',
-                              style: Theme.of(context).textTheme.titleMedium,
-                            ),
+    appBar: AppBar(title: const Text('Synchronisation')),
+    body: SafeArea(
+      child: FutureBuilder<_Data>(
+        future: _data,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Text('Impossible de lire la file locale.'),
+                  const SizedBox(height: 10),
+                  OutlinedButton.icon(
+                    onPressed: _refresh,
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('Réessayer'),
+                  ),
+                ],
+              ),
+            );
+          }
+          final data = snapshot.data!;
+          final waiting = data.items.where((item) => !item.permanent).length;
+          final rejected = data.items.length - waiting;
+          return RefreshIndicator(
+            onRefresh: _refresh,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
+              children: [
+                Card(
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                  child: Padding(
+                    padding: const EdgeInsets.all(18),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.cloud_queue_rounded, size: 34),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Text(
+                            data.items.isEmpty
+                                ? 'Tout est synchronisé.'
+                                : '$waiting en attente de connexion${rejected > 0 ? ' · $rejected refusée(s) par la base' : ''}.',
+                            style: Theme.of(context).textTheme.titleMedium,
                           ),
-                        ]),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                FilledButton.icon(
+                  onPressed: _syncing ? null : _sync,
+                  icon:
+                      _syncing
+                          ? const SizedBox.square(
+                            dimension: 18,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                          : const Icon(Icons.sync_rounded),
+                  label: Text(
+                    _syncing ? 'Synchronisation…' : 'Synchroniser maintenant',
+                  ),
+                ),
+                const SizedBox(height: 18),
+                if (data.items.isEmpty)
+                  const Padding(
+                    padding: EdgeInsets.symmetric(vertical: 24),
+                    child: Center(child: Text('Aucune opération en attente.')),
+                  )
+                else
+                  ...data.items.map(
+                    (item) => Card(
+                      child: ListTile(
+                        leading: Icon(
+                          item.permanent
+                              ? Icons.error_outline_rounded
+                              : Icons.schedule_rounded,
+                          color:
+                              item.permanent
+                                  ? context.ink.error
+                                  : context.ink.pending,
+                        ),
+                        title: Text(
+                          'Carte ${item.tagId.length > 8 ? item.tagId.substring(0, 8) : item.tagId} · ${IzicardColors.labelForTagStatus(item.status)}',
+                        ),
+                        subtitle: Text(
+                          item.permanent
+                              ? 'Refusée : ${item.syncError ?? 'raison inconnue'}'
+                              : 'Tentative ${item.attempts}',
+                        ),
+                        isThreeLine: item.permanent,
+                        trailing:
+                            item.permanent
+                                ? PopupMenuButton<String>(
+                                  onSelected: (value) async {
+                                    if (value == 'retry') {
+                                      await widget.repository.retry(item.id);
+                                      await _refresh();
+                                    } else {
+                                      await _discard(item);
+                                    }
+                                  },
+                                  itemBuilder:
+                                      (_) => const [
+                                        PopupMenuItem(
+                                          value: 'retry',
+                                          child: Text('Réessayer'),
+                                        ),
+                                        PopupMenuItem(
+                                          value: 'discard',
+                                          child: Text('Abandonner'),
+                                        ),
+                                      ],
+                                )
+                                : null,
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    FilledButton.icon(
-                      onPressed: _syncing ? null : _sync,
-                      icon: _syncing
-                          ? const SizedBox.square(dimension: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                          : const Icon(Icons.sync_rounded),
-                      label: Text(_syncing ? 'Synchronisation…' : 'Synchroniser maintenant'),
-                    ),
-                    const SizedBox(height: 18),
-                    if (data.items.isEmpty)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 24),
-                        child: Center(child: Text('Aucune opération en attente.')),
-                      )
-                    else
-                      ...data.items.map((item) => Card(
-                            child: ListTile(
-                              leading: Icon(
-                                item.permanent ? Icons.error_outline_rounded : Icons.schedule_rounded,
-                                color: item.permanent ? context.ink.error : context.ink.pending,
-                              ),
-                              title: Text('Carte ${item.tagId.length > 8 ? item.tagId.substring(0, 8) : item.tagId} · ${IzicardColors.labelForTagStatus(item.status)}'),
-                              subtitle: Text(item.permanent
-                                  ? 'Refusée : ${item.syncError ?? 'raison inconnue'}'
-                                  : 'Tentative ${item.attempts}'),
-                              isThreeLine: item.permanent,
-                              trailing: item.permanent
-                                  ? PopupMenuButton<String>(
-                                      onSelected: (value) async {
-                                        if (value == 'retry') {
-                                          await widget.repository.retry(item.id);
-                                          await _refresh();
-                                        } else {
-                                          await _discard(item);
-                                        }
-                                      },
-                                      itemBuilder: (_) => const [
-                                        PopupMenuItem(value: 'retry', child: Text('Réessayer')),
-                                        PopupMenuItem(value: 'discard', child: Text('Abandonner')),
-                                      ],
-                                    )
-                                  : null,
-                            ),
-                          )),
-                    const SizedBox(height: 22),
-                    Text('Dossiers téléchargés (hors-ligne)', style: Theme.of(context).textTheme.titleMedium),
-                    const SizedBox(height: 8),
-                    if (data.batches.isEmpty)
-                      const Text('Aucun dossier téléchargé. Ouvrez un dossier puis choisissez « Télécharger pour le hors-ligne ».')
-                    else
-                      ...data.batches.map((info) => Card(
-                            child: ListTile(
-                              leading: Icon(Icons.offline_pin_outlined, color: Theme.of(context).colorScheme.primary),
-                              title: Text(info.batch.name),
-                              subtitle: Text('${info.tagCount} carte(s) · téléchargé le ${info.syncedAt.toLocal().toString().substring(0, 16)}'),
-                              trailing: IconButton(
-                                tooltip: 'Supprimer de cet appareil',
-                                icon: const Icon(Icons.delete_outline_rounded),
-                                onPressed: () => _removeBatch(info),
-                              ),
-                            ),
-                          )),
-                  ],
+                  ),
+                const SizedBox(height: 22),
+                Text(
+                  'Dossiers téléchargés (hors-ligne)',
+                  style: Theme.of(context).textTheme.titleMedium,
                 ),
-              );
-            },
-          ),
-        ),
-      );
+                const SizedBox(height: 8),
+                if (data.batches.isEmpty)
+                  const Text(
+                    'Aucun dossier téléchargé. Ouvrez un dossier puis choisissez « Télécharger pour le hors-ligne ».',
+                  )
+                else
+                  ...data.batches.map(
+                    (info) => Card(
+                      child: ListTile(
+                        leading: Icon(
+                          Icons.offline_pin_outlined,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        title: Text(info.batch.name),
+                        subtitle: Text(
+                          '${info.tagCount} carte(s) · téléchargé le ${info.syncedAt.toLocal().toString().substring(0, 16)}',
+                        ),
+                        trailing: IconButton(
+                          tooltip: 'Supprimer de cet appareil',
+                          icon: const Icon(Icons.delete_outline_rounded),
+                          onPressed: () => _removeBatch(info),
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
+    ),
+  );
 }
 
 class _Data {

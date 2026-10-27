@@ -30,18 +30,18 @@ class PendingWrite {
   final String? syncError;
 
   factory PendingWrite.fromMap(Map<String, Object?> map) => PendingWrite(
-        id: map['id']! as int,
-        tagId: map['tag_id']! as String,
-        status: map['status']! as String,
-        uid: map['uid'] as String?,
-        error: map['error'] as String?,
-        lockTag: (map['lock_tag'] as int? ?? 0) == 1,
-        attempts: map['attempts']! as int,
-        createdAt: DateTime.parse(map['created_at']! as String),
-        userId: map['user_id'] as String?,
-        permanent: (map['permanent'] as int? ?? 0) == 1,
-        syncError: map['sync_error'] as String?,
-      );
+    id: map['id']! as int,
+    tagId: map['tag_id']! as String,
+    status: map['status']! as String,
+    uid: map['uid'] as String?,
+    error: map['error'] as String?,
+    lockTag: (map['lock_tag'] as int? ?? 0) == 1,
+    attempts: map['attempts']! as int,
+    createdAt: DateTime.parse(map['created_at']! as String),
+    userId: map['user_id'] as String?,
+    permanent: (map['permanent'] as int? ?? 0) == 1,
+    syncError: map['sync_error'] as String?,
+  );
 }
 
 /// File d'envoi locale, cloisonnée par utilisateur : un élément n'est jamais
@@ -71,7 +71,11 @@ class PendingWritesDao {
   }
 
   /// Éléments de [userId]. Par défaut, uniquement ceux qui peuvent encore partir.
-  Future<List<PendingWrite>> pending(String userId, {int limit = 200, bool includePermanent = false}) async {
+  Future<List<PendingWrite>> pending(
+    String userId, {
+    int limit = 200,
+    bool includePermanent = false,
+  }) async {
     final db = await _database.instance;
     final rows = await db.query(
       'pending_writes',
@@ -97,7 +101,9 @@ class PendingWritesDao {
   /// Rattache à [userId] les anciens éléments (créés avant la version 3) qui n'ont pas de propriétaire.
   Future<void> adoptOrphans(String userId) async {
     final db = await _database.instance;
-    await db.update('pending_writes', {'user_id': userId}, where: 'user_id IS NULL');
+    await db.update('pending_writes', {
+      'user_id': userId,
+    }, where: 'user_id IS NULL');
   }
 
   Future<void> markAttempt(int id) async {
@@ -110,13 +116,23 @@ class PendingWritesDao {
 
   Future<void> markPermanent(int id, String message) async {
     final db = await _database.instance;
-    await db.update('pending_writes', {'permanent': 1, 'sync_error': message}, where: 'id = ?', whereArgs: [id]);
+    await db.update(
+      'pending_writes',
+      {'permanent': 1, 'sync_error': message},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 
   /// Remet un élément refusé dans la file normale (ex. après correction côté admin).
   Future<void> retry(int id) async {
     final db = await _database.instance;
-    await db.update('pending_writes', {'permanent': 0, 'sync_error': null}, where: 'id = ?', whereArgs: [id]);
+    await db.update(
+      'pending_writes',
+      {'permanent': 0, 'sync_error': null},
+      where: 'id = ?',
+      whereArgs: [id],
+    );
   }
 
   Future<void> remove(int id) async {

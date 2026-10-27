@@ -9,7 +9,12 @@ import 'package:nfc_manager_ndef/nfc_manager_ndef.dart';
 import 'ndef_builder.dart';
 
 class NfcReadResult {
-  const NfcReadResult({required this.uid, required this.message, this.maxSize, this.cancelled = false});
+  const NfcReadResult({
+    required this.uid,
+    required this.message,
+    this.maxSize,
+    this.cancelled = false,
+  });
   final String uid;
   final NdefMessage? message;
   final int? maxSize;
@@ -46,22 +51,36 @@ class NfcService {
 
   /// Attend un tag, le lit une seule fois et ferme toujours la session.
   /// L'attente est annulable et limitée dans le temps pour éviter un écran bloqué.
-  static Future<NfcReadResult> readOnce({Duration timeout = const Duration(seconds: 60)}) async {
+  static Future<NfcReadResult> readOnce({
+    Duration timeout = const Duration(seconds: 60),
+  }) async {
     if (!await isAvailable()) {
-      throw const FormatException('NFC indisponible ou désactivé. Activez le NFC dans les réglages Android.');
+      throw const FormatException(
+        'NFC indisponible ou désactivé. Activez le NFC dans les réglages Android.',
+      );
     }
     final completer = Completer<NfcReadResult>();
     _activeRead = completer;
     try {
       await NfcManager.instance.startSession(
-        pollingOptions: const {NfcPollingOption.iso14443, NfcPollingOption.iso15693, NfcPollingOption.iso18092},
+        pollingOptions: const {
+          NfcPollingOption.iso14443,
+          NfcPollingOption.iso15693,
+          NfcPollingOption.iso18092,
+        },
         onDiscovered: (tag) async {
           try {
             final ndef = Ndef.from(tag);
             final uid = _uid(tag);
             final message = await ndef?.read();
             if (!completer.isCompleted) {
-              completer.complete(NfcReadResult(uid: uid, message: message, maxSize: ndef?.maxSize));
+              completer.complete(
+                NfcReadResult(
+                  uid: uid,
+                  message: message,
+                  maxSize: ndef?.maxSize,
+                ),
+              );
             }
           } catch (error) {
             if (!completer.isCompleted) completer.completeError(error);
@@ -91,11 +110,21 @@ class NfcService {
   static Future<void> cancel() async {
     final read = _activeRead;
     if (read != null && !read.isCompleted) {
-      read.complete(const NfcReadResult(uid: '', message: null, cancelled: true));
+      read.complete(
+        const NfcReadResult(uid: '', message: null, cancelled: true),
+      );
     }
     final active = _active;
     if (active != null && !active.isCompleted) {
-      active.complete(const NfcWriteResult(uid: '', verified: false, recordable: false, cancelled: true, error: 'Action annulée.'));
+      active.complete(
+        const NfcWriteResult(
+          uid: '',
+          verified: false,
+          recordable: false,
+          cancelled: true,
+          error: 'Action annulée.',
+        ),
+      );
     }
     try {
       await NfcManager.instance.stopSession();
@@ -111,7 +140,8 @@ class NfcService {
       final x = a.records[i];
       final y = b.records[i];
       if (x.typeNameFormat != y.typeNameFormat) return false;
-      if (!_sameBytes(x.type, y.type) || !_sameBytes(x.payload, y.payload)) return false;
+      if (!_sameBytes(x.type, y.type) || !_sameBytes(x.payload, y.payload))
+        return false;
     }
     return true;
   }
@@ -131,7 +161,8 @@ class NfcService {
     required String payload,
     required bool lockAfterWrite,
     Future<String?> Function(String uid)? guard,
-    Future<bool> Function(String uid, int existingRecordCount)? confirmOverwrite,
+    Future<bool> Function(String uid, int existingRecordCount)?
+    confirmOverwrite,
     Duration timeout = const Duration(seconds: 60),
   }) async {
     if (!await isAvailable()) {
@@ -139,43 +170,71 @@ class NfcService {
         uid: '',
         verified: false,
         recordable: false,
-        error: 'NFC indisponible ou désactivé. Activez le NFC dans les réglages Android.',
+        error:
+            'NFC indisponible ou désactivé. Activez le NFC dans les réglages Android.',
       );
     }
-    final expected = NdefPayloadBuilder.build(dataType: dataType, payload: payload);
+    final expected = NdefPayloadBuilder.build(
+      dataType: dataType,
+      payload: payload,
+    );
     final completer = Completer<NfcWriteResult>();
     _active = completer;
     try {
       await NfcManager.instance.startSession(
-        pollingOptions: const {NfcPollingOption.iso14443, NfcPollingOption.iso15693, NfcPollingOption.iso18092},
+        pollingOptions: const {
+          NfcPollingOption.iso14443,
+          NfcPollingOption.iso15693,
+          NfcPollingOption.iso18092,
+        },
         onDiscovered: (tag) async {
           final uid = _uid(tag);
           try {
             final refusal = guard == null ? null : await guard(uid);
             if (refusal != null) {
-              if (!completer.isCompleted) completer.complete(NfcWriteResult(uid: uid, verified: false, recordable: false, error: refusal));
+              if (!completer.isCompleted)
+                completer.complete(
+                  NfcWriteResult(
+                    uid: uid,
+                    verified: false,
+                    recordable: false,
+                    error: refusal,
+                  ),
+                );
               return;
             }
             final ndef = Ndef.from(tag);
-            if (ndef == null) throw const FormatException('Ce tag ne prend pas en charge NDEF.');
-            if (!ndef.isWritable) throw const FormatException('Ce tag n’est pas inscriptible (déjà verrouillé ?).');
+            if (ndef == null)
+              throw const FormatException(
+                'Ce tag ne prend pas en charge NDEF.',
+              );
+            if (!ndef.isWritable)
+              throw const FormatException(
+                'Ce tag n’est pas inscriptible (déjà verrouillé ?).',
+              );
             if (ndef.maxSize < expected.byteLength) {
-              throw FormatException('Donnée trop volumineuse : ${expected.byteLength} octets pour ${ndef.maxSize}.');
+              throw FormatException(
+                'Donnée trop volumineuse : ${expected.byteLength} octets pour ${ndef.maxSize}.',
+              );
             }
             final existing = await ndef.read();
             if (existing != null && existing.records.isNotEmpty) {
-              final allowed = confirmOverwrite == null
-                  ? false
-                  : await confirmOverwrite(uid, existing.records.length);
+              final allowed =
+                  confirmOverwrite == null
+                      ? false
+                      : await confirmOverwrite(uid, existing.records.length);
               if (!allowed) {
                 if (!completer.isCompleted) {
-                  completer.complete(const NfcWriteResult(
-                    uid: '',
-                    verified: false,
-                    recordable: false,
-                    cancelled: true,
-                    error: 'Écriture annulée : le tag contient déjà une donnée.',
-                  ));
+                  completer.complete(
+                    const NfcWriteResult(
+                      uid: '',
+                      verified: false,
+                      recordable: false,
+                      cancelled: true,
+                      error:
+                          'Écriture annulée : le tag contient déjà une donnée.',
+                    ),
+                  );
                 }
                 return;
               }
@@ -183,7 +242,9 @@ class NfcService {
             await ndef.write(message: expected);
             final readBack = await ndef.read();
             if (readBack == null || !sameMessage(readBack, expected)) {
-              throw const FormatException('La relecture du tag ne correspond pas à la donnée écrite.');
+              throw const FormatException(
+                'La relecture du tag ne correspond pas à la donnée écrite.',
+              );
             }
             var locked = false;
             String? lockNote;
@@ -192,14 +253,29 @@ class NfcService {
                 await ndef.writeLock();
                 locked = true;
               } catch (error) {
-                lockNote = 'Écrit et vérifié, mais le verrouillage a échoué : ${_message(error)}';
+                lockNote =
+                    'Écrit et vérifié, mais le verrouillage a échoué : ${_message(error)}';
               }
             }
             if (!completer.isCompleted) {
-              completer.complete(NfcWriteResult(uid: uid, verified: true, locked: locked, error: lockNote));
+              completer.complete(
+                NfcWriteResult(
+                  uid: uid,
+                  verified: true,
+                  locked: locked,
+                  error: lockNote,
+                ),
+              );
             }
           } catch (error) {
-            if (!completer.isCompleted) completer.complete(NfcWriteResult(uid: uid, verified: false, error: _message(error)));
+            if (!completer.isCompleted)
+              completer.complete(
+                NfcWriteResult(
+                  uid: uid,
+                  verified: false,
+                  error: _message(error),
+                ),
+              );
           } finally {
             try {
               await NfcManager.instance.stopSession();
@@ -208,14 +284,27 @@ class NfcService {
         },
         noPlatformSoundsAndroid: false,
       );
-      return await completer.future.timeout(timeout, onTimeout: () async {
-        try {
-          await NfcManager.instance.stopSession();
-        } catch (_) {}
-        return const NfcWriteResult(uid: '', verified: false, recordable: false, error: 'Aucun tag détecté (délai dépassé).');
-      });
+      return await completer.future.timeout(
+        timeout,
+        onTimeout: () async {
+          try {
+            await NfcManager.instance.stopSession();
+          } catch (_) {}
+          return const NfcWriteResult(
+            uid: '',
+            verified: false,
+            recordable: false,
+            error: 'Aucun tag détecté (délai dépassé).',
+          );
+        },
+      );
     } catch (error) {
-      return NfcWriteResult(uid: '', verified: false, recordable: false, error: _message(error));
+      return NfcWriteResult(
+        uid: '',
+        verified: false,
+        recordable: false,
+        error: _message(error),
+      );
     } finally {
       if (identical(_active, completer)) _active = null;
     }
@@ -227,6 +316,13 @@ class NfcService {
     return 'INCONNU';
   }
 
-  static String _hex(Uint8List bytes) => bytes.map((value) => value.toRadixString(16).padLeft(2, '0')).join().toUpperCase();
-  static String _message(Object error) => error is FormatException ? error.message : error.toString().replaceFirst('Exception: ', '');
+  static String _hex(Uint8List bytes) =>
+      bytes
+          .map((value) => value.toRadixString(16).padLeft(2, '0'))
+          .join()
+          .toUpperCase();
+  static String _message(Object error) =>
+      error is FormatException
+          ? error.message
+          : error.toString().replaceFirst('Exception: ', '');
 }

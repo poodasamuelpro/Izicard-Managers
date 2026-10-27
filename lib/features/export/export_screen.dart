@@ -51,7 +51,8 @@ class _ExportScreenState extends State<ExportScreen> {
       });
     } catch (error) {
       setState(() {
-        _message = 'Export impossible : ${error.toString().replaceFirst('Exception: ', '')}';
+        _message =
+            'Export impossible : ${error.toString().replaceFirst('Exception: ', '')}';
         _messageIsError = true;
       });
     } finally {
@@ -61,58 +62,84 @@ class _ExportScreenState extends State<ExportScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-        appBar: AppBar(title: const Text('Exporter les données')),
-        body: SafeArea(
-          child: FutureBuilder<List<NfcBatch>>(
-            future: _batches,
-            builder: (context, snapshot) {
-              if (snapshot.connectionState != ConnectionState.done) {
-                return const Center(child: CircularProgressIndicator());
-              }
-              if (snapshot.hasError) {
-                return Center(
-                  child: Column(mainAxisSize: MainAxisSize.min, children: [
-                    const Icon(Icons.cloud_off_rounded, size: 44),
-                    const SizedBox(height: 12),
-                    const Text('Impossible de charger les dossiers.'),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: () => setState(() => _batches = widget.repository.listBatchStats()),
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('Réessayer'),
-                    ),
-                  ]),
-                );
-              }
-              final batches = snapshot.data ?? const <NfcBatch>[];
-              if (batches.isEmpty) return const Center(child: Text('Aucun dossier à exporter.'));
-              return ListView(
-                padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+    appBar: AppBar(title: const Text('Exporter les données')),
+    body: SafeArea(
+      child: FutureBuilder<List<NfcBatch>>(
+        future: _batches,
+        builder: (context, snapshot) {
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Center(child: CircularProgressIndicator());
+          }
+          if (snapshot.hasError) {
+            return Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const Text('Export CSV (séparateur « ; », ouverture directe dans Excel).'),
-                  if (_message != null) ...[
-                    const SizedBox(height: 12),
-                    Text(_message!,
-                        style: TextStyle(
-                            color: _messageIsError ? context.ink.error : context.ink.verified,
-                            fontWeight: FontWeight.w700)),
-                  ],
+                  const Icon(Icons.cloud_off_rounded, size: 44),
                   const SizedBox(height: 12),
-                  ...batches.map((batch) => Card(
-                        child: ListTile(
-                          leading: Icon(Icons.inventory_2_outlined, color: Theme.of(context).colorScheme.primary),
-                          title: Text(batch.name),
-                          subtitle: Text('${batch.total} carte(s) · ${batch.verified} vérifiée(s)'),
-                          trailing: _busyId == batch.id
-                              ? const SizedBox.square(dimension: 22, child: CircularProgressIndicator(strokeWidth: 2))
-                              : const Icon(Icons.download_rounded),
-                          onTap: _busyId == null ? () => _export(batch) : null,
+                  const Text('Impossible de charger les dossiers.'),
+                  const SizedBox(height: 12),
+                  OutlinedButton.icon(
+                    onPressed:
+                        () => setState(
+                          () => _batches = widget.repository.listBatchStats(),
                         ),
-                      )),
+                    icon: const Icon(Icons.refresh_rounded),
+                    label: const Text('Réessayer'),
+                  ),
                 ],
-              );
-            },
-          ),
-        ),
-      );
+              ),
+            );
+          }
+          final batches = snapshot.data ?? const <NfcBatch>[];
+          if (batches.isEmpty)
+            return const Center(child: Text('Aucun dossier à exporter.'));
+          return ListView(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+            children: [
+              const Text(
+                'Export CSV (séparateur « ; », ouverture directe dans Excel).',
+              ),
+              if (_message != null) ...[
+                const SizedBox(height: 12),
+                Text(
+                  _message!,
+                  style: TextStyle(
+                    color:
+                        _messageIsError
+                            ? context.ink.error
+                            : context.ink.verified,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 12),
+              ...batches.map(
+                (batch) => Card(
+                  child: ListTile(
+                    leading: Icon(
+                      Icons.inventory_2_outlined,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                    title: Text(batch.name),
+                    subtitle: Text(
+                      '${batch.total} carte(s) · ${batch.verified} vérifiée(s)',
+                    ),
+                    trailing:
+                        _busyId == batch.id
+                            ? const SizedBox.square(
+                              dimension: 22,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                            : const Icon(Icons.download_rounded),
+                    onTap: _busyId == null ? () => _export(batch) : null,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    ),
+  );
 }

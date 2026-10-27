@@ -38,7 +38,8 @@ class NfcProfile {
 
   bool get hasValidAccess {
     final now = DateTime.now().toUtc();
-    if (!active || (accessExpiresAt != null && !accessExpiresAt!.isAfter(now))) {
+    if (!active ||
+        (accessExpiresAt != null && !accessExpiresAt!.isAfter(now))) {
       return false;
     }
     if (role == NfcRole.client) {

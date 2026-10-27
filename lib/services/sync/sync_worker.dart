@@ -9,9 +9,11 @@ import '../../data/repositories/sync_repository.dart';
 /// au retour de l'application au premier plan et sur demande.
 /// À démarrer après l'authentification d'un profil valide, à arrêter à la déconnexion.
 class SyncWorker with WidgetsBindingObserver {
-  SyncWorker({required ConnectivityService connectivity, required SyncRepository repository})
-      : _connectivity = connectivity,
-        _repository = repository;
+  SyncWorker({
+    required ConnectivityService connectivity,
+    required SyncRepository repository,
+  }) : _connectivity = connectivity,
+       _repository = repository;
 
   final ConnectivityService _connectivity;
   final SyncRepository _repository;

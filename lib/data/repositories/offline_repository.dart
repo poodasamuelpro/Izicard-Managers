@@ -7,10 +7,13 @@ import '../remote/tags_remote.dart';
 
 /// Téléchargement d'un dossier pour le travail hors-ligne. L'écriture NFC lit toujours ce cache.
 class OfflineRepository {
-  OfflineRepository({required AppDatabase database, required TagsRemote remote, required this.userId})
-      : _dao = OfflineTagsDao(database),
-        _queue = PendingWritesDao(database),
-        _remote = remote;
+  OfflineRepository({
+    required AppDatabase database,
+    required TagsRemote remote,
+    required this.userId,
+  }) : _dao = OfflineTagsDao(database),
+       _queue = PendingWritesDao(database),
+       _remote = remote;
 
   final OfflineTagsDao _dao;
   final PendingWritesDao _queue;
@@ -44,5 +47,6 @@ class OfflineRepository {
     return tags.length;
   }
 
-  Future<List<NfcTagRecord>> writableTags(String batchId) => _dao.writableTags(userId, batchId);
+  Future<List<NfcTagRecord>> writableTags(String batchId) =>
+      _dao.writableTags(userId, batchId);
 }

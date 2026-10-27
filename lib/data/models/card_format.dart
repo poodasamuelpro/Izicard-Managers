@@ -16,15 +16,16 @@ class CardField {
   final bool digitsOnly;
 
   factory CardField.fromMap(Map<String, dynamic> map) => CardField(
-        key: map['key']?.toString() ?? '',
-        label: map['label']?.toString() ?? map['key']?.toString() ?? '',
-        type: map['type']?.toString() ?? 'text',
-        required: map['required'] == true,
-        aliases: (map['aliases'] is List)
+    key: map['key']?.toString() ?? '',
+    label: map['label']?.toString() ?? map['key']?.toString() ?? '',
+    type: map['type']?.toString() ?? 'text',
+    required: map['required'] == true,
+    aliases:
+        (map['aliases'] is List)
             ? (map['aliases'] as List).map((value) => value.toString()).toList()
             : const [],
-        digitsOnly: map['digits_only'] == true,
-      );
+    digitsOnly: map['digits_only'] == true,
+  );
 }
 
 class CardFormat {
@@ -61,29 +62,34 @@ class CardFormat {
   final Map<String, dynamic> rules;
 
   factory CardFormat.fromMap(Map<String, dynamic> map) => CardFormat(
-        id: map['id'].toString(),
-        code: map['code']?.toString() ?? '',
-        label: map['label']?.toString() ?? 'Format sans nom',
-        product: map['product']?.toString(),
-        chip: map['chip']?.toString() ?? 'NTAG213',
-        capacityBytes: _asInt(map['capacity_bytes'], 144),
-        defaultDataType: map['default_data_type']?.toString() ?? 'url',
-        payloadTemplate: map['payload_template']?.toString(),
-        idPrefix: map['id_prefix']?.toString() ?? '',
-        idLength: _asInt(map['id_length'], 10),
-        lockDefault: map['lock_default'] == true,
-        active: map['active'] == true,
-        fields: map['field_schema'] is List
+    id: map['id'].toString(),
+    code: map['code']?.toString() ?? '',
+    label: map['label']?.toString() ?? 'Format sans nom',
+    product: map['product']?.toString(),
+    chip: map['chip']?.toString() ?? 'NTAG213',
+    capacityBytes: _asInt(map['capacity_bytes'], 144),
+    defaultDataType: map['default_data_type']?.toString() ?? 'url',
+    payloadTemplate: map['payload_template']?.toString(),
+    idPrefix: map['id_prefix']?.toString() ?? '',
+    idLength: _asInt(map['id_length'], 10),
+    lockDefault: map['lock_default'] == true,
+    active: map['active'] == true,
+    fields:
+        map['field_schema'] is List
             ? (map['field_schema'] as List)
                 .whereType<Map>()
-                .map((value) => CardField.fromMap(Map<String, dynamic>.from(value)))
+                .map(
+                  (value) =>
+                      CardField.fromMap(Map<String, dynamic>.from(value)),
+                )
                 .where((field) => field.key.isNotEmpty)
                 .toList()
             : const [],
-        rules: map['rules'] is Map
+    rules:
+        map['rules'] is Map
             ? Map<String, dynamic>.from(map['rules'] as Map)
             : const {},
-      );
+  );
 
   static int _asInt(Object? value, int fallback) =>
       value is int ? value : int.tryParse(value?.toString() ?? '') ?? fallback;

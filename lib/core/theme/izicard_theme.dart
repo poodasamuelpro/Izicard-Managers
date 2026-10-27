@@ -87,11 +87,15 @@ class IzicardTheme {
         scrolledUnderElevation: 0,
         surfaceTintColor: Colors.transparent,
         // Icônes de la barre d'état claires en sombre, foncées en clair.
-        systemOverlayStyle: (dark ? SystemUiOverlayStyle.light : SystemUiOverlayStyle.dark).copyWith(
-          statusBarColor: Colors.transparent,
-          systemNavigationBarColor: scheme.surface,
-          systemNavigationBarIconBrightness: dark ? Brightness.light : Brightness.dark,
-        ),
+        systemOverlayStyle: (dark
+                ? SystemUiOverlayStyle.light
+                : SystemUiOverlayStyle.dark)
+            .copyWith(
+              statusBarColor: Colors.transparent,
+              systemNavigationBarColor: scheme.surface,
+              systemNavigationBarIconBrightness:
+                  dark ? Brightness.light : Brightness.dark,
+            ),
         iconTheme: IconThemeData(color: scheme.onSurface),
         actionsIconTheme: IconThemeData(color: scheme.onSurface),
         titleTextStyle: base.textTheme.titleLarge?.copyWith(
@@ -224,14 +228,20 @@ class IzicardTheme {
       ),
       checkboxTheme: CheckboxThemeData(
         fillColor: WidgetStateProperty.resolveWith(
-          (states) => states.contains(WidgetState.selected) ? scheme.primary : Colors.transparent,
+          (states) =>
+              states.contains(WidgetState.selected)
+                  ? scheme.primary
+                  : Colors.transparent,
         ),
         checkColor: WidgetStatePropertyAll(scheme.onPrimary),
         side: BorderSide(color: scheme.outline, width: 1.5),
       ),
       radioTheme: RadioThemeData(
         fillColor: WidgetStateProperty.resolveWith(
-          (states) => states.contains(WidgetState.selected) ? scheme.primary : scheme.outline,
+          (states) =>
+              states.contains(WidgetState.selected)
+                  ? scheme.primary
+                  : scheme.outline,
         ),
       ),
       segmentedButtonTheme: SegmentedButtonThemeData(

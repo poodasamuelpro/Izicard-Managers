@@ -5,7 +5,12 @@ import '../local/pending_writes_dao.dart';
 import '../remote/tags_remote.dart';
 
 class SyncResult {
-  const SyncResult({required this.sent, required this.remaining, this.rejected = 0, this.blocked = false});
+  const SyncResult({
+    required this.sent,
+    required this.remaining,
+    this.rejected = 0,
+    this.blocked = false,
+  });
   final int sent;
   final int remaining;
 
@@ -22,9 +27,11 @@ class SyncRepository {
     required TagsRemote remote,
     required this.userId,
     String? Function()? sessionUserId,
-  })  : _queue = PendingWritesDao(database),
-        _remote = remote,
-        _sessionUserId = sessionUserId ?? (() => Supabase.instance.client.auth.currentUser?.id);
+  }) : _queue = PendingWritesDao(database),
+       _remote = remote,
+       _sessionUserId =
+           sessionUserId ??
+           (() => Supabase.instance.client.auth.currentUser?.id);
 
   final PendingWritesDao _queue;
   final TagsRemote _remote;
@@ -39,10 +46,16 @@ class SyncRepository {
     String? uid,
     String? error,
     bool lockTag = false,
-  }) =>
-      _queue
-          .enqueue(userId: userId, tagId: tagId, status: status, uid: uid, error: error, lockTag: lockTag)
-          .then((_) {});
+  }) => _queue
+      .enqueue(
+        userId: userId,
+        tagId: tagId,
+        status: status,
+        uid: uid,
+        error: error,
+        lockTag: lockTag,
+      )
+      .then((_) {});
 
   Future<List<PendingWrite>> items({bool includePermanent = true}) =>
       _queue.pending(userId, includePermanent: includePermanent);
@@ -57,7 +70,11 @@ class SyncRepository {
   /// Session expirée ou autre compte : on s'arrête sans rien supprimer.
   Future<SyncResult> syncPending() async {
     if (_sessionUserId() != userId) {
-      return SyncResult(sent: 0, remaining: await _queue.count(userId), blocked: true);
+      return SyncResult(
+        sent: 0,
+        remaining: await _queue.count(userId),
+        blocked: true,
+      );
     }
     await _queue.adoptOrphans(userId);
     var sent = 0;
@@ -85,14 +102,19 @@ class SyncRepository {
         break;
       }
     }
-    return SyncResult(sent: sent, remaining: await _queue.count(userId), rejected: rejected);
+    return SyncResult(
+      sent: sent,
+      remaining: await _queue.count(userId),
+      rejected: rejected,
+    );
   }
 
   /// Erreur de réseau/serveur ou session expirée : à réessayer, jamais définitive.
   static bool _isTemporary(PostgrestException error) {
     final code = error.code ?? '';
     if (code.isEmpty) return true;
-    if (code == 'PGRST301' || code == '401' || code == '408' || code == '429') return true;
+    if (code == 'PGRST301' || code == '401' || code == '408' || code == '429')
+      return true;
     if (code.startsWith('5')) return true;
     return error.message.toLowerCase().contains('jwt');
   }

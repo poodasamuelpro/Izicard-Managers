@@ -65,7 +65,9 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
   Future<void> _changePassword() async {
     final password = _passwordController.text;
     if (password.length < 8) {
-      setState(() => _error = 'Le mot de passe doit contenir au moins 8 caractères.');
+      setState(
+        () => _error = 'Le mot de passe doit contenir au moins 8 caractères.',
+      );
       return;
     }
     setState(() {
@@ -97,7 +99,11 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final titles = ['Réinitialiser le mot de passe', 'Entrer le code', 'Nouveau mot de passe'];
+    final titles = [
+      'Réinitialiser le mot de passe',
+      'Entrer le code',
+      'Nouveau mot de passe',
+    ];
     return Scaffold(
       appBar: AppBar(title: Text(titles[_step])),
       body: Padding(
@@ -109,8 +115,8 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
               _step == 0
                   ? 'Saisis ton email pour recevoir un code de 8 chiffres.'
                   : _step == 1
-                      ? 'Le code a été envoyé à ${_emailController.text}.'
-                      : 'Choisis un nouveau mot de passe sécurisé.',
+                  ? 'Le code a été envoyé à ${_emailController.text}.'
+                  : 'Choisis un nouveau mot de passe sécurisé.',
             ),
             const SizedBox(height: 24),
             if (_step == 0)
@@ -126,25 +132,51 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
                 maxLength: 8,
                 keyboardType: TextInputType.number,
                 textAlign: TextAlign.center,
-                decoration: const InputDecoration(labelText: 'Code à 8 chiffres', counterText: ''),
+                decoration: const InputDecoration(
+                  labelText: 'Code à 8 chiffres',
+                  counterText: '',
+                ),
               ),
             if (_step == 2)
               TextField(
                 controller: _passwordController,
                 autofocus: true,
                 obscureText: true,
-                decoration: const InputDecoration(labelText: 'Nouveau mot de passe'),
+                decoration: const InputDecoration(
+                  labelText: 'Nouveau mot de passe',
+                ),
               ),
             if (_error != null) ...[
               const SizedBox(height: 12),
-              Text(_error!, style: TextStyle(color: Theme.of(context).colorScheme.error)),
+              Text(
+                _error!,
+                style: TextStyle(color: Theme.of(context).colorScheme.error),
+              ),
             ],
             const SizedBox(height: 20),
             FilledButton(
-              onPressed: _loading ? null : (_step == 0 ? _sendCode : _step == 1 ? _verifyCode : _changePassword),
-              child: _loading
-                  ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                  : Text(_step == 0 ? 'Envoyer le code' : _step == 1 ? 'Vérifier le code' : 'Enregistrer'),
+              onPressed:
+                  _loading
+                      ? null
+                      : (_step == 0
+                          ? _sendCode
+                          : _step == 1
+                          ? _verifyCode
+                          : _changePassword),
+              child:
+                  _loading
+                      ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : Text(
+                        _step == 0
+                            ? 'Envoyer le code'
+                            : _step == 1
+                            ? 'Vérifier le code'
+                            : 'Enregistrer',
+                      ),
             ),
           ],
         ),

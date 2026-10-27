@@ -27,10 +27,7 @@ class AuthRepository {
       final profile = await _loadRemoteProfile(userId);
       if (profile != null) {
         try {
-          await _database?.cacheProfile(
-            userId: userId,
-            payload: profile.$1,
-          );
+          await _database?.cacheProfile(userId: userId, payload: profile.$1);
         } catch (_) {
           // Le cache est un secours : il ne doit pas bloquer l’accès en ligne.
         }
@@ -46,14 +43,15 @@ class AuthRepository {
   Future<(Map<String, dynamic>, NfcProfile)?> _loadRemoteProfile(
     String userId,
   ) async {
-    final profileRow = await _client
-        .schema(AppConstants.nfcSchema)
-        .from('nfc_profiles')
-        .select(
-          'user_id, role, client_id, full_name, active, access_expires_at',
-        )
-        .eq('user_id', userId)
-        .maybeSingle();
+    final profileRow =
+        await _client
+            .schema(AppConstants.nfcSchema)
+            .from('nfc_profiles')
+            .select(
+              'user_id, role, client_id, full_name, active, access_expires_at',
+            )
+            .eq('user_id', userId)
+            .maybeSingle();
 
     if (profileRow == null) return null;
 
@@ -63,12 +61,13 @@ class AuthRepository {
     final clientId = row['client_id']?.toString();
 
     if (role == NfcRole.client && clientId != null) {
-      final result = await _client
-          .schema(AppConstants.nfcSchema)
-          .from('nfc_clients')
-          .select('active, access_expires_at, can_create_batches')
-          .eq('id', clientId)
-          .maybeSingle();
+      final result =
+          await _client
+              .schema(AppConstants.nfcSchema)
+              .from('nfc_clients')
+              .select('active, access_expires_at, can_create_batches')
+              .eq('id', clientId)
+              .maybeSingle();
       if (result != null) clientRow = Map<String, dynamic>.from(result);
     }
 

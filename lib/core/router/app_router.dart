@@ -13,8 +13,14 @@ class AppRouter {
     required AuthRepository repository,
   }) {
     return switch (profile.role) {
-      NfcRole.admin => AdminHomeScreen(profile: profile, repository: repository),
-      NfcRole.client => ClientHomeScreen(profile: profile, repository: repository),
+      NfcRole.admin => AdminHomeScreen(
+        profile: profile,
+        repository: repository,
+      ),
+      NfcRole.client => ClientHomeScreen(
+        profile: profile,
+        repository: repository,
+      ),
     };
   }
 }

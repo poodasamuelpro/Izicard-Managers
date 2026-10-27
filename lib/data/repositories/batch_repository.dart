@@ -10,10 +10,10 @@ import '../remote/tags_remote.dart';
 
 class BatchRepository {
   BatchRepository(SupabaseClient client)
-      : _batches = BatchesRemote(client),
-        _clients = ClientsRemote(client),
-        _formats = FormatsRemote(client),
-        _tags = TagsRemote(client);
+    : _batches = BatchesRemote(client),
+      _clients = ClientsRemote(client),
+      _formats = FormatsRemote(client),
+      _tags = TagsRemote(client);
 
   final BatchesRemote _batches;
   final ClientsRemote _clients;
@@ -31,14 +31,19 @@ class BatchRepository {
 
   Future<BatchImportContext> getImportContext(String batchId) async {
     final row = await _batches.getBatchImportContext(batchId);
-    final format = CardFormat.fromMap(await _formats.getFormat(row['format_id'].toString()));
+    final format = CardFormat.fromMap(
+      await _formats.getFormat(row['format_id'].toString()),
+    );
     final rawSettings = row['settings'];
     return BatchImportContext(
       id: row['id'].toString(),
       name: row['name']?.toString() ?? 'Dossier',
       dataType: row['data_type']?.toString() ?? format.defaultDataType,
       format: format,
-      settings: rawSettings is Map ? Map<String, dynamic>.from(rawSettings) : const {},
+      settings:
+          rawSettings is Map
+              ? Map<String, dynamic>.from(rawSettings)
+              : const {},
       status: row['status']?.toString() ?? 'draft',
     );
   }
@@ -64,7 +69,9 @@ class BatchRepository {
       settings: settings,
     );
     if (result == null || result.toString().isEmpty) {
-      throw const FormatException('Supabase n’a pas retourné l’identifiant du dossier.');
+      throw const FormatException(
+        'Supabase n’a pas retourné l’identifiant du dossier.',
+      );
     }
     return result.toString();
   }
@@ -75,15 +82,20 @@ class BatchRepository {
     String? filename,
     Map<String, dynamic>? mapping,
   }) => _tags.importRows(
-        batchId: batchId,
-        rows: rows,
-        filename: filename,
-        mapping: mapping,
-      );
+    batchId: batchId,
+    rows: rows,
+    filename: filename,
+    mapping: mapping,
+  );
 
-  Future<void> archiveBatch({required String batchId, required bool archived}) =>
-      _batches.archiveBatch(batchId: batchId, archived: archived);
+  Future<void> archiveBatch({
+    required String batchId,
+    required bool archived,
+  }) => _batches.archiveBatch(batchId: batchId, archived: archived);
 
-  Future<List<Map<String, dynamic>>> listAudit({String? entity, String? entityId, int limit = 100}) =>
-      _batches.listAudit(entity: entity, entityId: entityId, limit: limit);
+  Future<List<Map<String, dynamic>>> listAudit({
+    String? entity,
+    String? entityId,
+    int limit = 100,
+  }) => _batches.listAudit(entity: entity, entityId: entityId, limit: limit);
 }

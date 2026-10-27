@@ -34,26 +34,40 @@ class ExcelReader {
   ) async {
     if (bytes.isEmpty) throw const FormatException('Le fichier est vide.');
     if (bytes.length > maxFileBytes) {
-      throw const FormatException('Le fichier dépasse la limite mobile de 20 Mo.');
+      throw const FormatException(
+        'Le fichier dépasse la limite mobile de 20 Mo.',
+      );
     }
     final payload = await compute(_parseWorkbook, <String, Object>{
       'bytes': bytes,
       'extension': extension.toLowerCase().replaceFirst('.', ''),
     });
-    return payload.map((sheet) {
-      final map = Map<String, dynamic>.from(sheet);
-      return ImportSheet(
-        name: map['name'].toString(),
-        headers: (map['headers'] as List).map((value) => value.toString()).toList(),
-        rows: (map['rows'] as List).map((row) {
-          final data = Map<String, dynamic>.from(row as Map);
-          return ImportSourceRow(
-            sourceLine: data['line'] as int,
-            values: (data['values'] as List).map((value) => value.toString()).toList(),
+    return payload
+        .map((sheet) {
+          final map = Map<String, dynamic>.from(sheet);
+          return ImportSheet(
+            name: map['name'].toString(),
+            headers:
+                (map['headers'] as List)
+                    .map((value) => value.toString())
+                    .toList(),
+            rows:
+                (map['rows'] as List).map((row) {
+                  final data = Map<String, dynamic>.from(row as Map);
+                  return ImportSourceRow(
+                    sourceLine: data['line'] as int,
+                    values:
+                        (data['values'] as List)
+                            .map((value) => value.toString())
+                            .toList(),
+                  );
+                }).toList(),
           );
-        }).toList(),
-      );
-    }).where((sheet) => sheet.headers.any((header) => header.trim().isNotEmpty)).toList();
+        })
+        .where(
+          (sheet) => sheet.headers.any((header) => header.trim().isNotEmpty),
+        )
+        .toList();
   }
 }
 
@@ -63,12 +77,17 @@ List<Map<String, dynamic>> _parseWorkbook(Map<String, Object> input) {
   if (extension == 'csv') return _parseCsv(bytes);
   if (extension == 'xlsx') return _parseXlsx(bytes);
   if (extension == 'xls') return _parseXls(bytes);
-  throw const FormatException('Format non pris en charge. Utilisez .xlsx, .xls ou .csv.');
+  throw const FormatException(
+    'Format non pris en charge. Utilisez .xlsx, .xls ou .csv.',
+  );
 }
 
 List<Map<String, dynamic>> _parseCsv(Uint8List bytes) {
-  var text = utf8.decode(bytes, allowMalformed: true).replaceFirst('\uFEFF', '');
-  if (text.isEmpty) throw const FormatException('Le CSV ne contient aucune donnée.');
+  var text = utf8
+      .decode(bytes, allowMalformed: true)
+      .replaceFirst('\uFEFF', '');
+  if (text.isEmpty)
+    throw const FormatException('Le CSV ne contient aucune donnée.');
   final delimiter = _detectDelimiter(text);
   final records = _decodeCsv(text, delimiter);
   return [_toSheet('CSV', records)];
@@ -133,7 +152,8 @@ List<List<String>> _decodeCsv(String text, String delimiter) {
     row.add(field.toString());
     records.add(row);
   }
-  if (quoted) throw const FormatException('Le CSV contient un guillemet non fermé.');
+  if (quoted)
+    throw const FormatException('Le CSV contient un guillemet non fermé.');
   return records;
 }
 
@@ -143,36 +163,49 @@ List<Map<String, dynamic>> _parseXlsx(Uint8List bytes) {
   for (final entry in workbook.tables.entries) {
     final sheet = entry.value;
     if (sheet == null) continue;
-    final matrix = sheet.rows.map((row) => row.map(_xlsxCellText).toList()).toList();
+    final matrix =
+        sheet.rows.map((row) => row.map(_xlsxCellText).toList()).toList();
     final parsed = _toSheet(entry.key, matrix);
-    if ((parsed['headers'] as List).any((value) => value.toString().trim().isNotEmpty)) {
+    if ((parsed['headers'] as List).any(
+      (value) => value.toString().trim().isNotEmpty,
+    )) {
       result.add(parsed);
     }
   }
-  if (result.isEmpty) throw const FormatException('Aucune feuille avec des en-têtes n’a été trouvée.');
+  if (result.isEmpty)
+    throw const FormatException(
+      'Aucune feuille avec des en-têtes n’a été trouvée.',
+    );
   return result;
 }
 
 String _xlsxCellText(xlsx.Data? cell) {
   final value = cell?.value;
-  final formatCode = cell?.cellStyle?.numberFormat.formatCode.split(';').first.trim();
-  if (value is xlsx.IntCellValue && formatCode != null && RegExp(r'^0+$').hasMatch(formatCode)) {
+  final formatCode =
+      cell?.cellStyle?.numberFormat.formatCode.split(';').first.trim();
+  if (value is xlsx.IntCellValue &&
+      formatCode != null &&
+      RegExp(r'^0+$').hasMatch(formatCode)) {
     return value.value.toString().padLeft(formatCode.length, '0');
   }
-  if (value is xlsx.DoubleCellValue && formatCode != null && RegExp(r'^0+$').hasMatch(formatCode) && value.value == value.value.roundToDouble()) {
+  if (value is xlsx.DoubleCellValue &&
+      formatCode != null &&
+      RegExp(r'^0+$').hasMatch(formatCode) &&
+      value.value == value.value.roundToDouble()) {
     return value.value.toInt().toString().padLeft(formatCode.length, '0');
   }
   return switch (value) {
-      null => '',
-      xlsx.TextCellValue(:final value) => value.toString(),
-      xlsx.FormulaCellValue(:final formula) => formula,
-      xlsx.IntCellValue(:final value) => value.toString(),
-      xlsx.DoubleCellValue(:final value) => value.toString(),
-      xlsx.BoolCellValue(:final value) => value ? 'true' : 'false',
-      xlsx.DateCellValue() => value.asDateTimeLocal().toIso8601String().split('T').first,
-      xlsx.DateTimeCellValue() => value.asDateTimeLocal().toIso8601String(),
-      xlsx.TimeCellValue() => value.asDuration().toString(),
-    };
+    null => '',
+    xlsx.TextCellValue(:final value) => value.toString(),
+    xlsx.FormulaCellValue(:final formula) => formula,
+    xlsx.IntCellValue(:final value) => value.toString(),
+    xlsx.DoubleCellValue(:final value) => value.toString(),
+    xlsx.BoolCellValue(:final value) => value ? 'true' : 'false',
+    xlsx.DateCellValue() =>
+      value.asDateTimeLocal().toIso8601String().split('T').first,
+    xlsx.DateTimeCellValue() => value.asDateTimeLocal().toIso8601String(),
+    xlsx.TimeCellValue() => value.asDuration().toString(),
+  };
 }
 
 List<Map<String, dynamic>> _parseXls(Uint8List bytes) {
@@ -182,42 +215,66 @@ List<Map<String, dynamic>> _parseXls(Uint8List bytes) {
     final sheet = reader.sheet(index);
     final matrix = <List<String>>[];
     for (var row = 0; row < sheet.rowCount; row++) {
-      matrix.add(List<String>.generate(sheet.colCount, (column) {
-        final dynamic cell = sheet.cell(row, column);
-        if (cell == null) return '';
-        try {
-          final dynamic value = cell.value;
-          return value?.toString() ?? '';
-        } catch (_) {
-          return cell.toString();
-        }
-      }));
+      matrix.add(
+        List<String>.generate(sheet.colCount, (column) {
+          final dynamic cell = sheet.cell(row, column);
+          if (cell == null) return '';
+          try {
+            final dynamic value = cell.value;
+            return value?.toString() ?? '';
+          } catch (_) {
+            return cell.toString();
+          }
+        }),
+      );
     }
     final parsed = _toSheet(sheet.name, matrix);
-    if ((parsed['headers'] as List).any((value) => value.toString().trim().isNotEmpty)) {
+    if ((parsed['headers'] as List).any(
+      (value) => value.toString().trim().isNotEmpty,
+    )) {
       result.add(parsed);
     }
   }
-  if (result.isEmpty) throw const FormatException('Aucune feuille avec des en-têtes n’a été trouvée.');
+  if (result.isEmpty)
+    throw const FormatException(
+      'Aucune feuille avec des en-têtes n’a été trouvée.',
+    );
   return result;
 }
 
 Map<String, dynamic> _toSheet(String name, List<List<String>> matrix) {
-  if (matrix.isEmpty) return {'name': name, 'headers': <String>[], 'rows': <Map<String, dynamic>>[]};
+  if (matrix.isEmpty)
+    return {
+      'name': name,
+      'headers': <String>[],
+      'rows': <Map<String, dynamic>>[],
+    };
   final headers = _trimTrailingEmpty(matrix.first);
-  if (headers.isEmpty) return {'name': name, 'headers': <String>[], 'rows': <Map<String, dynamic>>[]};
+  if (headers.isEmpty)
+    return {
+      'name': name,
+      'headers': <String>[],
+      'rows': <Map<String, dynamic>>[],
+    };
   final rows = <Map<String, dynamic>>[];
   for (var index = 1; index < matrix.length; index++) {
     final values = _trimTrailingEmpty(matrix[index]);
     if (values.every((value) => value.trim().isEmpty)) continue;
-    while (values.length < headers.length) { values.add(''); }
-    rows.add({'line': index + 1, 'values': values.take(headers.length).toList()});
+    while (values.length < headers.length) {
+      values.add('');
+    }
+    rows.add({
+      'line': index + 1,
+      'values': values.take(headers.length).toList(),
+    });
   }
   return {'name': name, 'headers': headers, 'rows': rows};
 }
 
 List<String> _trimTrailingEmpty(List<String> source) {
   final values = List<String>.from(source);
-  while (values.isNotEmpty && values.last.trim().isEmpty) { values.removeLast(); }
+  while (values.isNotEmpty && values.last.trim().isEmpty) {
+    values.removeLast();
+  }
   return values;
 }

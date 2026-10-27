@@ -49,9 +49,12 @@ class IzicardInk {
 
   final bool dark;
 
-  Color get pending => dark ? const Color(0xFFFFB27A) : IzicardColors.statusPending;
-  Color get written => dark ? const Color(0xFF78C8FF) : IzicardColors.statusWritten;
-  Color get verified => dark ? const Color(0xFF6AD99A) : IzicardColors.statusVerified;
+  Color get pending =>
+      dark ? const Color(0xFFFFB27A) : IzicardColors.statusPending;
+  Color get written =>
+      dark ? const Color(0xFF78C8FF) : IzicardColors.statusWritten;
+  Color get verified =>
+      dark ? const Color(0xFF6AD99A) : IzicardColors.statusVerified;
   Color get error => dark ? const Color(0xFFFFB4AB) : IzicardColors.statusError;
   Color get voided => dark ? const Color(0xFFB7C7D1) : IzicardColors.statusVoid;
 
@@ -64,9 +67,10 @@ class IzicardInk {
   };
 
   /// Dégradé des bandeaux d'en-tête (texte blanc toujours lisible dessus).
-  List<Color> get hero => dark
-      ? const [Color(0xFF0B6A82), Color(0xFF0B5C8C)]
-      : const [Color(0xFF007F9E), Color(0xFF006EAA)];
+  List<Color> get hero =>
+      dark
+          ? const [Color(0xFF0B6A82), Color(0xFF0B5C8C)]
+          : const [Color(0xFF007F9E), Color(0xFF006EAA)];
 }
 
 extension IzicardContext on BuildContext {

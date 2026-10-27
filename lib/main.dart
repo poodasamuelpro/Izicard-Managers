@@ -18,9 +18,7 @@ Future<void> main() async {
   await Supabase.initialize(
     url: AppEnv.supabaseUrl,
     anonKey: AppEnv.supabaseAnonKey,
-    postgrestOptions: PostgrestClientOptions(
-      schema: AppConstants.nfcSchema,
-    ),
+    postgrestOptions: PostgrestClientOptions(schema: AppConstants.nfcSchema),
   );
 
   runApp(const IzicardApp());

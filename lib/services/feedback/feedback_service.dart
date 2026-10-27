@@ -19,7 +19,9 @@ class FeedbackService {
       }
     }
     if (settings.sound) {
-      await SystemSound.play(success ? SystemSoundType.click : SystemSoundType.alert);
+      await SystemSound.play(
+        success ? SystemSoundType.click : SystemSoundType.alert,
+      );
     }
   }
 

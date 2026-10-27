@@ -24,11 +24,11 @@ class ImportResult {
   final List<ImportRowFailure> failures;
 
   ImportResult operator +(ImportResult other) => ImportResult(
-        attempted: attempted + other.attempted,
-        inserted: inserted + other.inserted,
-        failed: failed + other.failed,
-        failures: [...failures, ...other.failures],
-      );
+    attempted: attempted + other.attempted,
+    inserted: inserted + other.inserted,
+    failed: failed + other.failed,
+    failures: [...failures, ...other.failures],
+  );
 
   static const empty = ImportResult(
     attempted: 0,

@@ -31,8 +31,38 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^5.0.0
+  flutter_launcher_icons: ^0.14.4
+  flutter_native_splash: ^2.4.4
 
 flutter:
   uses-material-design: true
   assets:
     - assets/images/logo.jpg
+
+# Icône de l'application : générée à partir du glyphe de marque IziCard
+# (fichier source assets/images/logo.jpg non modifié, non remplacé).
+# Icône adaptative Android : avant-plan transparent + fond uni couleur de marque,
+# plus variante monochrome pour Android 13+ (thèmes d'icônes dynamiques du launcher).
+flutter_launcher_icons:
+  android: "launcher_icon"
+  image_path: "assets/icons/ic_legacy.png"
+  min_sdk_android: 24
+  adaptive_icon_background: "#00A5D2"
+  adaptive_icon_foreground: "assets/icons/ic_foreground.png"
+  adaptive_icon_monochrome: "assets/icons/ic_monochrome.png"
+
+# Écran de démarrage natif : fond blanc (clair) / sombre (suit le thème système),
+# logo de marque centré, transition propre vers le premier écran Flutter.
+flutter_native_splash:
+  color: "#FFFFFF"
+  image: "assets/icons/splash_logo_full.png"
+  color_dark: "#101820"
+  image_dark: "assets/icons/splash_logo_full.png"
+  android_12:
+    image: "assets/icons/ic_foreground.png"
+    icon_background_color: "#00A5D2"
+    image_dark: "assets/icons/ic_foreground.png"
+    icon_background_color_dark: "#00A5D2"
+  android: true
+  ios: false
+  web: false

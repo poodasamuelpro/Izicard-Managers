@@ -406,7 +406,8 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                   child: LinearProgressIndicator(
                     value: _batch.progress,
                     minHeight: 8,
-                    backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                    backgroundColor:
+                        Theme.of(context).colorScheme.surfaceContainerHigh,
                   ),
                 ),
                 const SizedBox(height: 6),

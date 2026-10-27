@@ -11,7 +11,9 @@ class ClientsRemote {
     final rows = await _client
         .schema(AppConstants.nfcSchema)
         .from('nfc_clients')
-        .select('id, name, contact_name, email, phone, active, access_expires_at, can_create_batches')
+        .select(
+          'id, name, contact_name, email, phone, active, access_expires_at, can_create_batches',
+        )
         .order('name');
     return rows.map((row) => Map<String, dynamic>.from(row)).toList();
   }
@@ -21,15 +23,17 @@ class ClientsRemote {
     required bool active,
     DateTime? expiresAt,
   }) async {
-    await _client.schema(AppConstants.nfcSchema).rpc(
-      'nfc_set_access',
-      params: {
-        'p_client': clientId,
-        'p_user': null,
-        'p_active': active,
-        'p_expires': expiresAt?.toUtc().toIso8601String(),
-      },
-    );
+    await _client
+        .schema(AppConstants.nfcSchema)
+        .rpc(
+          'nfc_set_access',
+          params: {
+            'p_client': clientId,
+            'p_user': null,
+            'p_active': active,
+            'p_expires': expiresAt?.toUtc().toIso8601String(),
+          },
+        );
   }
 
   Future<void> setCanCreateBatches({
@@ -59,12 +63,16 @@ class ClientsRemote {
       return text.isEmpty ? null : text;
     }
 
-    await _client.schema(AppConstants.nfcSchema).from('nfc_clients').update({
-      'name': name.trim(),
-      'contact_name': clean(contactName),
-      'email': clean(email),
-      'phone': clean(phone),
-    }).eq('id', clientId);
+    await _client
+        .schema(AppConstants.nfcSchema)
+        .from('nfc_clients')
+        .update({
+          'name': name.trim(),
+          'contact_name': clean(contactName),
+          'email': clean(email),
+          'phone': clean(phone),
+        })
+        .eq('id', clientId);
   }
 
   Future<Map<String, dynamic>> inviteClient({
@@ -85,10 +93,13 @@ class ClientsRemote {
       },
     );
 
-    final payload = response.data is Map
-        ? Map<String, dynamic>.from(response.data as Map)
-        : <String, dynamic>{};
-    if (response.status < 200 || response.status >= 300 || payload['error'] != null) {
+    final payload =
+        response.data is Map
+            ? Map<String, dynamic>.from(response.data as Map)
+            : <String, dynamic>{};
+    if (response.status < 200 ||
+        response.status >= 300 ||
+        payload['error'] != null) {
       throw Exception(payload['error']?.toString() ?? 'Invitation impossible.');
     }
     return payload;

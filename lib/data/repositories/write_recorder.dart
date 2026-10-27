@@ -7,10 +7,17 @@ import 'sync_repository.dart';
 /// Garde-fous avant écriture et enregistrement du résultat (local d'abord, puis envoi).
 /// Partagé par la série d'écriture et l'écriture d'une seule carte.
 class WriteRecorder {
-  WriteRecorder({required AppDatabase database, required TagsRemote remote, required this.userId})
-      : _offline = OfflineTagsDao(database),
-        _remote = remote,
-        _sync = SyncRepository(database: database, remote: remote, userId: userId);
+  WriteRecorder({
+    required AppDatabase database,
+    required TagsRemote remote,
+    required this.userId,
+  }) : _offline = OfflineTagsDao(database),
+       _remote = remote,
+       _sync = SyncRepository(
+         database: database,
+         remote: remote,
+         userId: userId,
+       );
 
   final String userId;
   final OfflineTagsDao _offline;
@@ -26,14 +33,19 @@ class WriteRecorder {
       return 'Ce tag vient d’être utilisé pour la carte précédente. Posez un nouveau tag.';
     }
     final local = await _offline.findByUid(userId, uid);
-    if (local != null && local.id != tag.id && (local.status == 'written' || local.status == 'verified')) {
+    if (local != null &&
+        local.id != tag.id &&
+        (local.status == 'written' || local.status == 'verified')) {
       return 'Ce tag (UID $uid) est déjà associé à la carte n° ${local.sequence} (${local.publicId}).';
     }
     try {
-      final row = await _remote.findByUid(uid).timeout(const Duration(seconds: 3));
+      final row = await _remote
+          .findByUid(uid)
+          .timeout(const Duration(seconds: 3));
       if (row != null) {
         final remote = NfcTagRecord.fromMap(row);
-        if (remote.id != tag.id && (remote.status == 'written' || remote.status == 'verified')) {
+        if (remote.id != tag.id &&
+            (remote.status == 'written' || remote.status == 'verified')) {
           return 'Ce tag (UID $uid) est déjà associé à la carte n° ${remote.sequence} (${remote.publicId}).';
         }
       }
@@ -51,8 +63,20 @@ class WriteRecorder {
     required bool lockTag,
     String? error,
   }) async {
-    await _offline.updateResult(userId: userId, tagId: tag.id, status: status, uid: uid, locked: lockTag);
-    await _sync.enqueueWrite(tagId: tag.id, status: status, uid: uid, error: error, lockTag: lockTag);
+    await _offline.updateResult(
+      userId: userId,
+      tagId: tag.id,
+      status: status,
+      uid: uid,
+      locked: lockTag,
+    );
+    await _sync.enqueueWrite(
+      tagId: tag.id,
+      status: status,
+      uid: uid,
+      error: error,
+      lockTag: lockTag,
+    );
     try {
       return (await _sync.syncPending()).remaining;
     } catch (_) {

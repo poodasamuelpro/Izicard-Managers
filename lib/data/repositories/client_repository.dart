@@ -35,12 +35,12 @@ class ClientRepository {
     String? email,
     String? phone,
   }) => _remote.updateClient(
-        clientId: clientId,
-        name: name,
-        contactName: contactName,
-        email: email,
-        phone: phone,
-      );
+    clientId: clientId,
+    name: name,
+    contactName: contactName,
+    email: email,
+    phone: phone,
+  );
 
   Future<Map<String, dynamic>> inviteClient({
     required String fullName,

@@ -6,7 +6,13 @@ class ColumnMatcher {
 
   static const Map<String, List<String>> _specialAliases = {
     '_type': ['_type', 'type de donnee', 'type de donnée', 'data type'],
-    '_payload': ['_payload', 'payload', 'donnee brute', 'donnée brute', 'contenu brut'],
+    '_payload': [
+      '_payload',
+      'payload',
+      'donnee brute',
+      'donnée brute',
+      'contenu brut',
+    ],
   };
 
   static Map<int, String?> suggest(List<String> headers, CardFormat format) {
@@ -38,8 +44,8 @@ class ColumnMatcher {
   }
 
   static List<String> destinations(CardFormat format) => [
-        ...format.fields.map((field) => field.key),
-        '_type',
-        '_payload',
-      ];
+    ...format.fields.map((field) => field.key),
+    '_type',
+    '_payload',
+  ];
 }

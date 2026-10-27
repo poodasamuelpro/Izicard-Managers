@@ -18,12 +18,28 @@ enum SeriesPhase { idle, waiting, success, error, paused, finished }
 /// Série d'écriture : lit le cache local, écrit, relit, enregistre d'abord en local
 /// (file `pending_writes`), puis laisse la synchronisation prévenir la base.
 class WriteController extends ChangeNotifier {
-  WriteController({required TagRepository tags, required AppDatabase database, required this.userId, this.confirmOverwrite})
-      : _tags = tags,
-        _offline = OfflineRepository(database: database, remote: tags.remote, userId: userId),
-        _sync = SyncRepository(database: database, remote: tags.remote, userId: userId),
-        _recorder = WriteRecorder(database: database, remote: tags.remote, userId: userId),
-        _dao = OfflineTagsDao(database);
+  WriteController({
+    required TagRepository tags,
+    required AppDatabase database,
+    required this.userId,
+    this.confirmOverwrite,
+  }) : _tags = tags,
+       _offline = OfflineRepository(
+         database: database,
+         remote: tags.remote,
+         userId: userId,
+       ),
+       _sync = SyncRepository(
+         database: database,
+         remote: tags.remote,
+         userId: userId,
+       ),
+       _recorder = WriteRecorder(
+         database: database,
+         remote: tags.remote,
+         userId: userId,
+       ),
+       _dao = OfflineTagsDao(database);
 
   final TagRepository _tags;
   final OfflineRepository _offline;
@@ -31,7 +47,8 @@ class WriteController extends ChangeNotifier {
   final WriteRecorder _recorder;
   final OfflineTagsDao _dao;
   final String userId;
-  final Future<bool> Function(String uid, int existingRecordCount)? confirmOverwrite;
+  final Future<bool> Function(String uid, int existingRecordCount)?
+  confirmOverwrite;
 
   List<NfcTagRecord> queue = const [];
   int index = 0;
@@ -55,7 +72,8 @@ class WriteController extends ChangeNotifier {
 
   NfcTagRecord? get current => index < queue.length ? queue[index] : null;
   bool get isRunning => phase == SeriesPhase.waiting;
-  bool get isActive => phase != SeriesPhase.idle && phase != SeriesPhase.finished;
+  bool get isActive =>
+      phase != SeriesPhase.idle && phase != SeriesPhase.finished;
 
   /// Charge les cartes à écrire depuis le cache local ; télécharge le dossier au besoin.
   Future<void> load(NfcBatch batch) async {
@@ -72,9 +90,10 @@ class WriteController extends ChangeNotifier {
       unsynced = await _sync.pendingCount();
     } catch (error) {
       queue = const [];
-      loadError = await _offline.hasBatch(batch.id)
-          ? 'Impossible de lire le cache local : ${_clean(error)}'
-          : 'Dossier non téléchargé et réseau indisponible. Téléchargez-le tant que vous avez du réseau : ${_clean(error)}';
+      loadError =
+          await _offline.hasBatch(batch.id)
+              ? 'Impossible de lire le cache local : ${_clean(error)}'
+              : 'Dossier non téléchargé et réseau indisponible. Téléchargez-le tant que vous avez du réseau : ${_clean(error)}';
     } finally {
       loading = false;
       notifyListeners();
@@ -152,7 +171,8 @@ class WriteController extends ChangeNotifier {
     }
   }
 
-  Future<String?> _guard(NfcTagRecord tag, String uid) => _recorder.guard(tag, uid, lastUid: _lastUid);
+  Future<String?> _guard(NfcTagRecord tag, String uid) =>
+      _recorder.guard(tag, uid, lastUid: _lastUid);
 
   Future<void> _handle(NfcTagRecord tag, NfcWriteResult result) async {
     if (result.verified) {
@@ -160,16 +180,29 @@ class WriteController extends ChangeNotifier {
       _lastUid = result.uid;
       _awaitingAdvance = true;
       phase = SeriesPhase.success;
-      message = 'Carte n° ${tag.sequence} vérifiée · UID ${result.uid}${result.locked ? ' · verrouillée' : ''}'
+      message =
+          'Carte n° ${tag.sequence} vérifiée · UID ${result.uid}${result.locked ? ' · verrouillée' : ''}'
           '${result.error != null ? '\n${result.error}' : ''}';
-      await _record(tag, status: 'verified', uid: result.uid, lockTag: result.locked, error: null);
+      await _record(
+        tag,
+        status: 'verified',
+        uid: result.uid,
+        lockTag: result.locked,
+        error: null,
+      );
       unawaited(FeedbackService.signal(success: true));
     } else {
       errors++;
       phase = SeriesPhase.error;
       message = result.error ?? 'Écriture non vérifiée.';
       if (result.recordable) {
-        await _record(tag, status: 'error', uid: result.uid.isEmpty ? null : result.uid, lockTag: false, error: message);
+        await _record(
+          tag,
+          status: 'error',
+          uid: result.uid.isEmpty ? null : result.uid,
+          lockTag: false,
+          error: message,
+        );
       }
       unawaited(FeedbackService.signal(success: false));
     }
@@ -184,7 +217,13 @@ class WriteController extends ChangeNotifier {
     required bool lockTag,
     String? error,
   }) async {
-    unsynced = await _recorder.record(tag, status: status, uid: uid, lockTag: lockTag, error: error);
+    unsynced = await _recorder.record(
+      tag,
+      status: status,
+      uid: uid,
+      lockTag: lockTag,
+      error: error,
+    );
   }
 
   void _advance() {
@@ -209,7 +248,10 @@ class WriteController extends ChangeNotifier {
 
   void skip() {
     if (_running) return;
-    if (phase != SeriesPhase.error && phase != SeriesPhase.paused && phase != SeriesPhase.idle) return;
+    if (phase != SeriesPhase.error &&
+        phase != SeriesPhase.paused &&
+        phase != SeriesPhase.idle)
+      return;
     skipped++;
     _advance();
     if (phase != SeriesPhase.finished) {
@@ -249,7 +291,8 @@ class WriteController extends ChangeNotifier {
     notifyListeners();
   }
 
-  String _clean(Object error) => error.toString().replaceFirst('Exception: ', '');
+  String _clean(Object error) =>
+      error.toString().replaceFirst('Exception: ', '');
 
   @override
   void dispose() {

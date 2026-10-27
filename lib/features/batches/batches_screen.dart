@@ -378,7 +378,8 @@ class _BatchCard extends StatelessWidget {
                 child: LinearProgressIndicator(
                   value: batch.progress,
                   minHeight: 7,
-                  backgroundColor: Theme.of(context).colorScheme.surfaceContainerHigh,
+                  backgroundColor:
+                      Theme.of(context).colorScheme.surfaceContainerHigh,
                 ),
               ),
               const SizedBox(height: 8),

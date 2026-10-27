@@ -310,7 +310,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                                   ? 0
                                   : stats.verified / stats.total,
                           minHeight: 7,
-                          backgroundColor: theme.colorScheme.surfaceContainerHigh,
+                          backgroundColor:
+                              theme.colorScheme.surfaceContainerHigh,
                         ),
                       ),
                       const SizedBox(height: 6),

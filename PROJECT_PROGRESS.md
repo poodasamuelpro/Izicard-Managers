@@ -856,3 +856,67 @@ Commit : f5bfcce — docs: record Supabase NFC deployment
 Ni `flutter analyze`, ni test, ni rendu sur appareil dans cet environnement (Flutter absent). Contrastes choisis, non mesurés.
 ### Reste à faire
 Relire chaque écran en sombre sur un appareil ou émulateur ; thème de l'écran de démarrage Android (dossier `android/` sans ressources).
+
+## Lot M16 — plateforme Android générée et APK debug livré — 2026-10-27 02:48 UTC
+
+### Environnement vérifié
+- Flutter 3.35.4 (stable), Dart 3.9.2, Java OpenJDK 21.0.12.1, Gradle 8.12, AGP 8.9.1/Kotlin 2.1.0.
+- Android SDK local : platforms android-34/35/36, build-tools 35.0.0, NDK 27.0.12077973, `sdk.dir` dans `android/local.properties` (non versionné).
+- `pubspec.yaml` : `sdk: '>=3.7.2 <4.0.0'`, `flutter: '>=3.29.2'` — compatibles avec l'environnement.
+- Dossier `android/` absent avant ce lot (seul un `README.md` indicatif existait) : généré avec `flutter create --platforms=android --org com.izicardouaga .`. Aucune source Android existante n'a été remplacée ; les fichiers Dart (`lib/`, `test/`) n'ont pas été touchés par cette commande, seul un `test/widget_test.dart` générique non pertinent a été généré puis supprimé (référence à un `MyApp` inexistant dans ce dépôt), de même que les `.iml`/`.idea` et `.metadata` ajoutés au `.gitignore`.
+
+### Identité de l'application
+- Nom visible Android : **IziCard Manager** (`android:label` dans `AndroidManifest.xml`), distinct du nom technique Flutter `izicard_nfc_app` (`pubspec.yaml` nom de paquet Dart, non modifié).
+- `applicationId` / `namespace` : **com.izicardouaga.izicardmanager** (mis à jour dans `android/app/build.gradle.kts`, le `MainActivity.kt` déplacé dans `android/app/src/main/kotlin/com/izicardouaga/izicardmanager/` avec la déclaration de paquet correspondante ; l'ancien dossier généré par défaut `.../izicard_nfc_app/` a été supprimé).
+- `versionName`/`versionCode` proviennent de `pubspec.yaml` (`version: 0.1.0+1`) via `flutter.versionName`/`flutter.versionCode` — source unique, cohérente, sans valeur dépendante du poste local.
+- `compileSdk`/`targetSdk`/`minSdk` laissés aux valeurs par défaut du moteur Flutter (`flutter.compileSdkVersion`/`targetSdkVersion` = 36, `flutter.minSdkVersion` = 24, `ndkVersion` = 27.0.12077973) : compatibles avec tous les plugins utilisés (le plus exigeant, `nfc_manager`, requiert `minSdk 21`).
+
+### Permissions (vérifiées plugin par plugin dans le cache pub, pas d'ajout au hasard)
+- `android.permission.NFC` + `uses-feature android.hardware.nfc required="false"` ajoutés explicitement dans `AndroidManifest.xml` (le plugin `nfc_manager` ne déclare aucune permission dans son propre manifeste : l'app reste installable sans NFC, conformément à la demande).
+- `android.permission.INTERNET` ajouté explicitement (requis par `supabase_flutter`, qui ne fournit pas de manifeste Android propre car c'est un paquet Dart pur) ; permission déjà présente par ailleurs dans les manifestes `debug`/`profile` générés par Flutter pour les outils de développement.
+- `android.permission.ACCESS_NETWORK_STATE` fusionnée automatiquement depuis `connectivity_plus`. Aucune autre permission réseau ou stockage ajoutée : `file_picker` ne déclare qu'une requête `GET_CONTENT` (`<queries>`), pas de permission runtime supplémentaire nécessaire sur ce flux.
+- `android:usesCleartextTraffic="false"` conservé (aucun besoin HTTP en clair démontré) ; `android:allowBackup="false"` ajouté (données de session/cache locales, pas de sauvegarde cloud du système souhaitée vu le cache hors-ligne).
+- Manifeste final vérifié avec `aapt2 dump badging` sur l'APK construit : permissions présentes = NFC, INTERNET, ACCESS_NETWORK_STATE, plus la permission technique `DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION` ajoutée automatiquement par les outils de build Android pour les broadcast receivers dynamiques (aucune permission inattendue).
+
+### Icône adaptative et écran de démarrage
+- Travail réalisé uniquement à partir du glyphe de marque présent dans `assets/images/logo.jpg` (fichier source non modifié, non remplacé) : extraction du pictogramme carte+ondes NFC, recréation vectorielle fidèle sur fond transparent (`assets/icons/ic_foreground.png`, `ic_monochrome.png`, `ic_legacy.png`) et couleur de fond `#00A5D2` reprise par échantillonnage du teal de marque.
+- Génération via `flutter_launcher_icons: ^0.14.4` (dev-dependency ajoutée) : icône adaptative (foreground/background, zone de sécurité respectée ~62 % avec l'inset standard 16 % appliqué par l'outil), icône monochrome Android 13+ (thèmes dynamiques du launcher), variantes de densité mdpi→xxxhdpi, fallback `mipmap-anydpi-v26/launcher_icon.xml`. Les anciens `ic_launcher.png` par défaut de `flutter create` ont été supprimés pour ne garder que `launcher_icon`, référencé dans `AndroidManifest.xml`.
+- Écran de démarrage généré via `flutter_native_splash: ^2.4.4` (dev-dependency ajoutée) : fond blanc en thème clair / `#101820` en thème sombre, logo complet de marque (`assets/icons/splash_logo_full.png`, extrait du même fichier source avec fond rendu transparent, texte et pictogramme conservés) centré sans étirement ; écran de démarrage Android 12+ dédié avec icône animée sur fond `#00A5D2` et transition système native vers Flutter (pas de flash blanc/noir, pas d'étirement — vérifié par génération des fichiers `drawable*/launch_background.xml`, `values*/styles.xml` en versions jour/nuit et v21/v31).
+- Rendu vérifié par composition programmatique (icône et splash prévisualisés sur fond clair et sombre avant génération finale) ; vérification visuelle réelle sur appareil/émulateur Android non effectuée dans cet environnement (pas d'émulateur disponible ici).
+
+### Liens d'application et navigation système
+- Aucun schéma de lien profond, route web ou intent-filter de type `VIEW`/deep link n'existe dans le code Dart du dépôt (recherche explicite sans résultat dans `lib/`) : aucun filtre de lien n'a donc été ajouté au manifeste, conformément à la consigne de ne pas fabriquer de domaine ou de schéma inexistant. Seul le filtre `LAUNCHER`/`MAIN` standard est présent. Point consigné : si un lien d'invitation (deep link) doit ouvrir directement l'application à l'avenir, le schéma/l'hôte réel devra être fourni par le propriétaire avant de l'ajouter.
+- Changements d'orientation : `android:configChanges` standard généré par Flutter conservé (gère orientation/clavier/taille sans redémarrage d'activité).
+- Partage de fichiers : géré par `share_plus`, qui déclare son propre `FileProvider` interne (non exporté) dans son manifeste de plugin — aucune configuration supplémentaire requise côté app.
+
+### Sécurité de la configuration
+- `android/local.properties` (chemins SDK/Flutter locaux), `android/key.properties`, `*.jks`, `*.keystore` restent ignorés par Git (`.gitignore` racine préexistant, confirmé inchangé sur ce point ; `android/.gitignore` généré par Flutter confirme également `key.properties`, `**/*.jks`, `**/*.keystore`, `/local.properties`).
+- Aucun keystore ni mot de passe de signature commité. Le build `release` pointe pour l'instant vers `signingConfigs.getByName("debug")` (valeur générée par défaut de `flutter create`, inchangée) : une vraie configuration de signature sécurisée reste à fournir par le propriétaire avant toute release signée — non inventée.
+- Composant exporté unique : `MainActivity` avec `android:exported="true"` (requis car c'est l'activité `LAUNCHER`) ; le `receiver` interne de `share_plus` est explicitement `exported="false"` dans son propre manifeste. Minification/ProGuard non activés (valeurs par défaut non modifiées) : aucune régression constatée à ce stade sur les plugins utilisés, à reconfirmer si une minification release est activée plus tard.
+- `.idea/`, `*.iml`, `.metadata` ajoutés au `.gitignore` racine (fichiers d'IDE générés par `flutter create`, sans rapport avec la configuration Android livrable).
+
+### Qualité : résultats réels obtenus dans ce lot
+- `flutter pub get` : réussi (ajout de `flutter_launcher_icons` et `flutter_native_splash` en dev-dependencies ; aucune dépendance de production modifiée).
+- `dart format lib/ test/` : exécuté, 56 fichiers reformatés (écarts de style accumulés avant ce lot, aucun changement de logique).
+- `flutter analyze` : **0 erreur**. 34 diagnostics restants = avertissements/infos déjà documentés avant ce lot (dépréciations `withOpacity`, `value`→`initialValue`, `anonKey`→`publishableKey`, imports inutilisés, un champ non lu) ; aucun nouveau diagnostic introduit par les changements Android de ce lot.
+- `flutter test` : **réussi, tous les tests passent** (11 tests sur 5 fichiers).
+- `flutter build apk --debug` : **réussi**. Artefact produit, vérifié non vide, package/version/permissions/icône/activité de lancement contrôlés avec `aapt2 dump badging` (SDK Android fourni par l'environnement, aucun outil installé en plus).
+- APK release non tenté dans ce lot (faute de configuration de signature sécurisée fournie ; le temps du lot a été consacré en priorité à livrer un artefact installable vérifié selon la consigne « au minimum flutter build apk --debug »).
+- Essais sur tag NFC physique, rendu réel sur appareil/émulateur (icône, splash, thèmes clair/sombre) : non réalisés dans cet environnement sans matériel Android — restent à faire sur un vrai téléphone.
+
+### Artefact livré
+- Fichier : `build/app/outputs/flutter-apk/app-debug.apk`
+- Taille : 153 976 771 octets (~146,8 Mio)
+- SHA-256 : `9f55a4b59325ecf7fec2d79c3684f03f2cff1d96a16f0b9abd763fd0e56aa658`
+- Package vérifié : `com.izicardouaga.izicardmanager`, `versionName=0.1.0`, `versionCode=1`, `targetSdkVersion=36`, activité de lancement `com.izicardouaga.izicardmanager.MainActivity`.
+- Non commité dans Git (artefact binaire de build, `build/` déjà ignoré) ; fourni séparément au propriétaire pour installation/test.
+
+### Reste à faire (prochain lot Android)
+- Fournir/configurer une vraie clé de signature release (keystore + `key.properties`, jamais commités) puis construire et vérifier un APK/AAB release signé.
+- Tester réellement l'icône adaptative, l'icône monochrome et l'écran de démarrage sur un appareil ou émulateur Android (plusieurs densités, thèmes clair/sombre, Android 12+ vs versions antérieures).
+- Si un lien d'invitation/deep link doit ouvrir l'application, fournir le schéma/l'hôte réel à déclarer dans le manifeste (aucune valeur n'a été inventée dans ce lot).
+- Réévaluer l'activation de la minification/ProGuard release une fois une signature réelle disponible, en revérifiant chaque plugin NFC/fichier/partage.
+- Essais sur 5 à 10 tags NFC physiques (écriture, relecture, verrouillage, hors-ligne, révocation) sur un appareil réel, comme déjà demandé dans `RESTE_A_FAIRE_MOBILE.md`.
+
+### Commit
+À renseigner juste après le commit/push de ce lot.
