@@ -1022,3 +1022,7 @@ Créer les secrets GitHub, lancer le workflow Build APK, installer l'APK et vér
 - Run suivant : AGP 8.11.1 accepté, mais « Kotlin 2.1.0 inférieur au minimum 2.2.20 de Flutter ». Corrections : Kotlin 2.2.20 dans `settings.gradle.kts` ; dans `app/build.gradle.kts`, le bloc `kotlinOptions` (déprécié en Kotlin 2.2) remplacé par `kotlin { compilerOptions { jvmTarget = 11 } }`.
 - Les contrôles de version de Flutter portent sur Java, Gradle, AGP et Kotlin : les trois derniers sont maintenant à jour. Avertissements Flutter non bloquants : Gradle 9.1+ et AGP 9.0.1+ attendus « bientôt » (migration non faite).
 - Non vérifié : nouveau run non lancé ; les plugins tiers (nfc_manager, etc.) peuvent encore faire échouer la compilation.
+
+## Lot M24 : audit des retours terrain (aucun code modifié)
+- Document `AUDIT_RETOURS_TERRAIN.md` : vérification de tag, puces NTAG, dossiers/clients non reliés, import/écriture sans dossier, bug de double écran de réinitialisation du mot de passe (`_passwordSetup` jamais remis à faux), nom IziCardOuaga, design, avec propositions et ordre conseillé.
+- Seul changement réalisé : lien d'invitation (dépôt web, lot W6). Rien n'est testé.

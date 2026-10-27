@@ -59,3 +59,5 @@ L’application est exclusivement en français : aucune interface anglaise n’e
 Web Managers : `manager.izicardouaga.com` et `izicard-managers-web.izicardouaga.workers.dev`. Les deux sont déclarés comme App Links dans le manifeste Android ; `assetlinks.json` + empreinte de signature restent à publier (voir `GUIDE_DEPLOIEMENT.md` section 8).
 Build GitHub : secrets `SUPABASE_URL` et `SUPABASE_ANON_KEY` obligatoires (Settings > Secrets and variables > Actions > Secrets), injectés au build par le workflow *Build APK*.
 
+
+Audit des retours terrain : [`AUDIT_RETOURS_TERRAIN.md`](AUDIT_RETOURS_TERRAIN.md).
