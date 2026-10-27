@@ -1012,3 +1012,8 @@ Créer les secrets GitHub, lancer le workflow Build APK, installer l'APK et vér
 ## Lot M21 : correction du build GitHub (Gradle)
 - Run #53 : échec Gradle « version 8.12.0 inférieure au minimum 8.14.0 de Flutter ». Correction : `gradle-wrapper.properties` passé à Gradle 8.14. Aucune autre modification.
 - Non vérifié : nouveau run non lancé ; d'autres erreurs peuvent apparaître ensuite (AGP 8.9.1 déclaré dans `settings.gradle.kts` non confronté à cette version de Flutter).
+
+## Lot M22 : correction du build GitHub (AGP)
+- Run suivant : Gradle 8.14 accepté, mais « Android Gradle Plugin 8.9.1 inférieur au minimum 8.11.1 de Flutter ». Correction : `settings.gradle.kts` passé à AGP 8.11.1. Aucune autre modification.
+- Avertissement Flutter (non bloquant) : Gradle 8.14 sera abandonné « bientôt » au profit de 9.1+ ; non traité (AGP 9 demande une migration du DSL).
+- Non vérifié : nouveau run non lancé.
