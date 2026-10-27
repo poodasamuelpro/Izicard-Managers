@@ -271,9 +271,9 @@ class _CodeSettings extends StatelessWidget {
     ),
     const SizedBox(height: 12),
     Row(children: [
-      Expanded(child: TextFormField(controller: minController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Longueur minimum', border: OutlineInputBorder())),
+      Expanded(child: TextFormField(controller: minController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Longueur minimum', border: OutlineInputBorder()))),
       const SizedBox(width: 12),
-      Expanded(child: TextFormField(controller: maxController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Longueur maximum', border: OutlineInputBorder())),
+      Expanded(child: TextFormField(controller: maxController, keyboardType: TextInputType.number, decoration: const InputDecoration(labelText: 'Longueur maximum', border: OutlineInputBorder()))),
     ]),
   ]);
 }

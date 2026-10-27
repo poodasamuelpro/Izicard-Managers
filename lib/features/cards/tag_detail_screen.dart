@@ -13,7 +13,12 @@ import 'single_write_screen.dart';
 
 /// Détail d'une carte : donnée, champs, UID, historique d'écriture, et encodage de cette seule carte.
 class TagDetailScreen extends StatefulWidget {
-  const TagDetailScreen({super.key, required this.tag, required this.profile, this.batchName});
+  const TagDetailScreen({
+    super.key,
+    required this.tag,
+    required this.profile,
+    this.batchName,
+  });
 
   final NfcTagRecord tag;
   final NfcProfile profile;
@@ -67,9 +72,16 @@ class _TagDetailScreenState extends State<TagDetailScreen> {
   }
 
   Future<void> _write() async {
-    final changed = await Navigator.of(context).push<bool>(MaterialPageRoute<bool>(
-      builder: (_) => SingleWriteScreen(tag: _tag, profile: widget.profile, batchName: widget.batchName),
-    ));
+    final changed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute<bool>(
+        builder:
+            (_) => SingleWriteScreen(
+              tag: _tag,
+              profile: widget.profile,
+              batchName: widget.batchName,
+            ),
+      ),
+    );
     if (changed == true) {
       _changed = true;
       await _refresh();
@@ -79,7 +91,9 @@ class _TagDetailScreenState extends State<TagDetailScreen> {
   Future<void> _copy() async {
     await Clipboard.setData(ClipboardData(text: _tag.payload));
     if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Donnée copiée.')));
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Donnée copiée.')));
   }
 
   @override
@@ -104,49 +118,101 @@ class _TagDetailScreenState extends State<TagDetailScreen> {
                   padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
                   children: [
                     if (_fromCache)
-                      const Padding(
+                      Padding(
                         padding: EdgeInsets.only(bottom: 10),
-                        child: Text('Hors connexion : données du cache de cet appareil.',
-                            style: TextStyle(color: IzicardColors.statusPending, fontWeight: FontWeight.w700)),
-                      ),
-                    Row(children: [
-                      Expanded(child: Text(tag.publicId, style: Theme.of(context).textTheme.titleLarge)),
-                      DecoratedBox(
-                        decoration: BoxDecoration(color: color, borderRadius: BorderRadius.circular(99)),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          child: Text(IzicardColors.labelForTagStatus(tag.status),
-                              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w800)),
+                        child: Text(
+                          'Hors connexion : données du cache de cet appareil.',
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.tertiary,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
-                    ]),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            tag.publicId,
+                            style: Theme.of(context).textTheme.titleLarge,
+                          ),
+                        ),
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: color,
+                            borderRadius: BorderRadius.circular(99),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 6,
+                            ),
+                            child: Text(
+                              IzicardColors.labelForTagStatus(tag.status),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                     if (widget.batchName != null) Text(widget.batchName!),
                     const SizedBox(height: 14),
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(14),
-                        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                          Row(children: [
-                            const Expanded(child: Text('Donnée à encoder', style: TextStyle(fontWeight: FontWeight.w800))),
-                            IconButton(tooltip: 'Copier', onPressed: _copy, icon: const Icon(Icons.copy_rounded)),
-                          ]),
-                          SelectableText(tag.payload),
-                        ]),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Expanded(
+                                  child: Text(
+                                    'Donnée à encoder',
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
+                                IconButton(
+                                  tooltip: 'Copier',
+                                  onPressed: _copy,
+                                  icon: const Icon(Icons.copy_rounded),
+                                ),
+                              ],
+                            ),
+                            SelectableText(tag.payload),
+                          ],
+                        ),
                       ),
                     ),
                     const SizedBox(height: 10),
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(14),
-                        child: Column(children: [
-                          _Row('Numéro', '${tag.sequence}'),
-                          _Row('Type de donnée', tag.dataType),
-                          _Row('UID du tag', tag.uid),
-                          _Row('Tentatives', '${tag.attempts}'),
-                          _Row('Verrouillée', tag.locked ? 'Oui (définitif)' : 'Non'),
-                          _Row('Écrite le', tag.writtenAt == null ? null : tag.writtenAt!.replaceFirst('T', ' ').split('.').first),
-                          _Row('Dernière erreur', tag.lastError),
-                        ]),
+                        child: Column(
+                          children: [
+                            _Row('Numéro', '${tag.sequence}'),
+                            _Row('Type de donnée', tag.dataType),
+                            _Row('UID du tag', tag.uid),
+                            _Row('Tentatives', '${tag.attempts}'),
+                            _Row(
+                              'Verrouillée',
+                              tag.locked ? 'Oui (définitif)' : 'Non',
+                            ),
+                            _Row(
+                              'Écrite le',
+                              tag.writtenAt == null
+                                  ? null
+                                  : tag.writtenAt!
+                                      .replaceFirst('T', ' ')
+                                      .split('.')
+                                      .first,
+                            ),
+                            _Row('Dernière erreur', tag.lastError),
+                          ],
+                        ),
                       ),
                     ),
                     if (tag.fields.isNotEmpty) ...[
@@ -154,18 +220,32 @@ class _TagDetailScreenState extends State<TagDetailScreen> {
                       Card(
                         child: Padding(
                           padding: const EdgeInsets.all(14),
-                          child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                            const Text('Champs de la carte', style: TextStyle(fontWeight: FontWeight.w800)),
-                            const SizedBox(height: 6),
-                            ...(tag.fields.entries.toList()..sort((a, b) => a.key.compareTo(b.key)))
-                                .map((entry) => _Row(entry.key, entry.value?.toString())),
-                          ]),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Champs de la carte',
+                                style: TextStyle(fontWeight: FontWeight.w800),
+                              ),
+                              const SizedBox(height: 6),
+                              ...(tag.fields.entries.toList()
+                                    ..sort((a, b) => a.key.compareTo(b.key)))
+                                  .map(
+                                    (entry) => _Row(
+                                      entry.key,
+                                      entry.value?.toString(),
+                                    ),
+                                  ),
+                            ],
+                          ),
                         ),
                       ),
                     ],
                     const SizedBox(height: 16),
                     FilledButton.icon(
-                      style: FilledButton.styleFrom(minimumSize: const Size.fromHeight(56)),
+                      style: FilledButton.styleFrom(
+                        minimumSize: const Size.fromHeight(56),
+                      ),
                       onPressed: canWrite ? _write : null,
                       icon: const Icon(Icons.nfc_rounded),
                       label: const Text('Encoder cette carte uniquement'),
@@ -178,8 +258,8 @@ class _TagDetailScreenState extends State<TagDetailScreen> {
                               ? (tag.status == 'verified'
                                   ? 'Cette carte est déjà vérifiée : elle ne peut plus être réécrite.'
                                   : tag.locked
-                                      ? 'Cette carte est verrouillée définitivement.'
-                                      : 'Cette carte est annulée.')
+                                  ? 'Cette carte est verrouillée définitivement.'
+                                  : 'Cette carte est annulée.')
                               : 'Votre accès n’est plus actif.',
                           textAlign: TextAlign.center,
                         ),
@@ -202,10 +282,23 @@ class _Row extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 5),
-        child: Row(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          SizedBox(width: 130, child: Text(label, style: const TextStyle(color: IzicardColors.muted))),
-          Expanded(child: SelectableText(value == null || value!.isEmpty ? '—' : value!)),
-        ]),
-      );
+    padding: const EdgeInsets.symmetric(vertical: 5),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 130,
+          child: Text(
+            label,
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+        ),
+        Expanded(
+          child: SelectableText(value == null || value!.isEmpty ? '—' : value!),
+        ),
+      ],
+    ),
+  );
 }

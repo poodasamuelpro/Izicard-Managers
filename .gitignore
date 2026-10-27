@@ -1,1 +1,15 @@
-# build/, .dart_tool/, android/key.properties, *.jks, .env
+# Flutter / Dart generated files
+.dart_tool/
+build/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+
+# Local Android SDK configuration and signing keys
+android/local.properties
+android/key.properties
+*.jks
+*.keystore
+
+# Local environment secrets
+.env

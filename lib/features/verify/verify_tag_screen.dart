@@ -57,10 +57,15 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
       if (read.cancelled) return;
       NfcTagRecord? tag;
       try {
-        tag = await _tags.findByUid(read.uid).timeout(const Duration(seconds: 6));
+        tag = await _tags
+            .findByUid(read.uid)
+            .timeout(const Duration(seconds: 6));
       } catch (_) {
         // Hors connexion : recherche dans les dossiers téléchargés sur cet appareil.
-        tag = await _offline.findByUid(Supabase.instance.client.auth.currentUser?.id ?? '', read.uid);
+        tag = await _offline.findByUid(
+          Supabase.instance.client.auth.currentUser?.id ?? '',
+          read.uid,
+        );
       }
       if (!mounted) return;
       final found = tag;
@@ -72,12 +77,21 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
         } else if (read.message == null) {
           _result = 'Le tag ne contient aucun enregistrement NDEF.';
         } else {
-          final expected = NdefPayloadBuilder.build(dataType: found.dataType, payload: found.payload);
-          _result = NfcService.sameMessage(read.message!, expected) ? 'Contenu conforme.' : 'Contenu différent du payload attendu.';
+          final expected = NdefPayloadBuilder.build(
+            dataType: found.dataType,
+            payload: found.payload,
+          );
+          _result =
+              NfcService.sameMessage(read.message!, expected)
+                  ? 'Contenu conforme.'
+                  : 'Contenu différent du payload attendu.';
         }
       });
     } catch (exception) {
-      if (mounted) setState(() => _error = exception.toString().replaceFirst('Exception: ', ''));
+      if (mounted)
+        setState(
+          () => _error = exception.toString().replaceFirst('Exception: ', ''),
+        );
     } finally {
       if (mounted) {
         setState(() => _reading = false);
@@ -98,38 +112,55 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
         children: [
           const NfcHelpBanner(),
           Card(
-            color: IzicardColors.paleCyan,
+            color: Theme.of(context).colorScheme.primaryContainer,
             child: Padding(
               padding: const EdgeInsets.all(18),
-              child: Column(children: [
-                const Icon(Icons.fact_check_rounded, size: 42, color: IzicardColors.cyan),
-                const SizedBox(height: 12),
-                const Text('La vérification lit le tag, retrouve sa carte par UID et compare le contenu réel au payload backend.', textAlign: TextAlign.center),
-                const SizedBox(height: 18),
-                FilledButton.icon(
-                  onPressed: _reading ? null : _verify,
-                  icon: const Icon(Icons.nfc_rounded),
-                  label: const Text('Lire et vérifier'),
-                ),
-                if (_reading) ...[
-                  const SizedBox(height: 10),
-                  OutlinedButton.icon(
-                    onPressed: _cancelReading,
-                    icon: const Icon(Icons.close_rounded),
-                    label: const Text('Annuler la lecture'),
+              child: Column(
+                children: [
+                  Icon(
+                    Icons.fact_check_rounded,
+                    size: 42,
+                    color: Theme.of(context).colorScheme.onPrimaryContainer,
                   ),
+                  const SizedBox(height: 12),
+                  const Text(
+                    'La vérification lit le tag, retrouve sa carte par UID et compare le contenu réel au payload backend.',
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 18),
+                  FilledButton.icon(
+                    onPressed: _reading ? null : _verify,
+                    icon: const Icon(Icons.nfc_rounded),
+                    label: const Text('Lire et vérifier'),
+                  ),
+                  if (_reading) ...[
+                    const SizedBox(height: 10),
+                    OutlinedButton.icon(
+                      onPressed: _cancelReading,
+                      icon: const Icon(Icons.close_rounded),
+                      label: const Text('Annuler la lecture'),
+                    ),
+                  ],
                 ],
-              ]),
+              ),
             ),
           ),
           if (_error != null) ...[
             const SizedBox(height: 16),
-            _ResultCard(color: IzicardColors.statusError, icon: Icons.error_outline, title: 'Erreur de lecture', message: _error!),
+            _ResultCard(
+              color: IzicardColors.statusError,
+              icon: Icons.error_outline,
+              title: 'Erreur de lecture',
+              message: _error!,
+            ),
           ],
           if (_result != null) ...[
             const SizedBox(height: 16),
             _ResultCard(
-              color: isOk ? IzicardColors.statusVerified : IzicardColors.statusPending,
+              color:
+                  isOk
+                      ? IzicardColors.statusVerified
+                      : IzicardColors.statusPending,
               icon: isOk ? Icons.verified_rounded : Icons.warning_amber_rounded,
               title: isOk ? 'Conforme ✔' : 'À contrôler ✖',
               message: _result!,
@@ -138,15 +169,24 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(18),
-                child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-                  _InfoLine(label: 'UID physique', value: _uid ?? 'Inconnu'),
-                  if (_expected != null) ...[
-                    _InfoLine(label: 'Carte', value: _expected!.publicId),
-                    _InfoLine(label: 'Dossier', value: _expected!.batchId),
-                    _InfoLine(label: 'Statut backend', value: _expected!.status),
-                    _InfoLine(label: 'Payload attendu', value: _expected!.payload),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _InfoLine(label: 'UID physique', value: _uid ?? 'Inconnu'),
+                    if (_expected != null) ...[
+                      _InfoLine(label: 'Carte', value: _expected!.publicId),
+                      _InfoLine(label: 'Dossier', value: _expected!.batchId),
+                      _InfoLine(
+                        label: 'Statut backend',
+                        value: _expected!.status,
+                      ),
+                      _InfoLine(
+                        label: 'Payload attendu',
+                        value: _expected!.payload,
+                      ),
+                    ],
                   ],
-                ]),
+                ),
               ),
             ),
           ],
@@ -157,7 +197,12 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
 }
 
 class _ResultCard extends StatelessWidget {
-  const _ResultCard({required this.color, required this.icon, required this.title, required this.message});
+  const _ResultCard({
+    required this.color,
+    required this.icon,
+    required this.title,
+    required this.message,
+  });
   final Color color;
   final IconData icon;
   final String title;
@@ -165,8 +210,12 @@ class _ResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Card(
-        child: ListTile(leading: Icon(icon, color: color), title: Text(title), subtitle: Text(message)),
-      );
+    child: ListTile(
+      leading: Icon(icon, color: color),
+      title: Text(title),
+      subtitle: Text(message),
+    ),
+  );
 }
 
 class _InfoLine extends StatelessWidget {
@@ -176,11 +225,14 @@ class _InfoLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 6),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Text(label, style: Theme.of(context).textTheme.labelMedium),
-          const SizedBox(height: 2),
-          SelectableText(value),
-        ]),
-      );
+    padding: const EdgeInsets.symmetric(vertical: 6),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label, style: Theme.of(context).textTheme.labelMedium),
+        const SizedBox(height: 2),
+        SelectableText(value),
+      ],
+    ),
+  );
 }

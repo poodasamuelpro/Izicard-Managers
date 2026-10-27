@@ -769,3 +769,31 @@ Ajouter une bascule de thème système/clair/sombre avec prise en charge lisible
 ### Commit
 
 À renseigner après commit/push du lot documentaire.
+
+
+## Lot M11 — thème clair/sombre et première validation Flutter — 2026-10-27 00:32 UTC
+
+### Terminé dans le code mobile
+
+- Préférence persistée `système / clair / sombre` dans `AppSettingsStore`, reliée au `MaterialApp`; choix exposé dans Réglages.
+- Thèmes Material 3 clair et sombre distincts, avec ColorScheme/tokens pour fonds, cartes, dialogues, champs, boutons, navigation, menus, textes et états. Les écrans principaux (connexion, accueil, dossiers, détail carte/dossier, NFC, réglages, tableau de bord, erreurs) ont été adaptés là où les couleurs fixes empêchaient la lisibilité.
+- Nom affiché « IziCard Manager » défini côté Flutter.
+- Contrainte invalide `file_picker: ^10.3.11` remplacée par `^10.3.7`; la résolution Pub a abouti avec `file_picker 10.3.10`.
+- Blocages de compilation préexistants corrigés sans changer les règles métier : parenthésage du formulaire de création de dossier et import explicite de `NdefMessage` depuis `nfc_manager/ndef_record.dart`.
+- Les anciens fichiers de tests vides (`test/*_test.dart`) ont reçu des tests unitaires ciblés ; nouveaux tests pour les thèmes et la persistance des réglages.
+
+### Vérification réalisée
+
+- `flutter pub get` : réussi.
+- `flutter test` : réussi, tous les tests passent.
+- `flutter analyze` : aucune erreur Dart ; avertissements/info préexistants encore présents (dépréciations `withOpacity`, imports/fields inutilisés, usage déprécié `anonKey`), la commande retourne un statut non nul en raison de ces diagnostics.
+- Aucun APK n’est encore construit dans ce lot; la plateforme Android complète, les permissions, icône, splash, liens profonds et validations appareil réel restent le lot suivant.
+- Aucun changement appliqué dans Supabase pendant ce lot.
+
+### Reste à faire
+
+Générer puis configurer la plateforme Android (identifiant, SDK, permission NFC facultative pour permettre l’administration sur téléphones sans lecteur, liens profonds, icône et splash), construire APK debug/release quand la signature de production sera disponible, puis réaliser les vérifications Supabase strictement limitées au schéma NFC et aux réglages Auth de récupération/invitation requis.
+
+### Commit
+
+À renseigner après commit/push de ce lot.

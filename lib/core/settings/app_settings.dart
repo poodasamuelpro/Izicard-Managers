@@ -1,4 +1,4 @@
-import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Réglages locaux, propres à l'appareil.
@@ -10,6 +10,7 @@ class AppSettings {
     this.autoAdvance = true,
     this.lockByDefault = false,
     this.keepAwake = true,
+    this.themeMode = ThemeMode.system,
   });
 
   final bool sound;
@@ -19,6 +20,7 @@ class AppSettings {
   /// Jamais activé par défaut : le verrouillage est définitif.
   final bool lockByDefault;
   final bool keepAwake;
+  final ThemeMode themeMode;
 
   AppSettings copyWith({
     bool? sound,
@@ -26,21 +28,24 @@ class AppSettings {
     bool? autoAdvance,
     bool? lockByDefault,
     bool? keepAwake,
-  }) =>
-      AppSettings(
-        sound: sound ?? this.sound,
-        vibration: vibration ?? this.vibration,
-        autoAdvance: autoAdvance ?? this.autoAdvance,
-        lockByDefault: lockByDefault ?? this.lockByDefault,
-        keepAwake: keepAwake ?? this.keepAwake,
-      );
+    ThemeMode? themeMode,
+  }) => AppSettings(
+    sound: sound ?? this.sound,
+    vibration: vibration ?? this.vibration,
+    autoAdvance: autoAdvance ?? this.autoAdvance,
+    lockByDefault: lockByDefault ?? this.lockByDefault,
+    keepAwake: keepAwake ?? this.keepAwake,
+    themeMode: themeMode ?? this.themeMode,
+  );
 }
 
 class AppSettingsStore {
   AppSettingsStore._();
   static final AppSettingsStore instance = AppSettingsStore._();
 
-  final ValueNotifier<AppSettings> notifier = ValueNotifier(const AppSettings());
+  final ValueNotifier<AppSettings> notifier = ValueNotifier(
+    const AppSettings(),
+  );
   AppSettings get value => notifier.value;
 
   static const _sound = 'settings.sound';
@@ -48,6 +53,13 @@ class AppSettingsStore {
   static const _auto = 'settings.autoAdvance';
   static const _lock = 'settings.lockByDefault';
   static const _awake = 'settings.keepAwake';
+  static const _themeMode = 'settings.themeMode';
+
+  static ThemeMode _themeModeFromString(String? value) => switch (value) {
+    'light' => ThemeMode.light,
+    'dark' => ThemeMode.dark,
+    _ => ThemeMode.system,
+  };
 
   Future<void> load() async {
     try {
@@ -58,6 +70,7 @@ class AppSettingsStore {
         autoAdvance: prefs.getBool(_auto) ?? true,
         lockByDefault: prefs.getBool(_lock) ?? false,
         keepAwake: prefs.getBool(_awake) ?? true,
+        themeMode: _themeModeFromString(prefs.getString(_themeMode)),
       );
     } catch (_) {
       notifier.value = const AppSettings();
@@ -73,6 +86,7 @@ class AppSettingsStore {
       await prefs.setBool(_auto, next.autoAdvance);
       await prefs.setBool(_lock, next.lockByDefault);
       await prefs.setBool(_awake, next.keepAwake);
+      await prefs.setString(_themeMode, next.themeMode.name);
     } catch (_) {
       // Le réglage reste actif pour la session même si le stockage échoue.
     }

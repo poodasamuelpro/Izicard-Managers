@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'core/router/app_router.dart';
+import 'core/settings/app_settings.dart';
 import 'core/theme/izicard_theme.dart';
 import 'core/network/connectivity_service.dart';
 import 'data/local/app_database.dart';
@@ -23,16 +24,22 @@ class IzicardApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      title: 'IziCard NFC',
-      theme: IzicardTheme.light,
-      darkTheme: IzicardTheme.light,
-      themeMode: ThemeMode.light,
-      locale: const Locale('fr'),
-      home: configurationError
-          ? const ConfigurationErrorScreen()
-          : const AuthGate(),
+    return ValueListenableBuilder<AppSettings>(
+      valueListenable: AppSettingsStore.instance.notifier,
+      builder:
+          (context, settings, _) => MaterialApp(
+            debugShowCheckedModeBanner: false,
+            title: 'IziCard Manager',
+            theme: IzicardTheme.light,
+            darkTheme: IzicardTheme.dark,
+            themeMode: settings.themeMode,
+            themeAnimationDuration: const Duration(milliseconds: 250),
+            locale: const Locale('fr'),
+            home:
+                configurationError
+                    ? const ConfigurationErrorScreen()
+                    : const AuthGate(),
+          ),
     );
   }
 }
@@ -95,16 +102,16 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     _database = AppDatabase();
-    _repository = AuthRepository(
-      Supabase.instance.client,
-      database: _database,
-    );
+    _repository = AuthRepository(Supabase.instance.client, database: _database);
     _user = _repository.currentUser;
     _profileFuture = _futureFor(_user);
     _authSubscription = _repository.authStateChanges.listen(_onAuthChanged);
     WidgetsBinding.instance.addObserver(this);
     // Contrôle régulier de l'accès : une révocation doit se voir sans redémarrer l'application.
-    _accessTimer = Timer.periodic(const Duration(minutes: 2), (_) => unawaited(_recheckAccess()));
+    _accessTimer = Timer.periodic(
+      const Duration(minutes: 2),
+      (_) => unawaited(_recheckAccess()),
+    );
   }
 
   @override
@@ -255,10 +262,7 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
           );
         }
 
-        return AppRouter.homeFor(
-          profile: profile,
-          repository: _repository,
-        );
+        return AppRouter.homeFor(profile: profile, repository: _repository);
       },
     );
   }

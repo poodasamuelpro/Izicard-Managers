@@ -55,156 +55,186 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: SafeArea(
         child: LayoutBuilder(
-          builder: (context, constraints) => Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.all(20),
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 460),
-                child: Card(
-                  child: Padding(
-                    padding: EdgeInsets.all(constraints.maxWidth >= 520 ? 32 : 24),
-                    child: Form(
-                      key: _formKey,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Center(
-                            child: Image.asset(
-                              'assets/images/logo.jpg',
-                              height: 74,
-                              fit: BoxFit.contain,
-                            ),
-                          ),
-                          const SizedBox(height: 28),
-                          Text(
-                            'Bienvenue chez IziCard',
-                            textAlign: TextAlign.center,
-                            style: textTheme.headlineSmall?.copyWith(
-                              color: IzicardColors.ink,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            'Connectez-vous pour accéder à votre espace NFC.',
-                            textAlign: TextAlign.center,
-                            style: textTheme.bodyMedium?.copyWith(
-                              color: IzicardColors.muted,
-                            ),
-                          ),
-                          const SizedBox(height: 28),
-                          TextFormField(
-                            controller: _emailController,
-                            keyboardType: TextInputType.emailAddress,
-                            textInputAction: TextInputAction.next,
-                            autofillHints: const [AutofillHints.username],
-                            autocorrect: false,
-                            decoration: const InputDecoration(
-                              labelText: 'Adresse email',
-                              prefixIcon: Icon(Icons.mail_outline_rounded),
-                            ),
-                            validator: (value) {
-                              final email = value?.trim() ?? '';
-                              return RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
-                                      .hasMatch(email)
-                                  ? null
-                                  : 'Saisissez une adresse email valide.';
-                            },
-                          ),
-                          const SizedBox(height: 14),
-                          TextFormField(
-                            controller: _passwordController,
-                            obscureText: _obscurePassword,
-                            textInputAction: TextInputAction.done,
-                            autofillHints: const [AutofillHints.password],
-                            onFieldSubmitted: (_) {
-                              if (!_loading) _signIn();
-                            },
-                            decoration: InputDecoration(
-                              labelText: 'Mot de passe',
-                              prefixIcon: const Icon(Icons.lock_outline_rounded),
-                              suffixIcon: IconButton(
-                                tooltip: _obscurePassword
-                                    ? 'Afficher le mot de passe'
-                                    : 'Masquer le mot de passe',
-                                onPressed: () => setState(
-                                  () => _obscurePassword = !_obscurePassword,
-                                ),
-                                icon: Icon(
-                                  _obscurePassword
-                                      ? Icons.visibility_outlined
-                                      : Icons.visibility_off_outlined,
+          builder:
+              (context, constraints) => Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 460),
+                    child: Card(
+                      child: Padding(
+                        padding: EdgeInsets.all(
+                          constraints.maxWidth >= 520 ? 32 : 24,
+                        ),
+                        child: Form(
+                          key: _formKey,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Center(
+                                child: Image.asset(
+                                  'assets/images/logo.jpg',
+                                  height: 74,
+                                  fit: BoxFit.contain,
                                 ),
                               ),
-                            ),
-                            validator: (value) => (value?.isNotEmpty ?? false)
-                                ? null
-                                : 'Saisissez votre mot de passe.',
-                          ),
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: _loading
-                                  ? null
-                                  : () => Navigator.of(context).push<void>(
-                                        MaterialPageRoute<void>(
-                                          builder: (_) => PasswordResetScreen(
-                                            repository: widget.repository,
-                                          ),
+                              const SizedBox(height: 28),
+                              Text(
+                                'Bienvenue chez IziCard',
+                                textAlign: TextAlign.center,
+                                style: textTheme.headlineSmall?.copyWith(
+                                  color:
+                                      Theme.of(context).colorScheme.onSurface,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Connectez-vous pour accéder à votre espace NFC.',
+                                textAlign: TextAlign.center,
+                                style: textTheme.bodyMedium?.copyWith(
+                                  color:
+                                      Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                              const SizedBox(height: 28),
+                              TextFormField(
+                                controller: _emailController,
+                                keyboardType: TextInputType.emailAddress,
+                                textInputAction: TextInputAction.next,
+                                autofillHints: const [AutofillHints.username],
+                                autocorrect: false,
+                                decoration: const InputDecoration(
+                                  labelText: 'Adresse email',
+                                  prefixIcon: Icon(Icons.mail_outline_rounded),
+                                ),
+                                validator: (value) {
+                                  final email = value?.trim() ?? '';
+                                  return RegExp(
+                                        r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
+                                      ).hasMatch(email)
+                                      ? null
+                                      : 'Saisissez une adresse email valide.';
+                                },
+                              ),
+                              const SizedBox(height: 14),
+                              TextFormField(
+                                controller: _passwordController,
+                                obscureText: _obscurePassword,
+                                textInputAction: TextInputAction.done,
+                                autofillHints: const [AutofillHints.password],
+                                onFieldSubmitted: (_) {
+                                  if (!_loading) _signIn();
+                                },
+                                decoration: InputDecoration(
+                                  labelText: 'Mot de passe',
+                                  prefixIcon: const Icon(
+                                    Icons.lock_outline_rounded,
+                                  ),
+                                  suffixIcon: IconButton(
+                                    tooltip:
+                                        _obscurePassword
+                                            ? 'Afficher le mot de passe'
+                                            : 'Masquer le mot de passe',
+                                    onPressed:
+                                        () => setState(
+                                          () =>
+                                              _obscurePassword =
+                                                  !_obscurePassword,
                                         ),
-                                      ),
-                              child: const Text('Mot de passe oublié ?'),
-                            ),
-                          ),
-                          if (_error != null) ...[
-                            const SizedBox(height: 4),
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: IzicardColors.error.withOpacity(0.08),
-                                borderRadius: BorderRadius.circular(12),
+                                    icon: Icon(
+                                      _obscurePassword
+                                          ? Icons.visibility_outlined
+                                          : Icons.visibility_off_outlined,
+                                    ),
+                                  ),
+                                ),
+                                validator:
+                                    (value) =>
+                                        (value?.isNotEmpty ?? false)
+                                            ? null
+                                            : 'Saisissez votre mot de passe.',
                               ),
-                              child: Text(
-                                _error!,
-                                style: const TextStyle(
-                                  color: IzicardColors.error,
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  onPressed:
+                                      _loading
+                                          ? null
+                                          : () => Navigator.of(
+                                            context,
+                                          ).push<void>(
+                                            MaterialPageRoute<void>(
+                                              builder:
+                                                  (_) => PasswordResetScreen(
+                                                    repository:
+                                                        widget.repository,
+                                                  ),
+                                            ),
+                                          ),
+                                  child: const Text('Mot de passe oublié ?'),
                                 ),
                               ),
-                            ),
-                          ],
-                          const SizedBox(height: 14),
-                          SizedBox(
-                            width: double.infinity,
-                            child: FilledButton(
-                              onPressed: _loading ? null : _signIn,
-                              child: _loading
-                                  ? const SizedBox(
-                                      width: 20,
-                                      height: 20,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.white,
-                                      ),
-                                    )
-                                  : const Text('Se connecter'),
-                            ),
+                              if (_error != null) ...[
+                                const SizedBox(height: 4),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: IzicardColors.error.withOpacity(
+                                      0.08,
+                                    ),
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    _error!,
+                                    style: const TextStyle(
+                                      color: IzicardColors.error,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: 14),
+                              SizedBox(
+                                width: double.infinity,
+                                child: FilledButton(
+                                  onPressed: _loading ? null : _signIn,
+                                  child:
+                                      _loading
+                                          ? SizedBox(
+                                            width: 20,
+                                            height: 20,
+                                            child: CircularProgressIndicator(
+                                              strokeWidth: 2,
+                                              color:
+                                                  Theme.of(
+                                                    context,
+                                                  ).colorScheme.onPrimary,
+                                            ),
+                                          )
+                                          : const Text('Se connecter'),
+                                ),
+                              ),
+                              const SizedBox(height: 18),
+                              Text(
+                                'Accès réservé aux comptes IziCard autorisés.',
+                                textAlign: TextAlign.center,
+                                style: textTheme.bodySmall?.copyWith(
+                                  color:
+                                      Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 18),
-                          Text(
-                            'Accès réservé aux comptes IziCard autorisés.',
-                            textAlign: TextAlign.center,
-                            style: textTheme.bodySmall?.copyWith(
-                              color: IzicardColors.muted,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ),
         ),
       ),
     );

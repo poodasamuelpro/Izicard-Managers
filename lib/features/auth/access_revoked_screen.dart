@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../../core/theme/izicard_colors.dart';
-
 class AccessRevokedScreen extends StatelessWidget {
   const AccessRevokedScreen({
     super.key,
@@ -33,11 +31,15 @@ class AccessRevokedScreen extends StatelessWidget {
                   Container(
                     width: 82,
                     height: 82,
-                    decoration: const BoxDecoration(
-                      color: IzicardColors.paleCyan,
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
                       shape: BoxShape.circle,
                     ),
-                    child: Icon(icon, size: 38, color: IzicardColors.cyan),
+                    child: Icon(
+                      icon,
+                      size: 38,
+                      color: Theme.of(context).colorScheme.onPrimaryContainer,
+                    ),
                   ),
                   const SizedBox(height: 24),
                   Text(
@@ -50,8 +52,8 @@ class AccessRevokedScreen extends StatelessWidget {
                     message,
                     textAlign: TextAlign.center,
                     style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: IzicardColors.muted,
-                        ),
+                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
                   ),
                   const SizedBox(height: 28),
                   if (onRetry != null) ...[

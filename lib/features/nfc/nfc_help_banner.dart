@@ -15,7 +15,8 @@ class NfcHelpBanner extends StatefulWidget {
   State<NfcHelpBanner> createState() => _NfcHelpBannerState();
 }
 
-class _NfcHelpBannerState extends State<NfcHelpBanner> with WidgetsBindingObserver {
+class _NfcHelpBannerState extends State<NfcHelpBanner>
+    with WidgetsBindingObserver {
   bool? _available;
   bool _checking = false;
 
@@ -58,7 +59,9 @@ class _NfcHelpBannerState extends State<NfcHelpBanner> with WidgetsBindingObserv
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ouvrez Réglages Android > Appareils connectés > NFC.')),
+        const SnackBar(
+          content: Text('Ouvrez Réglages Android > Appareils connectés > NFC.'),
+        ),
       );
     }
   }
@@ -66,39 +69,58 @@ class _NfcHelpBannerState extends State<NfcHelpBanner> with WidgetsBindingObserv
   @override
   Widget build(BuildContext context) {
     if (_available != false) return const SizedBox.shrink();
+    final dark = Theme.of(context).brightness == Brightness.dark;
+    final warningBackground =
+        dark ? const Color(0xFF3B2B19) : const Color(0xFFFFF3E8);
+    final warningForeground =
+        dark ? const Color(0xFFFFD08A) : IzicardColors.statusPending;
     return Card(
-      color: const Color(0xFFFFF3E8),
+      color: warningBackground,
       margin: const EdgeInsets.only(bottom: 14),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-          Row(children: const [
-            Icon(Icons.nfc_rounded, color: IzicardColors.statusPending),
-            SizedBox(width: 10),
-            Expanded(
-              child: Text('NFC indisponible ou désactivé',
-                  style: TextStyle(fontWeight: FontWeight.w800, color: IzicardColors.statusPending)),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(Icons.nfc_rounded, color: warningForeground),
+                SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'NFC indisponible ou désactivé',
+                    style: TextStyle(
+                      fontWeight: FontWeight.w800,
+                      color: warningForeground,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ]),
-          const SizedBox(height: 8),
-          const Text(
-            'Pour encoder ou lire une carte, activez le NFC : Réglages Android > Appareils connectés > '
-            'Préférences de connexion > NFC. Si l’option n’existe pas, ce téléphone n’a pas de lecteur NFC.',
-          ),
-          const SizedBox(height: 10),
-          Wrap(spacing: 10, runSpacing: 8, children: [
-            FilledButton.icon(
-              onPressed: _openSettings,
-              icon: const Icon(Icons.settings_rounded),
-              label: const Text('Ouvrir les réglages NFC'),
+            const SizedBox(height: 8),
+            const Text(
+              'Pour encoder ou lire une carte, activez le NFC : Réglages Android > Appareils connectés > '
+              'Préférences de connexion > NFC. Si l’option n’existe pas, ce téléphone n’a pas de lecteur NFC.',
             ),
-            OutlinedButton.icon(
-              onPressed: _check,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Vérifier à nouveau'),
+            const SizedBox(height: 10),
+            Wrap(
+              spacing: 10,
+              runSpacing: 8,
+              children: [
+                FilledButton.icon(
+                  onPressed: _openSettings,
+                  icon: const Icon(Icons.settings_rounded),
+                  label: const Text('Ouvrir les réglages NFC'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: _check,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Vérifier à nouveau'),
+                ),
+              ],
             ),
-          ]),
-        ]),
+          ],
+        ),
       ),
     );
   }
