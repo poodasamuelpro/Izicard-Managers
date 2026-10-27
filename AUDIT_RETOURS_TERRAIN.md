@@ -86,3 +86,10 @@ Le code de récupération (OTP) déclenche l'événement Supabase `passwordRecov
 - **Textes** : les messages techniques affichés à l'écran (« Supabase », « RPC », « schéma nfc », « payload », « backend », « client_id », « service_role ») sont remplacés par des phrases simples dans la création de client, la liste des clients, la création de dossier, l'import (saisie, correspondance, aperçu, résultat) et la vérification de tag.
 - **Pas refait** : la mise en page des autres écrans (dossiers, détail d'un dossier, clients, écriture, import, réglages, connexion). Ils suivent déjà le thème commun (cartes arrondies, bandeau dégradé, filtres, états vides) et n'ont pas été re-dessinés faute de pouvoir les voir à l'écran. Pas d'illustrations ni de photos ajoutées. Envoyer une capture de chaque écran à améliorer permet de cibler.
 - Non vérifié : rien n'est compilé ni vu sur appareil.
+
+## Navigation (M28)
+- **Barre de navigation en bas** (Accueil · Dossiers · Écrire · Vérifier · Menu) : on passe d'un écran à l'autre d'une touche, sans revenir en arrière. Les onglets sont créés à la première visite puis conservés (l'état d'un écran reste en mémoire). Le bouton retour du téléphone ramène à l'Accueil avant de quitter.
+- **Menu** : profil + écrans secondaires selon le rôle (tableau de bord, créer un dossier, clients, import, export, synchronisation, réglages) + déconnexion. L'Accueil garde les actions rapides et la grille.
+- Limite connue : pendant une série d'écriture en cours, le bouton retour peut ramener à l'Accueil au lieu de n'afficher que la confirmation d'arrêt ; la série continue et on la retrouve dans l'onglet Écrire.
+- Les écrans secondaires (clients, import, export, synchronisation, réglages) s'ouvrent par-dessus la barre et gardent leur propre mise en page ; ils n'ont pas été re-dessinés (non vus à l'écran).
+- Non vérifié : rien n'est compilé ni vu sur appareil.

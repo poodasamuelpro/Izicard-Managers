@@ -1044,3 +1044,7 @@ Créer les secrets GitHub, lancer le workflow Build APK, installer l'APK et vér
 ## Lot M27 : design de l'accueil et textes
 - `home_screen.dart` : actions rapides + grille de tuiles ; textes techniques remplacés par du français courant dans plusieurs écrans (clients, dossier, import, vérification).
 - Non traité : refonte des autres écrans, illustrations. Non vérifié : aucun build ni capture.
+
+## Lot M28 : barre de navigation
+- `home_screen.dart` : coque à 5 onglets (Accueil, Dossiers, Écrire, Vérifier, Menu) avec onglets conservés et retour vers l'Accueil ; thème `navigationBarTheme`.
+- Non vérifié : aucun build ni capture. Écrans secondaires non re-dessinés.

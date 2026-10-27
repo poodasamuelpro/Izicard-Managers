@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/router/route_guards.dart';
 import '../../core/theme/izicard_colors.dart';
 import '../../core/widgets/responsive_content.dart';
 import '../../data/models/nfc_profile.dart';
 import '../../data/repositories/auth_repository.dart';
+import '../../data/repositories/batch_repository.dart';
+import '../batches/batches_screen.dart';
+import '../verify/verify_tag_screen.dart';
+import '../writing/write_screen.dart';
 
 class AdminHomeScreen extends StatelessWidget {
   const AdminHomeScreen({
@@ -32,7 +37,10 @@ class ClientHomeScreen extends StatelessWidget {
       HomeScreen(profile: profile, repository: repository);
 }
 
-class HomeScreen extends StatelessWidget {
+/// Coque de l'application : barre de navigation en bas (Accueil, Dossiers, Écrire, Vérifier, Menu).
+/// Les onglets sont créés à la première visite puis conservés (l'état d'un écran n'est pas perdu
+/// quand on change d'onglet). Le bouton retour ramène d'abord à l'accueil.
+class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
     required this.profile,
@@ -41,9 +49,54 @@ class HomeScreen extends StatelessWidget {
   final NfcProfile profile;
   final AuthRepository repository;
 
-  bool get _isAdmin => profile.role == NfcRole.admin;
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
 
-  Future<void> _confirmSignOut(BuildContext context) async {
+class _HomeScreenState extends State<HomeScreen> {
+  static const _tabHome = 0;
+  static const _tabBatches = 1;
+  static const _tabWrite = 2;
+  static const _tabVerify = 3;
+  static const _tabMenu = 4;
+
+  int _index = _tabHome;
+  final _visited = <int>{_tabHome};
+  late final BatchRepository _batches = BatchRepository(
+    Supabase.instance.client,
+  );
+
+  NfcProfile get _profile => widget.profile;
+  AuthRepository get _repository => widget.repository;
+  bool get _isAdmin => _profile.role == NfcRole.admin;
+
+  void _go(int index) => setState(() {
+    _index = index;
+    _visited.add(index);
+  });
+
+  void _open(NfcDestination destination) => NfcRouteGuard.open(
+    context,
+    profile: _profile,
+    destination: destination,
+    repository: _repository,
+  );
+
+  /// Ouvre un écran : les 3 principaux ont leur onglet, les autres s'ouvrent par-dessus.
+  void _openDestination(NfcDestination destination) {
+    switch (destination) {
+      case NfcDestination.batches:
+        _go(_tabBatches);
+      case NfcDestination.write:
+        _go(_tabWrite);
+      case NfcDestination.verify:
+        _go(_tabVerify);
+      default:
+        _open(destination);
+    }
+  }
+
+  Future<void> _confirmSignOut() async {
     final shouldSignOut = await showDialog<bool>(
       context: context,
       builder:
@@ -63,46 +116,82 @@ class HomeScreen extends StatelessWidget {
             ],
           ),
     );
-    if (shouldSignOut == true) await repository.signOut();
+    if (shouldSignOut == true) await _repository.signOut();
+  }
+
+  /// Écrans disponibles pour ce profil (hors onglets fixes), dans l'ordre d'affichage.
+  List<NfcDestination> get _menuDestinations => <NfcDestination>[
+    if (_isAdmin) NfcDestination.dashboard,
+    if (NfcDestination.createBatch.allowedFor(_profile))
+      NfcDestination.createBatch,
+    if (_isAdmin) NfcDestination.clients,
+    NfcDestination.imports,
+    if (_isAdmin) NfcDestination.export,
+    NfcDestination.sync,
+    NfcDestination.settings,
+  ];
+
+  Widget _page(int index) {
+    if (!_visited.contains(index)) return const SizedBox.shrink();
+    return switch (index) {
+      _tabHome => _homeTab(context),
+      _tabBatches => BatchesScreen(profile: _profile, repository: _batches),
+      _tabWrite => WriteScreen(profile: _profile),
+      _tabVerify => const VerifyTagScreen(),
+      _ => _menuTab(context),
+    };
   }
 
   @override
-  Widget build(BuildContext context) {
-    final destinations =
-        _isAdmin
-            ? <NfcDestination>[
-              NfcDestination.dashboard,
-              NfcDestination.createBatch,
-              NfcDestination.batches,
-              NfcDestination.clients,
-              NfcDestination.imports,
-              NfcDestination.export,
-              NfcDestination.write,
-              NfcDestination.verify,
-              NfcDestination.sync,
-              NfcDestination.settings,
-            ]
-            : <NfcDestination>[
-              if (profile.canCreateBatches && profile.clientId != null)
-                NfcDestination.createBatch,
-              NfcDestination.batches,
-              NfcDestination.imports,
-              NfcDestination.write,
-              NfcDestination.verify,
-              NfcDestination.sync,
-              NfcDestination.settings,
-            ];
+  Widget build(BuildContext context) => PopScope(
+    canPop: _index == _tabHome,
+    onPopInvokedWithResult: (didPop, _) {
+      if (!didPop) _go(_tabHome);
+    },
+    child: Scaffold(
+      body: IndexedStack(
+        index: _index,
+        children: List<Widget>.generate(5, _page),
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _index,
+        onDestinationSelected: _go,
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home_rounded),
+            label: 'Accueil',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.inventory_2_outlined),
+            selectedIcon: Icon(Icons.inventory_2_rounded),
+            label: 'Dossiers',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.nfc_rounded),
+            label: 'Écrire',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.fact_check_outlined),
+            selectedIcon: Icon(Icons.fact_check_rounded),
+            label: 'Vérifier',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.menu_rounded),
+            label: 'Menu',
+          ),
+        ],
+      ),
+    ),
+  );
 
+  // ----- Onglet Accueil -----
+  Widget _homeTab(BuildContext context) {
     const quick = [NfcDestination.write, NfcDestination.verify];
-    final others = destinations.where((d) => !quick.contains(d)).toList();
-    void open(BuildContext context, NfcDestination destination) =>
-        NfcRouteGuard.open(
-          context,
-          profile: profile,
-          destination: destination,
-          repository: repository,
-        );
-
+    final others = <NfcDestination>[
+      NfcDestination.batches,
+      ..._menuDestinations,
+    ];
     return Scaffold(
       appBar: AppBar(
         title: const Text('IziCard Manager'),
@@ -111,7 +200,7 @@ class HomeScreen extends StatelessWidget {
             padding: const EdgeInsets.only(right: 8),
             child: IconButton.filledTonal(
               tooltip: 'Se déconnecter',
-              onPressed: () => _confirmSignOut(context),
+              onPressed: _confirmSignOut,
               icon: const Icon(Icons.logout_rounded),
             ),
           ),
@@ -129,12 +218,12 @@ class HomeScreen extends StatelessWidget {
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800);
               return ListView(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
                 children: [
                   _WelcomeCard(
-                    name: profile.displayName,
-                    email: repository.currentUser?.email ?? '',
-                    role: profile.role,
+                    name: _profile.displayName,
+                    email: _repository.currentUser?.email ?? '',
+                    role: _profile.role,
                     isWide: constraints.maxWidth >= 600,
                   ),
                   const SizedBox(height: 24),
@@ -149,14 +238,17 @@ class HomeScreen extends StatelessWidget {
                           child: _QuickAction(
                             destination: quick[i],
                             filled: i == 0,
-                            onTap: () => open(context, quick[i]),
+                            onTap: () => _openDestination(quick[i]),
                           ),
                         ),
                       ],
                     ],
                   ),
                   const SizedBox(height: 28),
-                  Text(_isAdmin ? 'Gestion' : 'Votre espace', style: titleStyle),
+                  Text(
+                    _isAdmin ? 'Gestion' : 'Votre espace',
+                    style: titleStyle,
+                  ),
                   const SizedBox(height: 12),
                   Wrap(
                     spacing: gap,
@@ -168,7 +260,7 @@ class HomeScreen extends StatelessWidget {
                                 width: tileWidth,
                                 child: _GridTile(
                                   destination: destination,
-                                  onTap: () => open(context, destination),
+                                  onTap: () => _openDestination(destination),
                                 ),
                               ),
                             )
@@ -185,6 +277,88 @@ class HomeScreen extends StatelessWidget {
                 ],
               );
             },
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ----- Onglet Menu -----
+  Widget _menuTab(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    return Scaffold(
+      appBar: AppBar(title: const Text('Menu')),
+      body: SafeArea(
+        child: ResponsiveContent(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            children: [
+              Card(
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 6,
+                  ),
+                  leading: CircleAvatar(
+                    backgroundColor: colors.primaryContainer,
+                    child: Icon(
+                      Icons.person_rounded,
+                      color: colors.onPrimaryContainer,
+                    ),
+                  ),
+                  title: Text(
+                    _profile.displayName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(fontWeight: FontWeight.w800),
+                  ),
+                  subtitle: Text(
+                    '${_repository.currentUser?.email ?? ''}\n${_profile.role.label}',
+                  ),
+                  isThreeLine: true,
+                ),
+              ),
+              const SizedBox(height: 16),
+              ..._menuDestinations.map(
+                (destination) => Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Card(
+                    clipBehavior: Clip.antiAlias,
+                    child: ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 6,
+                      ),
+                      leading: Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: colors.primaryContainer,
+                          borderRadius: BorderRadius.circular(13),
+                        ),
+                        child: Icon(
+                          _destinationIcon(destination),
+                          color: colors.onPrimaryContainer,
+                        ),
+                      ),
+                      title: Text(
+                        destination.title,
+                        style: const TextStyle(fontWeight: FontWeight.w700),
+                      ),
+                      subtitle: Text(_destinationHint(destination)),
+                      trailing: const Icon(Icons.chevron_right_rounded),
+                      onTap: () => _open(destination),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 8),
+              OutlinedButton.icon(
+                onPressed: _confirmSignOut,
+                icon: const Icon(Icons.logout_rounded),
+                label: const Text('Se déconnecter'),
+              ),
+            ],
           ),
         ),
       ),
