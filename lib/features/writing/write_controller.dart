@@ -252,7 +252,8 @@ class WriteController extends ChangeNotifier {
         phase != SeriesPhase.paused &&
         phase != SeriesPhase.idle)
       return;
-    skipped++;
+    // Carte déjà vérifiée puis pause : on avance sans la compter comme « passée ».
+    if (!_awaitingAdvance) skipped++;
     _advance();
     if (phase != SeriesPhase.finished) {
       phase = SeriesPhase.paused;

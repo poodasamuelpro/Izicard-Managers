@@ -574,8 +574,10 @@ class _ImportScreenState extends State<ImportScreen> {
                       _BatchSummary(contextData: contextData),
                       const SizedBox(height: 16),
                       if (contextData.status == 'archived')
-                        const Text(
-                          'Ce dossier est archivé; import et saisie sont désactivés.',
+                        const IziNotice(
+                          'Ce dossier est archivé : l’import et la saisie sont désactivés.',
+                          tone: IziTone.warning,
+                          icon: Icons.archive_outlined,
                         )
                       else ...[
                         SegmentedButton<int>(

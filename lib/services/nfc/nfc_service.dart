@@ -138,15 +138,41 @@ class NfcService {
     }
   }
 
-  /// Compare deux messages NDEF enregistrement par enregistrement (type, format, contenu).
+  /// Un tag vierge renvoie souvent un message à un seul enregistrement « vide » : ce n'est pas un contenu.
+  static List<NdefRecord> contentRecords(NdefMessage? message) =>
+      message == null
+          ? const <NdefRecord>[]
+          : message.records
+              .where((record) => record.typeNameFormat != TypeNameFormat.empty)
+              .toList();
+
+  static bool isBlank(NdefMessage? message) => contentRecords(message).isEmpty;
+
+  /// Compare deux messages NDEF par leur SENS : une URI abrégée ou non, un texte quelle que
+  /// soit sa langue, valent la même chose. Les autres types sont comparés octet par octet.
   static bool sameMessage(NdefMessage a, NdefMessage b) {
-    if (a.records.length != b.records.length) return false;
-    for (var i = 0; i < a.records.length; i++) {
-      final x = a.records[i];
-      final y = b.records[i];
+    final left = contentRecords(a);
+    final right = contentRecords(b);
+    if (left.length != right.length) return false;
+    for (var i = 0; i < left.length; i++) {
+      final x = left[i];
+      final y = right[i];
       if (x.typeNameFormat != y.typeNameFormat) return false;
-      if (!_sameBytes(x.type, y.type) || !_sameBytes(x.payload, y.payload))
+      if (!_sameBytes(x.type, y.type)) return false;
+      final type = String.fromCharCodes(x.type);
+      if (x.typeNameFormat == TypeNameFormat.wellKnown && type == 'U') {
+        if (NdefPayloadBuilder.decodeUri(x.payload) !=
+            NdefPayloadBuilder.decodeUri(y.payload)) {
+          return false;
+        }
+      } else if (x.typeNameFormat == TypeNameFormat.wellKnown && type == 'T') {
+        if (NdefPayloadBuilder.decodeText(x.payload) !=
+            NdefPayloadBuilder.decodeText(y.payload)) {
+          return false;
+        }
+      } else if (!_sameBytes(x.payload, y.payload)) {
         return false;
+      }
     }
     return true;
   }
@@ -209,10 +235,28 @@ class NfcService {
               return;
             }
             final ndef = Ndef.from(tag);
-            if (ndef == null)
-              throw const FormatException(
-                'Ce tag ne prend pas en charge NDEF.',
-              );
+            if (ndef == null) {
+              // Tag vierge non formaté : on le formate en y écrivant directement le message.
+              final formatable = NdefFormatableAndroid.from(tag);
+              if (formatable == null) {
+                throw const FormatException(
+                  'Ce tag ne prend pas en charge NDEF.',
+                );
+              }
+              await formatable.format(expected);
+              if (!completer.isCompleted) {
+                completer.complete(
+                  NfcWriteResult(
+                    uid: uid,
+                    verified: false,
+                    recordable: false,
+                    error:
+                        'Carte vierge formatée et écrite. Approchez-la une seconde fois pour la vérifier.',
+                  ),
+                );
+              }
+              return;
+            }
             if (!ndef.isWritable)
               throw const FormatException(
                 'Ce tag n’est pas inscriptible (déjà verrouillé ?).',
@@ -223,11 +267,15 @@ class NfcService {
               );
             }
             final existing = await ndef.read();
-            if (existing != null && existing.records.isNotEmpty) {
+            // Contenu déjà identique : on réécrit sans demander. Tag vierge : rien à confirmer.
+            if (!isBlank(existing) && !sameMessage(existing!, expected)) {
               final allowed =
                   confirmOverwrite == null
                       ? false
-                      : await confirmOverwrite(uid, existing.records.length);
+                      : await confirmOverwrite(
+                        uid,
+                        contentRecords(existing).length,
+                      );
               if (!allowed) {
                 if (!completer.isCompleted) {
                   completer.complete(

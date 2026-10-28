@@ -83,9 +83,15 @@ List<Map<String, dynamic>> _parseWorkbook(Map<String, Object> input) {
 }
 
 List<Map<String, dynamic>> _parseCsv(Uint8List bytes) {
-  var text = utf8
-      .decode(bytes, allowMalformed: true)
-      .replaceFirst('\uFEFF', '');
+  // Les CSV exportés par Excel en français sont souvent en Windows-1252 : repli sur latin1
+  // quand le fichier n'est pas de l'UTF-8 valide, pour ne pas abîmer les accents.
+  String decoded;
+  try {
+    decoded = utf8.decode(bytes);
+  } on FormatException {
+    decoded = latin1.decode(bytes);
+  }
+  var text = decoded.replaceFirst('\uFEFF', '');
   if (text.isEmpty)
     throw const FormatException('Le CSV ne contient aucune donnée.');
   final delimiter = _detectDelimiter(text);
@@ -199,7 +205,10 @@ String _xlsxCellText(xlsx.Data? cell) {
     xlsx.TextCellValue(:final value) => value.toString(),
     xlsx.FormulaCellValue(:final formula) => formula,
     xlsx.IntCellValue(:final value) => value.toString(),
-    xlsx.DoubleCellValue(:final value) => value.toString(),
+    xlsx.DoubleCellValue(:final value) =>
+      value == value.roundToDouble() && value.abs() < 1e15
+          ? value.toInt().toString()
+          : value.toString(),
     xlsx.BoolCellValue(:final value) => value ? 'true' : 'false',
     xlsx.DateCellValue() =>
       value.asDateTimeLocal().toIso8601String().split('T').first,

@@ -65,18 +65,7 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
     if (record.typeNameFormat == TypeNameFormat.wellKnown &&
         type == 'U' &&
         payload.isNotEmpty) {
-      const prefixes = [
-        '',
-        'http://www.',
-        'https://www.',
-        'http://',
-        'https://',
-        'tel:',
-        'mailto:',
-      ];
-      final code = payload.first;
-      final prefix = code < prefixes.length ? prefixes[code] : '';
-      return 'Lien : $prefix${utf8.decode(payload.sublist(1), allowMalformed: true)} ($size)';
+      return 'Lien : ${NdefPayloadBuilder.decodeUri(payload)} ($size)';
     }
     if (record.typeNameFormat == TypeNameFormat.wellKnown &&
         type == 'T' &&
@@ -98,12 +87,13 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
 
   /// Tous les enregistrements NDEF lus, un par ligne.
   static String _describe(NdefMessage? message) {
-    if (message == null || message.records.isEmpty) {
+    final records = NfcService.contentRecords(message);
+    if (records.isEmpty) {
       return 'Aucun contenu (tag vide).';
     }
     final lines = <String>[];
-    for (var i = 0; i < message.records.length; i++) {
-      lines.add('#${i + 1} ${_describeRecord(message.records[i])}');
+    for (var i = 0; i < records.length; i++) {
+      lines.add('#${i + 1} ${_describeRecord(records[i])}');
     }
     return lines.join('\n');
   }
@@ -157,10 +147,10 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
       String verdict;
       if (found == null) {
         verdict =
-            message == null || message.records.isEmpty
+            NfcService.isBlank(message)
                 ? 'Aucun contenu lu : tag vide ou non NDEF.'
                 : 'Contenu lu ci-dessous. Aucune comparaison possible : ce tag n’est pas enregistré.';
-      } else if (message == null || message.records.isEmpty) {
+      } else if (NfcService.isBlank(message)) {
         contentOk = false;
         verdict = 'Le tag ne contient aucun enregistrement NDEF.';
       } else {
