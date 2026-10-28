@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../core/widgets/izi_ui.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -94,31 +96,13 @@ class SettingsScreen extends StatelessWidget {
                 child: ListView(
                   padding: EdgeInsets.zero,
                   children: [
-                    Card(
-                      child: ListTile(
-                        leading: CircleAvatar(
-                          backgroundColor:
-                              Theme.of(context).colorScheme.primaryContainer,
-                          child: Icon(
-                            Icons.person_outline_rounded,
-                            color:
-                                Theme.of(
-                                  context,
-                                ).colorScheme.onPrimaryContainer,
-                          ),
-                        ),
-                        title: Text(profile.displayName),
-                        subtitle: Text(
+                    IziHero(
+                      icon: Icons.person_outline_rounded,
+                      title: profile.displayName,
+                      subtitle:
                           '${profile.role.label}${email.isEmpty ? '' : ' · $email'}',
-                        ),
-                      ),
                     ),
-                    const SizedBox(height: 18),
-                    Text(
-                      'Compte',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
+                    const IziSectionTitle('Compte'),
                     Card(
                       child: Column(
                         children: [
@@ -163,12 +147,7 @@ class SettingsScreen extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 18),
-                    Text(
-                      'Apparence',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
+                    const IziSectionTitle('Apparence'),
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
@@ -229,19 +208,7 @@ class SettingsScreen extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 18),
-                    Text(
-                      'Écriture NFC',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Ces réglages sont enregistrés sur cet appareil.',
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
+                    const IziSectionTitle('Écriture NFC (cet appareil)'),
                     Card(
                       child: Column(
                         children: [
@@ -417,10 +384,7 @@ class _ChangePasswordDialogState extends State<_ChangePasswordDialog> {
             ),
             if (_error != null) ...[
               const SizedBox(height: 10),
-              Text(
-                _error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
+              IziNotice(_error!, tone: IziTone.error),
             ],
           ],
         ),

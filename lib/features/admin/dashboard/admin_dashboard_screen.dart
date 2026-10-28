@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/widgets/izi_ui.dart';
+
 import '../../../core/theme/izicard_colors.dart';
 import '../../../core/widgets/responsive_content.dart';
 import '../../../data/models/nfc_batch.dart';
@@ -99,27 +101,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError || snapshot.data == null) {
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(28),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Icon(Icons.cloud_off_rounded, size: 44),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'Impossible de charger le tableau de bord.',
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 12),
-                    OutlinedButton.icon(
-                      onPressed: _refresh,
-                      icon: const Icon(Icons.refresh_rounded),
-                      label: const Text('Réessayer'),
-                    ),
-                  ],
-                ),
-              ),
+            return IziErrorState(
+              message: 'Impossible de charger le tableau de bord. Vérifiez votre connexion.',
+              onRetry: _refresh,
             );
           }
           return RefreshIndicator(
@@ -166,80 +150,41 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           ..sort((a, b) => b.value.total.compareTo(a.value.total));
 
     return ResponsiveContent(
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(colors: context.ink.hero),
-              borderRadius: BorderRadius.circular(22),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  '$verified / $total cartes vérifiées',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: LinearProgressIndicator(
-                    value: total == 0 ? 0 : verified / total,
-                    minHeight: 9,
-                    backgroundColor: Colors.white24,
-                    valueColor: const AlwaysStoppedAnimation<Color>(
-                      Colors.white,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${batches.length} dossier(s) dont $inProgress en cours · ${clients.length} client(s)',
-                  style: const TextStyle(color: Colors.white),
-                ),
-              ],
-            ),
+          IziHero(
+            icon: Icons.insights_rounded,
+            title: '$verified / $total cartes vérifiées',
+            subtitle:
+                '${batches.length} dossier(s) dont $inProgress en cours · ${clients.length} client(s)',
           ),
-          const SizedBox(height: 18),
-          Text('Cartes', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+          const SizedBox(height: 12),
+          IziProgress(value: total == 0 ? 0 : verified / total, height: 10),
+          const IziSectionTitle('Cartes'),
+          _StatGrid(
             children: [
-              _Tile('À écrire', pending, context.ink.pending),
-              _Tile('Écrites', written, context.ink.written),
-              _Tile('Vérifiées', verified, context.ink.verified),
-              _Tile('Erreurs', errors, context.ink.error),
-              _Tile('Annulées', voided, context.ink.voided),
+              IziStat(value: '$pending', label: 'À écrire', icon: Icons.edit_note_rounded, color: context.ink.pending),
+              IziStat(value: '$written', label: 'Écrites', icon: Icons.nfc_rounded, color: context.ink.written),
+              IziStat(value: '$verified', label: 'Vérifiées', icon: Icons.verified_rounded, color: context.ink.verified),
+              IziStat(value: '$errors', label: 'Erreurs', icon: Icons.error_outline_rounded, color: context.ink.error),
+              IziStat(value: '$voided', label: 'Annulées', icon: Icons.block_rounded, color: context.ink.voided),
             ],
           ),
-          const SizedBox(height: 18),
-          Text('Clients', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
-          Wrap(
-            spacing: 8,
-            runSpacing: 8,
+          const IziSectionTitle('Clients'),
+          _StatGrid(
             children: [
-              _Tile('Actifs', activeClients, context.ink.verified),
-              _Tile('Suspendus', suspended, context.ink.error),
-              _Tile('Expirés', expired, context.ink.pending),
+              IziStat(value: '$activeClients', label: 'Actifs', icon: Icons.check_circle_outline_rounded, color: context.ink.verified),
+              IziStat(value: '$suspended', label: 'Suspendus', icon: Icons.pause_circle_outline_rounded, color: context.ink.error),
+              IziStat(value: '$expired', label: 'Expirés', icon: Icons.schedule_rounded, color: context.ink.pending),
             ],
           ),
-          const SizedBox(height: 22),
-          Text('Dossiers avec des erreurs', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
+          const IziSectionTitle('Dossiers avec des erreurs'),
           if (attention.isEmpty)
-            const Card(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('Aucune erreur d’écriture en cours.'),
-              ),
+            const IziNotice(
+              'Aucune erreur d’écriture en cours.',
+              tone: IziTone.success,
             )
           else
             ...attention
@@ -264,16 +209,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     ),
                   ),
                 ),
-          const SizedBox(height: 22),
-          Text('Volume par client', style: theme.textTheme.titleMedium),
-          const SizedBox(height: 8),
+          const IziSectionTitle('Volume par client'),
           if (ranking.isEmpty)
-            const Card(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Text('Aucun dossier pour le moment.'),
-              ),
-            )
+            const IziNotice('Aucun dossier pour le moment.')
           else
             ...ranking.take(10).map((entry) {
               final stats = entry.value;
@@ -330,39 +268,22 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }
 }
 
-class _Tile extends StatelessWidget {
-  const _Tile(this.label, this.value, this.color);
-  final String label;
-  final int value;
-  final Color color;
+class _StatGrid extends StatelessWidget {
+  const _StatGrid({required this.children});
+  final List<Widget> children;
 
   @override
-  Widget build(BuildContext context) => Container(
-    constraints: const BoxConstraints(minWidth: 96),
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surfaceContainerLowest,
-      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-      borderRadius: BorderRadius.circular(14),
-    ),
-    child: Column(
-      children: [
-        Text(
-          '$value',
-          style: TextStyle(
-            color: color,
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            fontSize: 12,
-          ),
-        ),
-      ],
-    ),
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final columns = constraints.maxWidth >= 640 ? 3 : 2;
+      final width = (constraints.maxWidth - 8 * (columns - 1)) / columns;
+      return Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final child in children) SizedBox(width: width, child: child),
+        ],
+      );
+    },
   );
 }

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../core/widgets/izi_ui.dart';
 import 'package:flutter/services.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -115,17 +117,16 @@ class _TagDetailScreenState extends State<TagDetailScreen> {
               child: RefreshIndicator(
                 onRefresh: _refresh,
                 child: ListView(
-                  padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
                   children: [
                     if (_fromCache)
-                      Padding(
+                      const Padding(
                         padding: EdgeInsets.only(bottom: 10),
-                        child: Text(
-                          'Hors connexion : données du cache de cet appareil.',
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.tertiary,
-                            fontWeight: FontWeight.w700,
-                          ),
+                        child: IziNotice(
+                          'Données du cache de cet appareil.',
+                          tone: IziTone.warning,
+                          icon: Icons.cloud_off_rounded,
+                          title: 'Hors connexion',
                         ),
                       ),
                     Row(
@@ -133,32 +134,27 @@ class _TagDetailScreenState extends State<TagDetailScreen> {
                         Expanded(
                           child: Text(
                             tag.publicId,
-                            style: Theme.of(context).textTheme.titleLarge,
+                            style: Theme.of(context).textTheme.titleLarge
+                                ?.copyWith(fontWeight: FontWeight.w800),
                           ),
                         ),
-                        DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: color,
-                            borderRadius: BorderRadius.circular(99),
-                          ),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
-                            child: Text(
-                              IzicardColors.labelForTagStatus(tag.status),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w800,
-                              ),
-                            ),
-                          ),
+                        IziPill(
+                          IzicardColors.labelForTagStatus(tag.status),
+                          color: color,
                         ),
                       ],
                     ),
-                    if (widget.batchName != null) Text(widget.batchName!),
-                    const SizedBox(height: 14),
+                    if (widget.batchName != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: Text(
+                          widget.batchName!,
+                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                            color: Theme.of(context).colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                    const IziSectionTitle('Donnée'),
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(14),
@@ -187,7 +183,7 @@ class _TagDetailScreenState extends State<TagDetailScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 10),
+                    const IziSectionTitle('Informations'),
                     Card(
                       child: Padding(
                         padding: const EdgeInsets.all(14),
@@ -216,18 +212,13 @@ class _TagDetailScreenState extends State<TagDetailScreen> {
                       ),
                     ),
                     if (tag.fields.isNotEmpty) ...[
-                      const SizedBox(height: 10),
+                      const IziSectionTitle('Champs de la carte'),
                       Card(
                         child: Padding(
                           padding: const EdgeInsets.all(14),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'Champs de la carte',
-                                style: TextStyle(fontWeight: FontWeight.w800),
-                              ),
-                              const SizedBox(height: 6),
                               ...(tag.fields.entries.toList()
                                     ..sort((a, b) => a.key.compareTo(b.key)))
                                   .map(
