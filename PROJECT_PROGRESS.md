@@ -1062,3 +1062,11 @@ Créer les secrets GitHub, lancer le workflow Build APK, installer l'APK et vér
 - Corrigé : marges doublées (40 px) sur Accueil/Menu, textes techniques restants (« schéma nfc », écran de configuration), écran de chargement, réinitialisation du mot de passe (vouvoiement, clavier, étapes), série d'écriture (pastilles, bilan), synchronisation, boutons du thème, statuts en mode sombre.
 - Constats : tous les écrans sont atteignables depuis l'accueil/menu/onglets ; `PasswordSetupScreen` n'est plus utilisé (code mort, l'activation passe par la page web). Export réservé aux admins dans le menu (les clients exportent depuis le détail d'un dossier).
 - Non vérifié : rendu et NFC sur téléphone réel.
+
+## M32 — Audit écriture / lecture / import
+- Carte neuve : l'enregistrement NDEF « vide » n'est plus pris pour un contenu (plus de fausse confirmation d'écrasement ; vérification d'un tag vierge correcte). Contenu déjà identique : réécriture sans question.
+- Tags vierges non formatés : formatage + écriture (NdefFormatable), puis seconde approche pour la vérification.
+- Liens encodés avec abréviations NFC Forum (https://, tel:, mailto:) : plus de place sur NTAG213. Comparaison lecture/attendu par SENS (anciennes cartes toujours « conformes »). Téléphone/e-mail sans schéma → tel:/mailto:.
+- Série : « Passer » après pause sur carte vérifiée ne la compte plus comme passée.
+- Import : CSV Windows-1252 (accents) ; nombres Excel sans « .0 » ; message d'archivage.
+- Tests ndef_builder mis à jour/ajoutés. CI verte (b036324). Non testé sur cartes réelles.
