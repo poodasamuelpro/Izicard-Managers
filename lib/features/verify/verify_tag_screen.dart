@@ -5,6 +5,7 @@ import 'package:nfc_manager/ndef_record.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/theme/izicard_colors.dart';
+import '../../core/widgets/izi_ui.dart';
 import '../../data/models/nfc_tag.dart';
 import '../../data/repositories/tag_repository.dart';
 import '../../data/remote/tags_remote.dart';
@@ -204,64 +205,45 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('Vérifier un tag')),
       body: ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
         children: [
           const NfcHelpBanner(),
-          Card(
-            color: Theme.of(context).colorScheme.primaryContainer,
-            child: Padding(
-              padding: const EdgeInsets.all(18),
-              child: Column(
-                children: [
-                  Icon(
-                    Icons.fact_check_rounded,
-                    size: 42,
-                    color: Theme.of(context).colorScheme.onPrimaryContainer,
-                  ),
-                  const SizedBox(height: 12),
-                  const Text(
-                    'La vérification contrôle deux choses : le tag appartient-il à IziCard Manager (UID enregistré), et son contenu est-il celui attendu.',
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 18),
-                  FilledButton.icon(
-                    onPressed: _reading ? null : _verify,
-                    icon: const Icon(Icons.nfc_rounded),
-                    label: const Text('Lire et vérifier'),
-                  ),
-                  if (_reading) ...[
-                    const SizedBox(height: 10),
-                    OutlinedButton.icon(
-                      onPressed: _cancelReading,
-                      icon: const Icon(Icons.close_rounded),
-                      label: const Text('Annuler la lecture'),
-                    ),
-                  ],
-                ],
-              ),
-            ),
+          const IziHero(
+            icon: Icons.fact_check_rounded,
+            title: 'Contrôle d’un tag',
+            subtitle:
+                'Deux vérifications : le tag appartient-il à IziCard Manager (UID enregistré), et son contenu est-il celui attendu.',
           ),
+          const SizedBox(height: 14),
+          FilledButton.icon(
+            onPressed: _reading ? null : _verify,
+            icon: const Icon(Icons.nfc_rounded),
+            label: Text(_reading ? 'Approchez le tag…' : 'Lire et vérifier'),
+          ),
+          if (_reading) ...[
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: _cancelReading,
+              icon: const Icon(Icons.close_rounded),
+              label: const Text('Annuler la lecture'),
+            ),
+          ],
           if (_error != null) ...[
-            const SizedBox(height: 16),
+            const IziSectionTitle('Résultat'),
             _ResultCard(
-              color: IzicardColors.statusError,
-              icon: Icons.error_outline,
+              tone: IziTone.error,
               title: 'Erreur de lecture',
               message: _error!,
             ),
           ],
           if (_owned != null) ...[
-            const SizedBox(height: 16),
+            const IziSectionTitle('Résultat'),
             _ResultCard(
-              color:
-                  _owned!
-                      ? IzicardColors.statusVerified
-                      : IzicardColors.statusPending,
-              icon: _owned! ? Icons.verified_rounded : Icons.help_outline,
+              tone: _owned! ? IziTone.success : IziTone.warning,
               title:
                   _owned!
-                      ? '1. Appartenance : tag IziCard Manager ✔'
-                      : '1. Appartenance : tag non enregistré ✖',
+                      ? '1. Appartenance : tag IziCard Manager'
+                      : '1. Appartenance : tag non enregistré',
               message:
                   _owned!
                       ? 'Cet UID est enregistré dans un de vos dossiers.'
@@ -269,26 +251,19 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
             ),
             const SizedBox(height: 10),
             _ResultCard(
-              color:
-                  _contentOk == true
-                      ? IzicardColors.statusVerified
-                      : IzicardColors.statusPending,
-              icon:
-                  _contentOk == true
-                      ? Icons.verified_rounded
-                      : Icons.warning_amber_rounded,
+              tone: _contentOk == true ? IziTone.success : IziTone.warning,
               title:
                   _contentOk == true
-                      ? '2. Contenu : conforme ✔'
+                      ? '2. Contenu : conforme'
                       : _contentOk == false
-                      ? '2. Contenu : à contrôler ✖'
+                      ? '2. Contenu : à contrôler'
                       : '2. Contenu : non comparé',
               message: _contentVerdict ?? '',
             ),
-            const SizedBox(height: 12),
+            const IziSectionTitle('Détails du tag'),
             Card(
               child: Padding(
-                padding: const EdgeInsets.all(18),
+                padding: const EdgeInsets.all(16),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -297,13 +272,23 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
                       label: 'Contenu NDEF lu sur le tag',
                       value: _contentRead ?? '—',
                     ),
-                    if (_chip != null)
-                      _InfoLine(label: 'Puce', value: _chip!),
+                    if (_chip != null) _InfoLine(label: 'Puce', value: _chip!),
                     ..._details.entries.map(
                       (entry) =>
                           _InfoLine(label: entry.key, value: entry.value),
                     ),
-                    if (_expected != null) ...[
+                  ],
+                ),
+              ),
+            ),
+            if (_expected != null) ...[
+              const IziSectionTitle('Carte enregistrée'),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       _InfoLine(label: 'Carte', value: _expected!.publicId),
                       _InfoLine(label: 'Dossier', value: _expected!.batchId),
                       _InfoLine(
@@ -315,10 +300,10 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
                         value: _expected!.payload,
                       ),
                     ],
-                  ],
+                  ),
                 ),
               ),
-            ),
+            ],
           ],
         ],
       ),
@@ -328,24 +313,17 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
 
 class _ResultCard extends StatelessWidget {
   const _ResultCard({
-    required this.color,
-    required this.icon,
+    required this.tone,
     required this.title,
     required this.message,
   });
-  final Color color;
-  final IconData icon;
+  final IziTone tone;
   final String title;
   final String message;
 
   @override
-  Widget build(BuildContext context) => Card(
-    child: ListTile(
-      leading: Icon(icon, color: color),
-      title: Text(title),
-      subtitle: Text(message),
-    ),
-  );
+  Widget build(BuildContext context) =>
+      IziNotice(message, tone: tone, title: title);
 }
 
 class _InfoLine extends StatelessWidget {
