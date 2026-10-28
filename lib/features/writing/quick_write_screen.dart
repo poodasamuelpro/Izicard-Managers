@@ -47,24 +47,27 @@ class _QuickWriteScreenState extends State<QuickWriteScreen> {
     super.dispose();
   }
 
-  /// (code du format, ligne envoyée à nfc_import_rows) selon le type choisi.
-  (String, Map<String, dynamic>) _spec(String raw) {
+  /// (codes de format possibles dans l'ordre de préférence, ligne envoyée à l'import).
+  /// La ligne porte à la fois les champs du format et la donnée brute : elle est acceptée
+  /// quelle que soit la version du format disponible.
+  (List<String>, Map<String, dynamic>) _spec(String raw) {
     switch (_type) {
       case 'phone':
-        return ('custom_phone', {'phone': raw});
+        return (const ['custom_phone'], {'phone': raw});
       case 'email':
-        return (
-          'custom_url',
-          {'_payload': raw.startsWith('mailto:') ? raw : 'mailto:$raw'},
-        );
+        final mail = raw.replaceFirst('mailto:', '');
+        return (const ['custom_email', 'custom_url'], {
+          'email': mail,
+          '_payload': 'mailto:$mail',
+        });
       case 'text':
-        return ('custom_text', {'_payload': raw});
+        return (const ['custom_text'], {'text': raw, '_payload': raw});
       default:
         final withScheme =
             raw.startsWith('http://') || raw.startsWith('https://')
                 ? raw
                 : 'https://$raw';
-        return ('custom_url', {'_payload': withScheme});
+        return (const ['custom_url'], {'url': withScheme, '_payload': withScheme});
     }
   }
 
@@ -83,15 +86,18 @@ class _QuickWriteScreenState extends State<QuickWriteScreen> {
     });
     try {
       final repository = widget.repository;
-      final (formatCode, row) = _spec(raw);
+      final (formatCodes, row) = _spec(raw);
       final title = 'Cartes uniques — ${_types[_type]}';
 
-      final formats =
-          (await repository.listActiveFormats())
-              .where((format) => format.code == formatCode)
-              .toList();
+      final available = await repository.listActiveFormats();
+      final formats = [
+        for (final code in formatCodes)
+          ...available.where((format) => format.code == code),
+      ];
       if (formats.isEmpty) {
-        throw Exception('Le format « $formatCode » n’est pas disponible.');
+        throw Exception(
+          'Ce type de carte n’est pas disponible pour le moment. Contactez votre administrateur.',
+        );
       }
       final format = formats.first;
 
@@ -145,6 +151,7 @@ class _QuickWriteScreenState extends State<QuickWriteScreen> {
                 tag: tag,
                 profile: widget.profile,
                 batchName: title,
+                autoStart: true,
               ),
         ),
       );
@@ -180,9 +187,9 @@ class _QuickWriteScreenState extends State<QuickWriteScreen> {
                 const NfcHelpBanner(),
                 const IziHero(
                   icon: Icons.nfc_rounded,
-                  title: 'Une carte, enregistrée',
+                  title: 'Écrire une carte',
                   subtitle:
-                      'Elle est classée dans un dossier « Cartes uniques », puis écrite. Connexion requise.',
+                      '1. Saisissez la donnée.  2. Appuyez sur « Enregistrer et écrire ».  3. Posez la carte contre le dos du téléphone. Elle est écrite, relue et classée dans « Cartes uniques ». Connexion requise.',
                 ),
                 const IziSectionTitle('Contenu de la carte'),
                 DropdownButtonFormField<String>(

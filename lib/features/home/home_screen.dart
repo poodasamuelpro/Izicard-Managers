@@ -7,7 +7,13 @@ import '../../core/widgets/responsive_content.dart';
 import '../../data/models/nfc_profile.dart';
 import '../../data/repositories/auth_repository.dart';
 import '../../data/repositories/batch_repository.dart';
+import '../../core/widgets/izi_ui.dart';
+import '../../data/models/nfc_batch.dart';
+import '../batches/batch_detail_screen.dart';
+import '../batches/batch_source.dart';
 import '../batches/batches_screen.dart';
+import '../import/import_screen.dart';
+import '../writing/quick_write_screen.dart';
 import '../verify/verify_tag_screen.dart';
 import '../writing/write_screen.dart';
 
@@ -186,101 +192,246 @@ class _HomeScreenState extends State<HomeScreen> {
   );
 
   // ----- Onglet Accueil -----
+  late Future<BatchList> _homeData = loadBatches(_batches);
+
+  Future<void> _reloadHome() async {
+    setState(() => _homeData = loadBatches(_batches));
+    try {
+      await _homeData;
+    } catch (_) {}
+  }
+
+  void _openBatch(NfcBatch batch) {
+    Navigator.of(context)
+        .push<void>(
+          MaterialPageRoute<void>(
+            builder:
+                (_) => BatchDetailScreen(
+                  batch: batch,
+                  profile: _profile,
+                  repository: _batches,
+                  onImport:
+                      () => Navigator.of(context).push<void>(
+                        MaterialPageRoute<void>(
+                          builder:
+                              (_) => ImportScreen(
+                                profile: _profile,
+                                repository: _batches,
+                                initialBatchId: batch.id,
+                              ),
+                        ),
+                      ),
+                ),
+          ),
+        )
+        .then((_) => _reloadHome());
+  }
+
+  void _quickWrite() => Navigator.of(context)
+      .push<void>(
+        MaterialPageRoute<void>(
+          builder:
+              (_) => QuickWriteScreen(profile: _profile, repository: _batches),
+        ),
+      )
+      .then((_) => _reloadHome());
+
+  void _import() => Navigator.of(context)
+      .push<void>(
+        MaterialPageRoute<void>(
+          builder: (_) => ImportScreen(profile: _profile, repository: _batches),
+        ),
+      )
+      .then((_) => _reloadHome());
+
   Widget _homeTab(BuildContext context) {
-    const quick = [NfcDestination.write, NfcDestination.verify];
-    final others = <NfcDestination>[
-      NfcDestination.batches,
-      ..._menuDestinations,
-    ];
+    final theme = Theme.of(context);
     return Scaffold(
       appBar: AppBar(
         title: const Text('IziCard Manager'),
         actions: [
           Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: IconButton.filledTonal(
-              tooltip: 'Se déconnecter',
-              onPressed: _confirmSignOut,
-              icon: const Icon(Icons.logout_rounded),
+            child: IconButton(
+              tooltip: 'Actualiser',
+              onPressed: _reloadHome,
+              icon: const Icon(Icons.refresh_rounded),
             ),
           ),
         ],
       ),
       body: SafeArea(
-        child: ResponsiveContent(
-          padding: EdgeInsets.zero,
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final columns = constraints.maxWidth >= 760 ? 3 : 2;
-              const gap = 12.0;
-              final tileWidth =
-                  (constraints.maxWidth - gap * (columns - 1)) / columns;
-              final titleStyle = Theme.of(
-                context,
-              ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800);
-              return ListView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                children: [
-                  _WelcomeCard(
-                    name: _profile.displayName,
-                    email: _repository.currentUser?.email ?? '',
-                    role: _profile.role,
-                    isWide: constraints.maxWidth >= 600,
+        child: RefreshIndicator(
+          onRefresh: _reloadHome,
+          child: ResponsiveContent(
+            padding: EdgeInsets.zero,
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+              children: [
+                Text(
+                  'Bonjour, ${_profile.displayName}',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    fontWeight: FontWeight.w800,
                   ),
-                  const SizedBox(height: 24),
-                  Text('Actions rapides', style: titleStyle),
-                  const SizedBox(height: 12),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      for (var i = 0; i < quick.length; i++) ...[
-                        if (i > 0) const SizedBox(width: gap),
-                        Expanded(
-                          child: _QuickAction(
-                            destination: quick[i],
-                            filled: i == 0,
-                            onTap: () => _openDestination(quick[i]),
-                          ),
-                        ),
-                      ],
-                    ],
+                ),
+                Text(
+                  _isAdmin ? 'Espace administration' : 'Votre espace NFC',
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
                   ),
-                  const SizedBox(height: 28),
-                  Text(
-                    _isAdmin ? 'Gestion' : 'Votre espace',
-                    style: titleStyle,
-                  ),
-                  const SizedBox(height: 12),
-                  Wrap(
-                    spacing: gap,
-                    runSpacing: gap,
-                    children:
-                        others
-                            .map(
-                              (destination) => SizedBox(
-                                width: tileWidth,
-                                child: _GridTile(
-                                  destination: destination,
-                                  onTap: () => _openDestination(destination),
-                                ),
-                              ),
-                            )
-                            .toList(),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'Vos données sont synchronisées et protégées par votre compte IziCard.',
-                    textAlign: TextAlign.center,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+                const IziSectionTitle('Actions rapides'),
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Expanded(
+                      child: _HomeAction(
+                        icon: Icons.nfc_rounded,
+                        title: 'Écrire une carte',
+                        hint: 'Lien, texte ou numéro',
+                        filled: true,
+                        onTap: _quickWrite,
+                      ),
                     ),
-                  ),
-                ],
-              );
-            },
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _HomeAction(
+                        icon: Icons.fact_check_rounded,
+                        title: 'Vérifier un tag',
+                        hint: 'Lire et contrôler',
+                        onTap: () => _go(_tabVerify),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                IziItemCard(
+                  icon: Icons.upload_file_rounded,
+                  title: 'Importer des données',
+                  subtitle: 'Fichier Excel/CSV ou saisie, vers un dossier de cartes',
+                  onTap: _import,
+                ),
+                FutureBuilder<BatchList>(
+                  future: _homeData,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState != ConnectionState.done) {
+                      return const Padding(
+                        padding: EdgeInsets.all(32),
+                        child: Center(child: CircularProgressIndicator()),
+                      );
+                    }
+                    if (snapshot.hasError) {
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 16),
+                        child: IziNotice(
+                          'Impossible de charger vos dossiers. Tirez vers le bas pour réessayer.',
+                          tone: IziTone.warning,
+                          icon: Icons.cloud_off_rounded,
+                        ),
+                      );
+                    }
+                    final batches = (snapshot.data?.batches ?? const <NfcBatch>[])
+                        .where((b) => b.status != 'archived')
+                        .toList();
+                    return _homeSummary(context, batches);
+                  },
+                ),
+              ],
+            ),
           ),
         ),
       ),
+    );
+  }
+
+  Widget _homeSummary(BuildContext context, List<NfcBatch> batches) {
+    final ink = context.ink;
+    if (batches.isEmpty) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const IziSectionTitle('Pour commencer'),
+          const IziNotice(
+            'Importez vos données (ou écrivez une carte unique) : un dossier est alors créé pour regrouper vos cartes.',
+            title: 'Aucun dossier pour le moment',
+          ),
+          const SizedBox(height: 10),
+          if (NfcDestination.createBatch.allowedFor(_profile))
+            OutlinedButton.icon(
+              onPressed: () => _open(NfcDestination.createBatch),
+              icon: const Icon(Icons.create_new_folder_outlined),
+              label: const Text('Créer un dossier'),
+            ),
+        ],
+      );
+    }
+    int sum(int Function(NfcBatch) pick) =>
+        batches.fold<int>(0, (a, b) => a + pick(b));
+    final pending = sum((b) => b.pending);
+    final verified = sum((b) => b.verified);
+    final errors = sum((b) => b.errors);
+    final total = sum((b) => b.total);
+    final todo =
+        batches.where((b) => b.pending > 0 || b.errors > 0).toList()
+          ..sort((a, b) => (b.pending + b.errors).compareTo(a.pending + a.errors));
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        IziSectionTitle(
+          'Vos cartes',
+          action: TextButton(
+            onPressed: () => _go(_tabBatches),
+            child: Text('${batches.length} dossier(s)'),
+          ),
+        ),
+        LayoutBuilder(
+          builder: (context, constraints) {
+            final columns = constraints.maxWidth >= 640 ? 4 : 2;
+            final width = (constraints.maxWidth - 8 * (columns - 1)) / columns;
+            Widget cell(Widget child) => SizedBox(width: width, child: child);
+            return Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                cell(IziStat(value: '$total', label: 'Cartes au total', icon: Icons.layers_outlined)),
+                cell(IziStat(value: '$pending', label: 'À écrire', icon: Icons.edit_note_rounded, color: ink.pending)),
+                cell(IziStat(value: '$verified', label: 'Vérifiées', icon: Icons.verified_rounded, color: ink.verified)),
+                cell(IziStat(value: '$errors', label: 'En erreur', icon: Icons.error_outline_rounded, color: ink.error)),
+              ],
+            );
+          },
+        ),
+        if (total > 0) ...[
+          const SizedBox(height: 12),
+          IziProgress(value: verified / total, height: 10),
+          const SizedBox(height: 4),
+          Text(
+            '${(verified * 100 / total).round()} % des cartes vérifiées',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+        ],
+        const IziSectionTitle('À traiter'),
+        if (todo.isEmpty)
+          const IziNotice(
+            'Rien à écrire ni à corriger pour le moment.',
+            tone: IziTone.success,
+          )
+        else
+          ...todo
+              .take(4)
+              .map(
+                (batch) => Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: IziItemCard(
+                    icon: Icons.inventory_2_outlined,
+                    title: batch.name,
+                    subtitle:
+                        '${batch.pending} à écrire${batch.errors > 0 ? ' · ${batch.errors} en erreur' : ''}',
+                    onTap: () => _openBatch(batch),
+                  ),
+                ),
+              ),
+      ],
     );
   }
 
@@ -368,99 +519,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-class _WelcomeCard extends StatelessWidget {
-  const _WelcomeCard({
-    required this.name,
-    required this.email,
-    required this.role,
-    required this.isWide,
-  });
-  final String name;
-  final String email;
-  final NfcRole role;
-  final bool isWide;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Container(
-      padding: EdgeInsets.all(isWide ? 28 : 22),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: context.ink.hero,
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: colors.primary.withOpacity(0.16),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 28,
-            backgroundColor: Colors.white.withOpacity(0.2),
-            child: const Icon(Icons.nfc_rounded, color: Colors.white, size: 30),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Bonjour, $name',
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-                if (email.isNotEmpty) ...[
-                  const SizedBox(height: 4),
-                  Text(
-                    email,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Colors.white.withOpacity(0.9),
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 10),
-                DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: colors.surface.withOpacity(0.18),
-                    borderRadius: BorderRadius.circular(30),
-                  ),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 5,
-                    ),
-                    child: Text(
-                      role.label,
-                      style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 IconData _destinationIcon(NfcDestination destination) => switch (destination) {
   NfcDestination.clients => Icons.people_alt_rounded,
   NfcDestination.batches => Icons.inventory_2_rounded,
@@ -487,14 +545,18 @@ String _destinationHint(NfcDestination destination) => switch (destination) {
   NfcDestination.dashboard => 'Vue d’ensemble',
 };
 
-/// Grande action de l'accueil (écrire / vérifier) : pensée pour le pouce, une seule touche.
-class _QuickAction extends StatelessWidget {
-  const _QuickAction({
-    required this.destination,
-    required this.filled,
+/// Grande action de l'accueil : une seule touche, pensée pour le pouce.
+class _HomeAction extends StatelessWidget {
+  const _HomeAction({
+    required this.icon,
+    required this.title,
+    required this.hint,
     required this.onTap,
+    this.filled = false,
   });
-  final NfcDestination destination;
+  final IconData icon;
+  final String title;
+  final String hint;
   final bool filled;
   final VoidCallback onTap;
 
@@ -502,10 +564,10 @@ class _QuickAction extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = Theme.of(context).colorScheme;
     final foreground = filled ? Colors.white : colors.onSurface;
-    final secondary = filled ? Colors.white.withOpacity(0.88) : colors.onSurfaceVariant;
+    final secondary =
+        filled ? Colors.white.withOpacity(0.88) : colors.onSurfaceVariant;
     return Material(
       color: Colors.transparent,
-      borderRadius: BorderRadius.circular(22),
       child: Ink(
         decoration: BoxDecoration(
           gradient:
@@ -517,21 +579,11 @@ class _QuickAction extends StatelessWidget {
                   )
                   : null,
           color: filled ? null : colors.surfaceContainerLowest,
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(20),
           border: filled ? null : Border.all(color: colors.outlineVariant),
-          boxShadow:
-              filled
-                  ? [
-                    BoxShadow(
-                      color: colors.primary.withOpacity(0.18),
-                      blurRadius: 16,
-                      offset: const Offset(0, 6),
-                    ),
-                  ]
-                  : null,
         ),
         child: InkWell(
-          borderRadius: BorderRadius.circular(22),
+          borderRadius: BorderRadius.circular(20),
           onTap: onTap,
           child: Padding(
             padding: const EdgeInsets.all(16),
@@ -539,8 +591,8 @@ class _QuickAction extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Container(
-                  width: 46,
-                  height: 46,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
                     color:
                         filled
@@ -549,88 +601,28 @@ class _QuickAction extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    _destinationIcon(destination),
+                    icon,
                     color: filled ? Colors.white : colors.onPrimaryContainer,
                   ),
                 ),
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
                 Text(
-                  destination.title,
+                  title,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     color: foreground,
                     fontWeight: FontWeight.w800,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Text(
-                  _destinationHint(destination),
+                  hint,
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: Theme.of(
                     context,
                   ).textTheme.bodySmall?.copyWith(color: secondary),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-/// Tuile compacte (grille 2 colonnes sur téléphone) : icône, titre, précision courte.
-class _GridTile extends StatelessWidget {
-  const _GridTile({required this.destination, required this.onTap});
-  final NfcDestination destination;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = Theme.of(context).colorScheme;
-    return Card(
-      clipBehavior: Clip.antiAlias,
-      child: InkWell(
-        onTap: onTap,
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(minHeight: 124),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 42,
-                  height: 42,
-                  decoration: BoxDecoration(
-                    color: colors.primaryContainer,
-                    borderRadius: BorderRadius.circular(13),
-                  ),
-                  child: Icon(
-                    _destinationIcon(destination),
-                    size: 22,
-                    color: colors.onPrimaryContainer,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  destination.title,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  _destinationHint(destination),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: colors.onSurfaceVariant,
-                  ),
                 ),
               ],
             ),

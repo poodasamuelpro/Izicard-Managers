@@ -24,11 +24,15 @@ class SingleWriteScreen extends StatefulWidget {
     required this.tag,
     required this.profile,
     this.batchName,
+    this.autoStart = false,
   });
 
   final NfcTagRecord tag;
   final NfcProfile profile;
   final String? batchName;
+
+  /// Lance tout de suite l'attente de la carte (écriture d'une carte unique : un seul geste).
+  final bool autoStart;
 
   @override
   State<SingleWriteScreen> createState() => _SingleWriteScreenState();
@@ -55,6 +59,11 @@ class _SingleWriteScreenState extends State<SingleWriteScreen> {
       userId: client.auth.currentUser?.id ?? '',
     );
     _lock = AppSettingsStore.instance.value.lockByDefault;
+    if (widget.autoStart) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted && !_lock) _write();
+      });
+    }
   }
 
   @override
@@ -266,6 +275,14 @@ class _SingleWriteScreenState extends State<SingleWriteScreen> {
                             fontWeight: FontWeight.w800,
                           ),
                         ),
+                        if (_phase == _Phase.waiting) ...[
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Posez le dos du téléphone sur la carte et gardez-la immobile jusqu’au signal.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ],
                         if (_phase == _Phase.idle && !_canWrite) ...[
                           const SizedBox(height: 6),
                           Text(
