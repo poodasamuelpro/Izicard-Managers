@@ -308,13 +308,6 @@ class IzicardTheme {
         color: scheme.primary,
         linearTrackColor: scheme.surfaceContainerHigh,
       ),
-      navigationBarTheme: NavigationBarThemeData(
-        backgroundColor: scheme.surfaceContainerLow,
-        indicatorColor: scheme.primaryContainer,
-        labelTextStyle: WidgetStatePropertyAll(
-          base.textTheme.labelMedium?.copyWith(color: scheme.onSurfaceVariant),
-        ),
-      ),
       popupMenuTheme: PopupMenuThemeData(
         color: scheme.surfaceContainerLow,
         textStyle: TextStyle(color: scheme.onSurface),
