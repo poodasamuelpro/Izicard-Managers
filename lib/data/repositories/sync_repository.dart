@@ -94,6 +94,13 @@ class SyncRepository {
         sent++;
       } on PostgrestException catch (error) {
         if (_isTemporary(error)) break;
+        // Envoi déjà reçu par la base (réponse perdue puis nouvel essai) : rien à refaire.
+        if (item.status == 'verified' &&
+            error.message.toLowerCase().contains('déjà vérifiée')) {
+          await _queue.remove(item.id);
+          sent++;
+          continue;
+        }
         await _queue.markPermanent(item.id, error.message);
         rejected++;
       } on AuthException {
