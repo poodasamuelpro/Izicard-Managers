@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/izicard_colors.dart';
+import '../../core/widgets/izi_ui.dart';
 import '../../data/models/card_format.dart';
 import '../../services/import/column_matcher.dart';
 import '../../services/import/excel_reader.dart';
@@ -111,24 +112,16 @@ class ColumnMappingStep extends StatelessWidget {
         }),
         const SizedBox(height: 10),
         if (missing.isNotEmpty)
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.errorContainer,
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: Text(missing.map((issue) => issue.message).join('\n')),
+          IziNotice(
+            missing.map((issue) => issue.message).join('\n'),
+            tone: IziTone.error,
+            title: 'Correspondances manquantes',
           )
         else
-          Container(
-            padding: const EdgeInsets.all(14),
-            decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withOpacity(.1),
-              borderRadius: BorderRadius.circular(14),
-            ),
-            child: const Text(
-              'Les lignes invalides seront signalées sans empêcher les autres d’être importées.',
-            ),
+          const IziNotice(
+            'Les lignes invalides seront signalées sans empêcher les autres d’être importées.',
+            tone: IziTone.success,
+            title: 'Correspondances complètes',
           ),
         const SizedBox(height: 14),
         OutlinedButton.icon(

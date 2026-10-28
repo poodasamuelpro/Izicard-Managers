@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../../core/widgets/izi_ui.dart';
 import '../../data/models/card_format.dart';
 import '../../services/import/excel_reader.dart';
 
@@ -28,42 +29,50 @@ class ImportPreviewStep extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        Text(
-          '${sheet.rows.length} lignes prêtes à vérifier',
-          style: Theme.of(context).textTheme.titleMedium,
+        IziHero(
+          icon: Icons.fact_check_outlined,
+          title: '${sheet.rows.length} lignes prêtes',
+          subtitle:
+              'Aperçu des cinq premières lignes. Le contrôle définitif est fait à l’envoi.',
         ),
         const SizedBox(height: 8),
-        const Text(
-          'Aperçu des cinq premières lignes. Le contrôle définitif est fait à l’envoi.',
-        ),
-        const SizedBox(height: 12),
         if (activeColumns.isEmpty)
-          const Text('Aucune colonne n’est associée.')
+          const IziNotice(
+            'Aucune colonne n’est associée.',
+            tone: IziTone.warning,
+          )
         else
           for (final entry in activeColumns) ...[
-            Padding(
-              padding: const EdgeInsets.only(top: 12, bottom: 5),
-              child: Text(
-                format.fields.where((field) => field.key == entry.value).isEmpty
-                    ? entry.value!
-                    : format.fields
-                        .firstWhere((field) => field.key == entry.value)
-                        .label,
-                style: const TextStyle(fontWeight: FontWeight.w800),
+            IziSectionTitle(
+              format.fields.where((field) => field.key == entry.value).isEmpty
+                  ? entry.value!
+                  : format.fields
+                      .firstWhere((field) => field.key == entry.value)
+                      .label,
+              padding: const EdgeInsets.only(top: 16, bottom: 6),
+            ),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children:
+                      sheet.rows
+                          .take(5)
+                          .map(
+                            (row) => Padding(
+                              padding: const EdgeInsets.symmetric(vertical: 4),
+                              child: Text(
+                                'Ligne ${row.sourceLine} · ${entry.key < row.values.length ? row.values[entry.key] : ''}',
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          )
+                          .toList(),
+                ),
               ),
             ),
-            ...sheet.rows
-                .take(5)
-                .map(
-                  (row) => Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 3),
-                    child: Text(
-                      'Ligne ${row.sourceLine} · ${entry.key < row.values.length ? row.values[entry.key] : ''}',
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ),
-                ),
           ],
         const SizedBox(height: 20),
         OutlinedButton.icon(
