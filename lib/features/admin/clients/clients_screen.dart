@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/izi_ui.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/theme/izicard_colors.dart';
@@ -245,8 +247,12 @@ class _ClientsScreenState extends State<ClientsScreen> {
                 const SizedBox(height: 14),
                 if (clients.isEmpty)
                   const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 32),
-                    child: Center(child: Text('Aucun client correspondant.')),
+                    padding: EdgeInsets.only(top: 24),
+                    child: IziEmptyState(
+                      icon: Icons.person_search_outlined,
+                      title: 'Aucun client trouvé',
+                      message: 'Modifiez la recherche ou invitez un nouveau client.',
+                    ),
                   )
                 else
                   ...clients.map(
@@ -325,18 +331,8 @@ class _ClientError extends StatelessWidget {
   final VoidCallback onRetry;
 
   @override
-  Widget build(BuildContext context) => Center(
-    child: Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        const Text('Impossible de charger les clients.'),
-        const SizedBox(height: 12),
-        OutlinedButton.icon(
-          onPressed: onRetry,
-          icon: const Icon(Icons.refresh_rounded),
-          label: const Text('Réessayer'),
-        ),
-      ],
-    ),
+  Widget build(BuildContext context) => IziErrorState(
+    message: 'Impossible de charger les clients. Vérifiez votre connexion.',
+    onRetry: onRetry,
   );
 }

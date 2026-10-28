@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../core/widgets/izi_ui.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/theme/izicard_colors.dart';
@@ -71,31 +73,23 @@ class _ExportScreenState extends State<ExportScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Icon(Icons.cloud_off_rounded, size: 44),
-                  const SizedBox(height: 12),
-                  const Text('Impossible de charger les dossiers.'),
-                  const SizedBox(height: 12),
-                  OutlinedButton.icon(
-                    onPressed:
-                        () => setState(
-                          () => _batches = widget.repository.listBatchStats(),
-                        ),
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('Réessayer'),
+            return IziErrorState(
+              message: 'Impossible de charger les dossiers. Vérifiez votre connexion.',
+              onRetry:
+                  () => setState(
+                    () => _batches = widget.repository.listBatchStats(),
                   ),
-                ],
-              ),
             );
           }
           final batches = snapshot.data ?? const <NfcBatch>[];
           if (batches.isEmpty)
-            return const Center(child: Text('Aucun dossier à exporter.'));
+            return const IziEmptyState(
+              icon: Icons.ios_share_rounded,
+              title: 'Rien à exporter',
+              message: 'Créez un dossier et ajoutez des cartes pour pouvoir exporter.',
+            );
           return ListView(
-            padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
             children: [
               const Text(
                 'Export CSV (séparateur « ; », ouverture directe dans Excel).',

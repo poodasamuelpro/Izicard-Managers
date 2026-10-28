@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/widgets/izi_ui.dart';
+
 import '../../core/theme/izicard_colors.dart';
 import '../../data/local/offline_tags_dao.dart';
 import '../../data/local/pending_writes_dao.dart';
@@ -102,19 +104,9 @@ class _SyncStatusScreenState extends State<SyncStatusScreen> {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
-            return Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const Text('Impossible de lire la file locale.'),
-                  const SizedBox(height: 10),
-                  OutlinedButton.icon(
-                    onPressed: _refresh,
-                    icon: const Icon(Icons.refresh_rounded),
-                    label: const Text('Réessayer'),
-                  ),
-                ],
-              ),
+            return IziErrorState(
+              message: 'Impossible de lire les opérations enregistrées sur cet appareil.',
+              onRetry: _refresh,
             );
           }
           final data = snapshot.data!;
@@ -162,8 +154,12 @@ class _SyncStatusScreenState extends State<SyncStatusScreen> {
                 const SizedBox(height: 18),
                 if (data.items.isEmpty)
                   const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 24),
-                    child: Center(child: Text('Aucune opération en attente.')),
+                    padding: EdgeInsets.only(top: 16),
+                    child: IziEmptyState(
+                      icon: Icons.cloud_done_outlined,
+                      title: 'Tout est synchronisé',
+                      message: 'Aucune opération en attente sur cet appareil.',
+                    ),
                   )
                 else
                   ...data.items.map(

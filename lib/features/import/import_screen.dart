@@ -5,9 +5,11 @@ import 'package:excel/excel.dart' as xlsx;
 import 'package:cross_file/cross_file.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+
 import 'package:share_plus/share_plus.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import '../../core/widgets/izi_ui.dart';
 import '../../data/models/card_format.dart';
 import '../../data/models/import_result.dart';
 import '../../data/models/nfc_batch.dart';
@@ -492,25 +494,13 @@ class _ImportScreenState extends State<ImportScreen> {
                   .where((batch) => batch.status != 'archived')
                   .toList();
           if (batches.isEmpty)
-            return Center(
-              child: Padding(
-                padding: const EdgeInsets.all(28),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const Text(
-                      'Aucun dossier actif. Créez-en un pour importer vos données.',
-                      textAlign: TextAlign.center,
-                    ),
-                    const SizedBox(height: 14),
-                    FilledButton.icon(
-                      onPressed: _quickBatch,
-                      icon: const Icon(Icons.create_new_folder_outlined),
-                      label: const Text('Créer un dossier'),
-                    ),
-                  ],
-                ),
-              ),
+            return IziEmptyState(
+              icon: Icons.create_new_folder_outlined,
+              title: 'Aucun dossier actif',
+              message: 'Créez un dossier pour y importer vos données.',
+              actionLabel: 'Créer un dossier',
+              actionIcon: Icons.create_new_folder_outlined,
+              onAction: _quickBatch,
             );
           if (_batchId == null ||
               !batches.any((batch) => batch.id == _batchId)) {
@@ -524,7 +514,7 @@ class _ImportScreenState extends State<ImportScreen> {
           }
           final selectedId = _batchId!;
           return ListView(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
             children: [
               DropdownButtonFormField<String>(
                 value: selectedId,
@@ -826,23 +816,8 @@ class _LoadError extends StatelessWidget {
   const _LoadError({required this.onRetry});
   final VoidCallback onRetry;
   @override
-  Widget build(BuildContext context) => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.cloud_off_rounded, size: 42),
-          const SizedBox(height: 10),
-          const Text('Impossible de charger les dossiers.'),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: onRetry,
-            icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Réessayer'),
-          ),
-        ],
-      ),
-    ),
+  Widget build(BuildContext context) => IziErrorState(
+    message: 'Impossible de charger les dossiers. Vérifiez votre connexion.',
+    onRetry: onRetry,
   );
 }
