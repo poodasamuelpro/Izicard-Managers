@@ -675,12 +675,7 @@ class _ImportScreenState extends State<ImportScreen> {
                             const SizedBox(height: 12),
                           ],
                           if (_error != null) ...[
-                            Text(
-                              _error!,
-                              style: TextStyle(
-                                color: Theme.of(context).colorScheme.error,
-                              ),
-                            ),
+                            IziNotice(_error!, tone: IziTone.error),
                             const SizedBox(height: 10),
                           ],
                           ImportPreviewStep(

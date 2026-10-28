@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../core/widgets/izi_ui.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/models/card_format.dart';
@@ -209,10 +211,7 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
         ],
         if (_error != null) ...[
           const SizedBox(height: 4),
-          Text(
-            _error!,
-            style: TextStyle(color: Theme.of(context).colorScheme.error),
-          ),
+          IziNotice(_error!, tone: IziTone.error),
         ],
         const SizedBox(height: 12),
         FilledButton.icon(

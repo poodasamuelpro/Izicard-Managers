@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/widgets/izi_ui.dart';
+
 import '../../data/repositories/auth_repository.dart';
 
 class PasswordResetScreen extends StatefulWidget {
@@ -156,10 +158,7 @@ class _PasswordResetScreenState extends State<PasswordResetScreen> {
               ),
             if (_error != null) ...[
               const SizedBox(height: 12),
-              Text(
-                _error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
+              IziNotice(_error!, tone: IziTone.error),
             ],
             const SizedBox(height: 20),
             FilledButton(

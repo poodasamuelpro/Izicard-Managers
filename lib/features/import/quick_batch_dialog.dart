@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/widgets/izi_ui.dart';
+
 import '../../data/models/card_format.dart';
 import '../../data/models/nfc_profile.dart';
 import '../../data/repositories/batch_repository.dart';
@@ -134,10 +136,7 @@ class _QuickBatchDialogState extends State<QuickBatchDialog> {
               ),
               if (_error != null) ...[
                 const SizedBox(height: 12),
-                Text(
-                  _error!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
+                IziNotice(_error!, tone: IziTone.error),
               ],
             ],
           );

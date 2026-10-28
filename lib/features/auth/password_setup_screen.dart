@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/widgets/izi_ui.dart';
+
 import '../../core/theme/izicard_colors.dart';
 import '../../data/repositories/auth_repository.dart';
 
@@ -107,19 +109,14 @@ class _PasswordSetupScreenState extends State<PasswordSetupScreen> {
                       ),
                       if (_error != null) ...[
                         const SizedBox(height: 16),
-                        Text(
-                          _error!,
-                          style: TextStyle(
-                            color: Theme.of(context).colorScheme.error,
-                          ),
-                        ),
+                        IziNotice(_error!, tone: IziTone.error),
                       ],
                       const SizedBox(height: 22),
                       FilledButton(
                         onPressed: _saving ? null : _save,
                         child:
                             _saving
-                                ? const CircularProgressIndicator()
+                                ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator(strokeWidth: 2))
                                 : const Text('Enregistrer et continuer'),
                       ),
                     ],

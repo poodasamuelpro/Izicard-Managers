@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../core/widgets/izi_ui.dart';
+
 import '../../core/theme/izicard_colors.dart';
 import '../../data/models/nfc_profile.dart';
 import '../../data/models/nfc_tag.dart';
@@ -80,7 +82,7 @@ class _CardPickerScreenState extends State<CardPickerScreen> {
               child: Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 8),
                     child: TextField(
                       controller: _search,
                       onChanged: (value) => setState(() => _term = value),
@@ -94,13 +96,14 @@ class _CardPickerScreenState extends State<CardPickerScreen> {
                   Expanded(
                     child:
                         visible.isEmpty
-                            ? const Center(
-                              child: Text(
-                                'Aucune carte à écrire ne correspond.',
-                              ),
+                            ? const IziEmptyState(
+                              icon: Icons.search_off_rounded,
+                              title: 'Aucune carte',
+                              message:
+                                  'Aucune carte à écrire ne correspond à votre recherche.',
                             )
                             : ListView.builder(
-                              padding: const EdgeInsets.fromLTRB(20, 4, 20, 24),
+                              padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
                               itemCount: visible.length,
                               itemBuilder: (context, i) {
                                 final tag = visible[i];
