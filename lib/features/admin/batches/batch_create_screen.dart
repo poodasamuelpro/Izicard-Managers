@@ -535,3 +535,13 @@ class _EmptyOptions extends StatelessWidget {
   Widget build(BuildContext context) =>
       IziEmptyState(icon: Icons.info_outline_rounded, title: title, message: message);
 }
+
+class _FormError extends StatelessWidget {
+  const _FormError({required this.onRetry});
+  final VoidCallback onRetry;
+  @override
+  Widget build(BuildContext context) => IziErrorState(
+    message: 'Impossible de charger les clients et les formats.',
+    onRetry: onRetry,
+  );
+}
