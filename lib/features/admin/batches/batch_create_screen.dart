@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../core/theme/izicard_colors.dart';
+import '../../../core/widgets/izi_ui.dart';
 import '../../../data/models/card_format.dart';
 import '../../../data/models/nfc_client.dart';
 import '../../../data/models/nfc_profile.dart';
@@ -178,14 +179,10 @@ class _BatchCreateScreenState extends State<BatchCreateScreen> {
       return Scaffold(
         appBar: AppBar(title: const Text('Créer un dossier')),
         body: const SafeArea(
-          child: Center(
-            child: Padding(
-              padding: EdgeInsets.all(28),
-              child: Text(
-                'La création de dossier n’est pas autorisée pour ce profil.',
-                textAlign: TextAlign.center,
-              ),
-            ),
+          child: IziEmptyState(
+            icon: Icons.lock_outline_rounded,
+            title: 'Création non autorisée',
+            message: 'Votre profil ne permet pas de créer un dossier.',
           ),
         ),
       );
@@ -212,25 +209,13 @@ class _BatchCreateScreenState extends State<BatchCreateScreen> {
                     'Aucun format de carte n’est actif. Contactez votre administrateur.',
               );
             if (widget.profile.role == NfcRole.admin && clients.isEmpty)
-              return Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(28),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      const Text(
-                        'Aucun client disponible. Invitez un client, puis revenez ici.',
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 14),
-                      FilledButton.icon(
-                        onPressed: _inviteClient,
-                        icon: const Icon(Icons.person_add_alt_1_rounded),
-                        label: const Text('Nouveau client'),
-                      ),
-                    ],
-                  ),
-                ),
+              return IziEmptyState(
+                icon: Icons.group_add_outlined,
+                title: 'Aucun client pour le moment',
+                message: 'Invitez un client, puis revenez créer son dossier.',
+                actionLabel: 'Nouveau client',
+                actionIcon: Icons.person_add_alt_1_rounded,
+                onAction: _inviteClient,
               );
             if (_selectedFormat == null ||
                 !options.formats.any(
@@ -248,24 +233,15 @@ class _BatchCreateScreenState extends State<BatchCreateScreen> {
                   preferred.isNotEmpty ? preferred.first : clients.first.id;
             }
 
-            return ListView(
-              padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
+            final form = ListView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
               children: [
-                Container(
-                  padding: const EdgeInsets.all(18),
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary.withOpacity(.1),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Text(
-                    widget.profile.role == NfcRole.admin
-                        ? 'Choisissez le client destinataire, ou « Mes propres cartes » pour vos cartes personnelles (sans client externe).'
-                        : 'Ce dossier sera créé pour votre propre compte client.',
-                  ),
+                IziNotice(
+                  widget.profile.role == NfcRole.admin
+                      ? 'Choisissez le client destinataire, ou « Mes propres cartes » pour vos cartes personnelles (sans client externe).'
+                      : 'Ce dossier sera créé pour votre propre compte client.',
                 ),
-                const SizedBox(height: 20),
+                const IziSectionTitle('Destinataire et nom'),
                 if (widget.profile.role == NfcRole.admin) ...[
                   DropdownButtonFormField<String>(
                     value: _selectedClientId,
@@ -314,7 +290,7 @@ class _BatchCreateScreenState extends State<BatchCreateScreen> {
                     border: OutlineInputBorder(),
                   ),
                 ),
-                const SizedBox(height: 16),
+                const IziSectionTitle('Format de carte'),
                 DropdownButtonFormField<CardFormat>(
                   value: _selectedFormat,
                   decoration: const InputDecoration(
@@ -367,10 +343,10 @@ class _BatchCreateScreenState extends State<BatchCreateScreen> {
                   ),
                   const SizedBox(height: 8),
                   const Text(
-                    'Le serveur vérifiera les caractères, la longueur et l’unicité de chaque code dans ce dossier.',
+                    'Chaque code est contrôlé : caractères autorisés, longueur et unicité dans ce dossier.',
                   ),
                 ],
-                const SizedBox(height: 16),
+                const IziSectionTitle('Quantité et sécurité'),
                 TextFormField(
                   controller: _quantityController,
                   keyboardType: TextInputType.number,
@@ -396,25 +372,27 @@ class _BatchCreateScreenState extends State<BatchCreateScreen> {
                   ),
                 ),
                 if (_error != null) ...[
-                  const SizedBox(height: 10),
-                  Text(
-                    _error!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                  ),
+                  const SizedBox(height: 14),
+                  IziNotice(_error!, tone: IziTone.error),
                 ],
-                const SizedBox(height: 18),
-                FilledButton.icon(
-                  onPressed: _saving ? null : () => _submit(_selectedClientId),
-                  icon:
-                      _saving
-                          ? const SizedBox.square(
-                            dimension: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                          : const Icon(Icons.check_rounded),
-                  label: Text(_saving ? 'Création…' : 'Créer le dossier'),
+              ],
+            );
+            return Column(
+              children: [
+                Expanded(child: form),
+                IziBottomBar(
+                  child: FilledButton.icon(
+                    onPressed:
+                        _saving ? null : () => _submit(_selectedClientId),
+                    icon:
+                        _saving
+                            ? const SizedBox.square(
+                              dimension: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            )
+                            : const Icon(Icons.check_rounded),
+                    label: Text(_saving ? 'Création…' : 'Créer le dossier'),
+                  ),
                 ),
               ],
             );
@@ -554,46 +532,6 @@ class _EmptyOptions extends StatelessWidget {
   final String title;
   final String message;
   @override
-  Widget build(BuildContext context) => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(28),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.info_outline_rounded, size: 44),
-          const SizedBox(height: 14),
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
-          const SizedBox(height: 8),
-          Text(message, textAlign: TextAlign.center),
-        ],
-      ),
-    ),
-  );
-}
-
-class _FormError extends StatelessWidget {
-  const _FormError({required this.onRetry});
-  final VoidCallback onRetry;
-  @override
-  Widget build(BuildContext context) => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Text('Impossible de charger les clients et formats.'),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: onRetry,
-            icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Réessayer'),
-          ),
-        ],
-      ),
-    ),
-  );
+  Widget build(BuildContext context) =>
+      IziEmptyState(icon: Icons.info_outline_rounded, title: title, message: message);
 }

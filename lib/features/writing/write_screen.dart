@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/settings/app_settings.dart';
 import '../../core/theme/izicard_colors.dart';
+import '../../core/widgets/izi_ui.dart';
 import '../../data/local/app_database.dart';
 import '../../data/models/nfc_batch.dart';
 import '../../data/models/nfc_profile.dart';
@@ -225,7 +226,7 @@ class _WriteScreenState extends State<WriteScreen> {
         final offline = snapshot.data?.offline ?? false;
         final controller = _controller;
         return ListView(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
           children: [
             NfcHelpBanner(
               onChanged: (ready) {
@@ -234,18 +235,21 @@ class _WriteScreenState extends State<WriteScreen> {
               },
             ),
             if (offline)
-              Padding(
+              const Padding(
                 padding: EdgeInsets.only(bottom: 10),
-                child: Text(
-                  'Hors connexion : seuls les dossiers déjà téléchargés sont disponibles.',
-                  style: TextStyle(
-                    color: Theme.of(context).colorScheme.tertiary,
-                    fontWeight: FontWeight.w700,
-                  ),
+                child: IziNotice(
+                  'Seuls les dossiers déjà téléchargés sont disponibles.',
+                  tone: IziTone.warning,
+                  icon: Icons.cloud_off_rounded,
+                  title: 'Hors connexion',
                 ),
               ),
-            OutlinedButton.icon(
-              onPressed:
+            const IziSectionTitle('Une seule carte', padding: EdgeInsets.only(top: 14, bottom: 8)),
+            IziItemCard(
+              icon: Icons.nfc_rounded,
+              title: 'Écrire une seule carte',
+              subtitle: 'Lien, texte ou numéro. La carte est enregistrée dans vos dossiers.',
+              onTap:
                   () => Navigator.of(context).push<void>(
                     MaterialPageRoute<void>(
                       builder:
@@ -255,57 +259,38 @@ class _WriteScreenState extends State<WriteScreen> {
                           ),
                     ),
                   ),
-              icon: const Icon(Icons.nfc_rounded),
-              label: const Text('Écrire une seule carte (enregistrée)'),
             ),
-            const SizedBox(height: 18),
-            Text(
-              'Dossier à encoder',
-              style: Theme.of(context).textTheme.titleLarge,
-            ),
-            const SizedBox(height: 8),
+            const IziSectionTitle('Écrire en série'),
             if (batches.isEmpty)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(18),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Aucun dossier disponible. Écrivez une seule carte ci-dessus (un dossier est créé pour vous), ou créez un dossier.',
-                      ),
-                      const SizedBox(height: 12),
-                      FilledButton.icon(
-                        onPressed: () async {
-                          final created = await Navigator.of(context)
-                              .push<bool>(
-                                MaterialPageRoute<bool>(
-                                  builder:
-                                      (_) => BatchCreateScreen(
-                                        profile: widget.profile,
-                                        repository: _batches,
-                                      ),
-                                ),
-                              );
-                          if (created == true && mounted) {
-                            setState(
-                              () => _batchFuture = loadBatches(_batches),
-                            );
-                          }
-                        },
-                        icon: const Icon(Icons.create_new_folder_outlined),
-                        label: const Text('Créer un dossier'),
-                      ),
-                    ],
-                  ),
-                ),
+              IziEmptyState(
+                icon: Icons.create_new_folder_outlined,
+                title: 'Aucun dossier disponible',
+                message:
+                    'Écrivez une seule carte ci-dessus (un dossier est créé pour vous), ou créez un dossier.',
+                actionLabel: 'Créer un dossier',
+                actionIcon: Icons.create_new_folder_outlined,
+                onAction: () async {
+                  final created = await Navigator.of(context).push<bool>(
+                    MaterialPageRoute<bool>(
+                      builder:
+                          (_) => BatchCreateScreen(
+                            profile: widget.profile,
+                            repository: _batches,
+                          ),
+                    ),
+                  );
+                  if (created == true && mounted) {
+                    setState(() => _batchFuture = loadBatches(_batches));
+                  }
+                },
               )
             else
               DropdownButtonFormField<String>(
                 value: _selected?.id,
                 isExpanded: true,
                 decoration: const InputDecoration(
-                  labelText: 'Dossier',
+                  labelText: 'Dossier à encoder',
+                  prefixIcon: Icon(Icons.folder_outlined),
                   border: OutlineInputBorder(),
                 ),
                 items:
@@ -339,34 +324,18 @@ class _WriteScreenState extends State<WriteScreen> {
                 onRetry: _selected == null ? null : () => _select(_selected!),
               )
             else if (_selected != null) ...[
-              Card(
-                color: Theme.of(context).colorScheme.primaryContainer,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Row(
-                    children: [
-                      Icon(
-                        Icons.offline_pin_outlined,
-                        color: Theme.of(context).colorScheme.onPrimaryContainer,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          controller.queue.isEmpty
-                              ? 'Aucune carte en attente d’écriture dans ce dossier.'
-                              : '${controller.queue.length} carte(s) à écrire, lues depuis le cache de cet appareil.'
-                                  '${controller.unsynced > 0 ? '\n${controller.unsynced} résultat(s) en attente de synchronisation.' : ''}',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
+              IziNotice(
+                controller.queue.isEmpty
+                    ? 'Aucune carte en attente d’écriture dans ce dossier.'
+                    : '${controller.queue.length} carte(s) à écrire, lues depuis le cache de cet appareil.'
+                        '${controller.unsynced > 0 ? '\n${controller.unsynced} résultat(s) en attente de synchronisation.' : ''}',
+                icon: Icons.offline_pin_outlined,
               ),
               const SizedBox(height: 8),
               TextButton.icon(
                 onPressed: () => controller.refreshFromServer(_selected!),
                 icon: const Icon(Icons.refresh_rounded),
-                label: const Text('Mettre à jour depuis le serveur'),
+                label: const Text('Actualiser la liste'),
               ),
               SwitchListTile.adaptive(
                 contentPadding: EdgeInsets.zero,
@@ -407,7 +376,7 @@ class _WriteScreenState extends State<WriteScreen> {
                 onPressed: controller.queue.isEmpty ? null : _pickSingle,
                 icon: const Icon(Icons.looks_one_outlined),
                 label: const Text(
-                  'Encoder une seule carte',
+                  'Choisir une carte précise du dossier',
                   style: TextStyle(fontSize: 16),
                 ),
               ),
@@ -662,22 +631,17 @@ class _Message extends StatelessWidget {
   final VoidCallback? onRetry;
 
   @override
-  Widget build(BuildContext context) => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        children: [
-          Text(text, style: TextStyle(color: context.ink.error)),
-          if (onRetry != null) ...[
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh_rounded),
-              label: const Text('Réessayer'),
-            ),
-          ],
-        ],
-      ),
-    ),
+  Widget build(BuildContext context) => Column(
+    children: [
+      IziNotice(text, tone: IziTone.error),
+      if (onRetry != null) ...[
+        const SizedBox(height: 10),
+        OutlinedButton.icon(
+          onPressed: onRetry,
+          icon: const Icon(Icons.refresh_rounded),
+          label: const Text('Réessayer'),
+        ),
+      ],
+    ],
   );
 }
