@@ -1052,4 +1052,8 @@ Créer les secrets GitHub, lancer le workflow Build APK, installer l'APK et vér
 ## M29 — Système de design commun + écrans redessinés
 - `lib/core/widgets/izi_ui.dart` : espacements, IziHero, IziSectionTitle, IziPill, IziProgress, IziItemCard, IziEmptyState, IziErrorState, IziNotice, IziStat, IziBottomBar.
 - Redessinés : connexion (bandeau de marque), dossiers, création de dossier (bouton fixe en bas), écriture, vérification de tag, états vides/erreur (import, clients, synchronisation, export).
-- Analyse CI verte (8e03d12). Non testé sur téléphone. Restent à polir : détail de dossier, réglages, tableau de bord admin, détail de tag, formulaires client, import (étapes).
+- Analyse CI verte (8e03d12). Non testé sur téléphone. 
+
+## M30 — Suite du redesign
+- Redessinés : détail de dossier (compteurs en grille), réglages, tableau de bord admin, détail de carte, clients (cartes avec actions Dossier/Modifier/Accès), invitation et édition client (barre d'action fixe), import (correspondances, aperçu, résultat), sélecteur de carte, activation de compte, erreurs unifiées (IziNotice).
+- Analyse CI verte. Reste non testé sur téléphone : rendu réel à valider avec l'APK.
