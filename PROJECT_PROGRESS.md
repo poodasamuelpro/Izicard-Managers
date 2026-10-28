@@ -1070,3 +1070,6 @@ Créer les secrets GitHub, lancer le workflow Build APK, installer l'APK et vér
 - Série : « Passer » après pause sur carte vérifiée ne la compte plus comme passée.
 - Import : CSV Windows-1252 (accents) ; nombres Excel sans « .0 » ; message d'archivage.
 - Tests ndef_builder mis à jour/ajoutés. CI verte (b036324). Non testé sur cartes réelles.
+
+## Étude API commerciale
+- Document : `docs/API_COMMERCIALE.md` (faisabilité, architecture, sécurité, plan). Étude uniquement, aucun code d'API publique.
