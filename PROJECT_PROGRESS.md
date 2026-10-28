@@ -1073,3 +1073,9 @@ Créer les secrets GitHub, lancer le workflow Build APK, installer l'APK et vér
 
 ## Étude API commerciale
 - Document : `docs/API_COMMERCIALE.md` (faisabilité, architecture, sécurité, plan). Étude uniquement, aucun code d'API publique.
+
+## M33 — Accueil, carte unique, import avec destinataire, synchronisation (28/10 soir)
+- 595396f : Accueil avec contenu réel (actions rapides, compteurs, « À traiter », message de démarrage) ; écriture d'une carte unique en un geste (attente de la carte automatique, `autoStart`) et lignes d'import compatibles avec les formats actuels (champs `url`/`text`/`email` + donnée brute, format e-mail dédié si disponible) ; création rapide de dossier avec choix du destinataire pour l'admin (usage interne, client existant, nouveau client).
+- acb4ceb : un envoi déjà reçu par la base (réponse perdue, nouvel essai) n'est plus compté comme refusé.
+- Vérifié côté code : paramètres de l'envoi du résultat = ancienne fonction (001) ; la fonction de la base réelle n'est pas dans le dépôt web (à contrôler avec une carte de test).
+- Correspondance commits ↔ lots : 70b1b79, 9e80b1b, e25bd4c…7924eeb → M29 ; aee0bb2…0b9d885 → M29/M30 ; a7867ab, 5d74aad → M31 ; 9fea7c3, b036324 → M32.
