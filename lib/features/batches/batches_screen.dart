@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/config/constants.dart';
 import '../../core/theme/izicard_colors.dart';
+import '../../core/widgets/izi_ui.dart';
 import '../../core/widgets/responsive_content.dart';
 import '../../data/models/nfc_batch.dart';
 import '../../data/models/nfc_profile.dart';
@@ -184,7 +185,7 @@ class _BatchesScreenState extends State<BatchesScreen> {
           return RefreshIndicator(
             onRefresh: _refresh,
             child: ResponsiveContent(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 100),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
               child: LayoutBuilder(
                 builder: (context, constraints) {
                   final isGrid = constraints.maxWidth >= 860;
@@ -193,30 +194,13 @@ class _BatchesScreenState extends State<BatchesScreen> {
                     padding: EdgeInsets.zero,
                     children: [
                       if (offline)
-                        Container(
-                          margin: const EdgeInsets.only(bottom: 12),
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color:
-                                Theme.of(context).colorScheme.tertiaryContainer,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.cloud_off_rounded,
-                                color:
-                                    Theme.of(
-                                      context,
-                                    ).colorScheme.onTertiaryContainer,
-                              ),
-                              SizedBox(width: 10),
-                              Expanded(
-                                child: Text(
-                                  'Hors connexion : dossiers téléchargés sur cet appareil. Tirez pour réessayer.',
-                                ),
-                              ),
-                            ],
+                        const Padding(
+                          padding: EdgeInsets.only(bottom: 12),
+                          child: IziNotice(
+                            'Dossiers téléchargés sur cet appareil. Tirez vers le bas pour réessayer.',
+                            tone: IziTone.warning,
+                            icon: Icons.cloud_off_rounded,
+                            title: 'Hors connexion',
                           ),
                         ),
                       _SummaryHeader(count: batches.length),
@@ -502,41 +486,17 @@ class _EmptyBatches extends StatelessWidget {
   final bool isFiltered;
   @override
   Widget build(BuildContext context) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: 48, horizontal: 20),
-    child: Column(
-      children: [
-        Icon(
-          isFiltered
-              ? Icons.filter_alt_off_rounded
-              : Icons.inventory_2_outlined,
-          size: 48,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-        const SizedBox(height: 14),
-        Text(
-          isFiltered
-              ? 'Aucun dossier dans ce filtre'
-              : 'Aucun dossier pour le moment',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.titleMedium,
-        ),
-        const SizedBox(height: 8),
-        Text(
-          isFiltered
-              ? 'Essayez un autre filtre.'
+    padding: const EdgeInsets.only(top: 24),
+    child: IziEmptyState(
+      icon: isFiltered ? Icons.filter_alt_off_rounded : Icons.inventory_2_outlined,
+      title: isFiltered ? 'Aucun dossier dans ce filtre' : 'Aucun dossier pour le moment',
+      message: isFiltered
+          ? 'Essayez un autre filtre pour voir vos dossiers.'
+          : canCreate
+              ? 'Un dossier regroupe les cartes d\'un même lot. Créez le premier pour commencer.'
               : 'Les dossiers autorisés pour votre compte apparaîtront ici.',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.bodyMedium,
-        ),
-        if (canCreate && !isFiltered) ...[
-          const SizedBox(height: 18),
-          FilledButton.icon(
-            onPressed: onCreate,
-            icon: const Icon(Icons.add_rounded),
-            label: const Text('Créer un dossier'),
-          ),
-        ],
-      ],
+      actionLabel: canCreate && !isFiltered ? 'Créer un dossier' : null,
+      onAction: canCreate && !isFiltered ? onCreate : null,
     ),
   );
 }
@@ -545,23 +505,8 @@ class _LoadError extends StatelessWidget {
   const _LoadError({required this.onRetry});
   final VoidCallback onRetry;
   @override
-  Widget build(BuildContext context) => Center(
-    child: Padding(
-      padding: const EdgeInsets.all(28),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          const Icon(Icons.cloud_off_rounded, size: 44),
-          const SizedBox(height: 12),
-          const Text('Impossible de charger les dossiers.'),
-          const SizedBox(height: 12),
-          OutlinedButton.icon(
-            onPressed: onRetry,
-            icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Réessayer'),
-          ),
-        ],
-      ),
-    ),
+  Widget build(BuildContext context) => IziErrorState(
+    message: 'Impossible de charger les dossiers. Vérifiez votre connexion.',
+    onRetry: onRetry,
   );
 }
