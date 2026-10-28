@@ -115,27 +115,21 @@ class _SyncStatusScreenState extends State<SyncStatusScreen> {
           return RefreshIndicator(
             onRefresh: _refresh,
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
               children: [
-                Card(
-                  color: Theme.of(context).colorScheme.primaryContainer,
-                  child: Padding(
-                    padding: const EdgeInsets.all(18),
-                    child: Row(
-                      children: [
-                        const Icon(Icons.cloud_queue_rounded, size: 34),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Text(
-                            data.items.isEmpty
-                                ? 'Tout est synchronisé.'
-                                : '$waiting en attente de connexion${rejected > 0 ? ' · $rejected refusée(s) par la base' : ''}.',
-                            style: Theme.of(context).textTheme.titleMedium,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                IziHero(
+                  icon:
+                      data.items.isEmpty
+                          ? Icons.cloud_done_outlined
+                          : Icons.cloud_queue_rounded,
+                  title:
+                      data.items.isEmpty
+                          ? 'Tout est synchronisé'
+                          : '$waiting en attente',
+                  subtitle:
+                      data.items.isEmpty
+                          ? 'Aucune opération en attente sur cet appareil.'
+                          : 'Envoi dès que la connexion est disponible${rejected > 0 ? ' · $rejected refusée(s)' : ''}.',
                 ),
                 const SizedBox(height: 16),
                 FilledButton.icon(
@@ -153,14 +147,7 @@ class _SyncStatusScreenState extends State<SyncStatusScreen> {
                 ),
                 const SizedBox(height: 18),
                 if (data.items.isEmpty)
-                  const Padding(
-                    padding: EdgeInsets.only(top: 16),
-                    child: IziEmptyState(
-                      icon: Icons.cloud_done_outlined,
-                      title: 'Tout est synchronisé',
-                      message: 'Aucune opération en attente sur cet appareil.',
-                    ),
-                  )
+                  const SizedBox.shrink()
                 else
                   ...data.items.map(
                     (item) => Card(
