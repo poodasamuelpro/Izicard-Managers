@@ -261,11 +261,6 @@ class _ClientsScreenState extends State<ClientsScreen> {
                     ),
                   ),
               ],
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
             ),
           );
         },
