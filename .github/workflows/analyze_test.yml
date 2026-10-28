@@ -22,5 +22,31 @@ jobs:
           channel: stable
           cache: true
       - run: flutter pub get
-      - run: flutter analyze --no-fatal-infos --no-fatal-warnings
-      - run: flutter test
+      # Les erreurs de l'analyseur sont aussi publiées en annotations (visibles sur la page du run,
+      # sans ouvrir les journaux) : « error • message • fichier:ligne:colonne • règle ».
+      - name: Analyse statique
+        run: |
+          set +e
+          flutter analyze --no-fatal-infos --no-fatal-warnings > analyze.txt 2>&1
+          code=$?
+          cat analyze.txt
+          grep -E '^[[:space:]]*error • ' analyze.txt | head -20 | while IFS= read -r line; do
+            msg=$(echo "$line" | awk -F ' • ' '{print $2}')
+            loc=$(echo "$line" | awk -F ' • ' '{print $3}')
+            file=$(echo "$loc" | cut -d: -f1)
+            row=$(echo "$loc" | cut -d: -f2)
+            echo "::error file=${file},line=${row}::${msg}"
+          done
+          exit $code
+      - name: Tests
+        run: |
+          set +e
+          flutter test > test.txt 2>&1
+          code=$?
+          tail -60 test.txt
+          if [ $code -ne 0 ]; then
+            grep -E '(Expected|Actual|EXCEPTION|Error|error:)' test.txt | head -10 | while IFS= read -r line; do
+              echo "::error::$(echo "$line" | cut -c1-300)"
+            done
+          fi
+          exit $code
