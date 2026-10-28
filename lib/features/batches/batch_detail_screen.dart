@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../core/theme/izicard_colors.dart';
+import '../../core/widgets/izi_ui.dart';
 import '../../core/widgets/responsive_content.dart';
 import '../../data/models/nfc_batch.dart';
 import '../../data/models/nfc_profile.dart';
@@ -360,29 +361,16 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
             maxWidth: 1240,
             padding: EdgeInsets.zero,
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
               children: [
                 if (_offlineMode)
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 12),
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: theme.colorScheme.tertiaryContainer,
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.cloud_off_rounded,
-                          color: theme.colorScheme.onTertiaryContainer,
-                        ),
-                        SizedBox(width: 10),
-                        Expanded(
-                          child: Text(
-                            'Mode hors connexion : cartes et compteurs du cache de cet appareil.',
-                          ),
-                        ),
-                      ],
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: 12),
+                    child: IziNotice(
+                      'Cartes et compteurs du cache de cet appareil.',
+                      tone: IziTone.warning,
+                      icon: Icons.cloud_off_rounded,
+                      title: 'Hors connexion',
                     ),
                   ),
                 Row(
@@ -390,7 +378,9 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                     Expanded(
                       child: Text(
                         _batch.name,
-                        style: theme.textTheme.headlineSmall,
+                        style: theme.textTheme.headlineSmall?.copyWith(
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 8),
@@ -401,51 +391,31 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                   ],
                 ),
                 const SizedBox(height: 14),
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: LinearProgressIndicator(
-                    value: _batch.progress,
-                    minHeight: 8,
-                    backgroundColor:
-                        Theme.of(context).colorScheme.surfaceContainerHigh,
-                  ),
-                ),
+                IziProgress(value: _batch.progress, height: 10),
                 const SizedBox(height: 6),
                 Text(
                   '${(_batch.progress * 100).round()} % des cartes vérifiées',
                   style: theme.textTheme.bodySmall,
                 ),
                 const SizedBox(height: 14),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _Stat(
-                      label: 'Total',
-                      value: _batch.total,
-                      color: Theme.of(context).colorScheme.onSurface,
-                    ),
-                    _Stat(
-                      label: 'À écrire',
-                      value: _batch.pending,
-                      color: context.ink.pending,
-                    ),
-                    _Stat(
-                      label: 'Écrites',
-                      value: _batch.written,
-                      color: context.ink.written,
-                    ),
-                    _Stat(
-                      label: 'Vérifiées',
-                      value: _batch.verified,
-                      color: context.ink.verified,
-                    ),
-                    _Stat(
-                      label: 'Erreurs',
-                      value: _batch.errors,
-                      color: context.ink.error,
-                    ),
-                  ],
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final columns = constraints.maxWidth >= 640 ? 5 : 3;
+                    final width =
+                        (constraints.maxWidth - 8 * (columns - 1)) / columns;
+                    Widget cell(Widget child) => SizedBox(width: width, child: child);
+                    return Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        cell(IziStat(value: '${_batch.total}', label: 'Total', icon: Icons.layers_outlined, color: theme.colorScheme.onSurface)),
+                        cell(IziStat(value: '${_batch.pending}', label: 'À écrire', icon: Icons.edit_note_rounded, color: context.ink.pending)),
+                        cell(IziStat(value: '${_batch.written}', label: 'Écrites', icon: Icons.nfc_rounded, color: context.ink.written)),
+                        cell(IziStat(value: '${_batch.verified}', label: 'Vérifiées', icon: Icons.verified_rounded, color: context.ink.verified)),
+                        cell(IziStat(value: '${_batch.errors}', label: 'Erreurs', icon: Icons.error_outline_rounded, color: context.ink.error)),
+                      ],
+                    );
+                  },
                 ),
                 const SizedBox(height: 16),
                 Wrap(
@@ -541,9 +511,7 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                       ),
                   ],
                 ),
-                const SizedBox(height: 22),
-                Text('Cartes du dossier', style: theme.textTheme.titleMedium),
-                const SizedBox(height: 10),
+                const IziSectionTitle('Cartes du dossier'),
                 TextField(
                   controller: _searchController,
                   onChanged: _onSearchChanged,
@@ -581,9 +549,11 @@ class _BatchDetailScreenState extends State<BatchDetailScreen> {
                   _InlineError(message: _error!, onRetry: _loadMore)
                 else if (_items.isEmpty && !_loading)
                   const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 32),
-                    child: Center(
-                      child: Text('Aucune carte ne correspond à ce filtre.'),
+                    padding: EdgeInsets.only(top: 8),
+                    child: IziEmptyState(
+                      icon: Icons.search_off_rounded,
+                      title: 'Aucune carte',
+                      message: 'Aucune carte ne correspond à ce filtre ou à cette recherche.',
                     ),
                   )
                 else
@@ -680,67 +650,22 @@ class _TagTile extends StatelessWidget {
   }
 }
 
-class _Stat extends StatelessWidget {
-  const _Stat({required this.label, required this.value, required this.color});
-  final String label;
-  final int value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    constraints: const BoxConstraints(minWidth: 84),
-    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-    decoration: BoxDecoration(
-      color: Theme.of(context).colorScheme.surfaceContainerLowest,
-      border: Border.all(color: Theme.of(context).colorScheme.outlineVariant),
-      borderRadius: BorderRadius.circular(14),
-    ),
-    child: Column(
-      children: [
-        Text(
-          '$value',
-          style: TextStyle(
-            color: color,
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            fontSize: 12,
-          ),
-        ),
-      ],
-    ),
-  );
-}
-
 class _InlineError extends StatelessWidget {
   const _InlineError({required this.message, required this.onRetry});
   final String message;
   final VoidCallback onRetry;
 
   @override
-  Widget build(BuildContext context) => Card(
-    child: Padding(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        children: [
-          Text(
-            message,
-            style: TextStyle(color: Theme.of(context).colorScheme.error),
-          ),
-          const SizedBox(height: 10),
-          OutlinedButton.icon(
-            onPressed: onRetry,
-            icon: const Icon(Icons.refresh_rounded),
-            label: const Text('Réessayer'),
-          ),
-        ],
+  Widget build(BuildContext context) => Column(
+    children: [
+      IziNotice(message, tone: IziTone.error),
+      const SizedBox(height: 10),
+      OutlinedButton.icon(
+        onPressed: onRetry,
+        icon: const Icon(Icons.refresh_rounded),
+        label: const Text('Réessayer'),
       ),
-    ),
+    ],
   );
 }
 
