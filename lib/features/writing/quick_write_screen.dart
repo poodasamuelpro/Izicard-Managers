@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../core/widgets/izi_ui.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../data/models/nfc_profile.dart';
@@ -169,77 +171,78 @@ class _QuickWriteScreenState extends State<QuickWriteScreen> {
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Écrire une seule carte')),
     body: SafeArea(
-      child: ListView(
-        padding: const EdgeInsets.all(20),
+      child: Column(
         children: [
-          const NfcHelpBanner(),
-          Text(
-            'La carte est enregistrée automatiquement dans un dossier « Cartes uniques », puis écrite. Connexion requise.',
-            style: Theme.of(context).textTheme.bodyMedium,
-          ),
-          const SizedBox(height: 16),
-          DropdownButtonFormField<String>(
-            value: _type,
-            decoration: const InputDecoration(
-              labelText: 'Type de donnée',
-              border: OutlineInputBorder(),
-            ),
-            items:
-                _types.entries
-                    .map(
-                      (entry) => DropdownMenuItem(
-                        value: entry.key,
-                        child: Text(entry.value),
-                      ),
-                    )
-                    .toList(),
-            onChanged: _busy ? null : (value) => setState(() => _type = value!),
-          ),
-          const SizedBox(height: 14),
-          TextField(
-            controller: _value,
-            enabled: !_busy,
-            keyboardType:
-                _type == 'phone'
-                    ? TextInputType.phone
-                    : _type == 'email'
-                    ? TextInputType.emailAddress
-                    : _type == 'url'
-                    ? TextInputType.url
-                    : TextInputType.multiline,
-            maxLines: _type == 'text' ? 4 : 1,
-            decoration: InputDecoration(
-              labelText: _types[_type],
-              border: const OutlineInputBorder(),
-            ),
-          ),
-          const SizedBox(height: 16),
-          FilledButton.icon(
-            onPressed: _busy ? null : _prepareAndWrite,
-            icon:
-                _busy
-                    ? const SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
-                    )
-                    : const Icon(Icons.nfc_rounded),
-            label: Text(_busy ? 'Préparation…' : 'Enregistrer et écrire'),
-          ),
-          if (_message != null) ...[
-            const SizedBox(height: 16),
-            Card(
-              child: ListTile(
-                leading: Icon(
-                  _ok ? Icons.verified_rounded : Icons.info_outline,
-                  color:
-                      _ok ? Colors.green : Theme.of(context).colorScheme.error,
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              children: [
+                const NfcHelpBanner(),
+                const IziHero(
+                  icon: Icons.nfc_rounded,
+                  title: 'Une carte, enregistrée',
+                  subtitle:
+                      'Elle est classée dans un dossier « Cartes uniques », puis écrite. Connexion requise.',
                 ),
-                title: Text(_ok ? 'Succès' : 'À savoir'),
-                subtitle: Text(_message!),
-              ),
+                const IziSectionTitle('Contenu de la carte'),
+                DropdownButtonFormField<String>(
+                  value: _type,
+                  decoration: const InputDecoration(
+                    labelText: 'Type de donnée',
+                    prefixIcon: Icon(Icons.category_outlined),
+                  ),
+                  items:
+                      _types.entries
+                          .map(
+                            (entry) => DropdownMenuItem(
+                              value: entry.key,
+                              child: Text(entry.value),
+                            ),
+                          )
+                          .toList(),
+                  onChanged:
+                      _busy ? null : (value) => setState(() => _type = value!),
+                ),
+                const SizedBox(height: 14),
+                TextField(
+                  controller: _value,
+                  enabled: !_busy,
+                  keyboardType:
+                      _type == 'phone'
+                          ? TextInputType.phone
+                          : _type == 'email'
+                          ? TextInputType.emailAddress
+                          : _type == 'url'
+                          ? TextInputType.url
+                          : TextInputType.multiline,
+                  maxLines: _type == 'text' ? 4 : 1,
+                  decoration: InputDecoration(labelText: _types[_type]),
+                ),
+                if (_message != null) ...[
+                  const SizedBox(height: 16),
+                  IziNotice(
+                    _message!,
+                    tone: _ok ? IziTone.success : IziTone.warning,
+                    title: _ok ? 'Succès' : 'À savoir',
+                  ),
+                ],
+              ],
             ),
-          ],
+          ),
+          IziBottomBar(
+            child: FilledButton.icon(
+              onPressed: _busy ? null : _prepareAndWrite,
+              icon:
+                  _busy
+                      ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : const Icon(Icons.nfc_rounded),
+              label: Text(_busy ? 'Préparation…' : 'Enregistrer et écrire'),
+            ),
+          ),
         ],
       ),
     ),

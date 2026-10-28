@@ -101,7 +101,7 @@ class _TagDetailScreenState extends State<TagDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final tag = _tag;
-    final color = IzicardColors.forTagStatus(tag.status);
+    final color = context.ink.forStatus(tag.status);
     final canWrite = widget.profile.hasValidAccess && tag.isWritable;
     return PopScope(
       canPop: false,

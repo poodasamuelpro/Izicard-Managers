@@ -156,25 +156,61 @@ class IzicardTheme {
         ),
       ),
       filledButtonTheme: FilledButtonThemeData(
-        style: FilledButton.styleFrom(
-          minimumSize: const Size(48, 52),
-          foregroundColor: scheme.onPrimary,
-          backgroundColor: scheme.primary,
-          disabledForegroundColor: scheme.onSurfaceVariant,
-          disabledBackgroundColor: scheme.surfaceContainerHigh,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+        style: ButtonStyle(
+          minimumSize: const WidgetStatePropertyAll(Size(64, 54)),
+          padding: const WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 22, vertical: 14),
           ),
-          textStyle: const TextStyle(fontWeight: FontWeight.w700),
+          elevation: const WidgetStatePropertyAll(0),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+          textStyle: const WidgetStatePropertyAll(
+            TextStyle(fontSize: 15, fontWeight: FontWeight.w800),
+          ),
+          backgroundColor: WidgetStateProperty.resolveWith(
+            (states) =>
+                states.contains(WidgetState.disabled)
+                    ? scheme.onSurface.withOpacity(dark ? 0.12 : 0.1)
+                    : scheme.primary,
+          ),
+          foregroundColor: WidgetStateProperty.resolveWith(
+            (states) =>
+                states.contains(WidgetState.disabled)
+                    ? scheme.onSurface.withOpacity(0.5)
+                    : scheme.onPrimary,
+          ),
+          overlayColor: WidgetStatePropertyAll(
+            scheme.onPrimary.withOpacity(0.12),
+          ),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
-        style: OutlinedButton.styleFrom(
-          minimumSize: const Size(48, 50),
-          foregroundColor: scheme.primary,
-          side: BorderSide(color: scheme.outline),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
+        style: ButtonStyle(
+          minimumSize: const WidgetStatePropertyAll(Size(64, 52)),
+          padding: const WidgetStatePropertyAll(
+            EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+          ),
+          shape: WidgetStatePropertyAll(
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+          textStyle: const WidgetStatePropertyAll(
+            TextStyle(fontSize: 15, fontWeight: FontWeight.w700),
+          ),
+          foregroundColor: WidgetStateProperty.resolveWith(
+            (states) =>
+                states.contains(WidgetState.disabled)
+                    ? scheme.onSurface.withOpacity(0.4)
+                    : scheme.primary,
+          ),
+          side: WidgetStateProperty.resolveWith(
+            (states) => BorderSide(
+              color:
+                  states.contains(WidgetState.disabled)
+                      ? scheme.outlineVariant
+                      : scheme.primary.withOpacity(dark ? 0.7 : 0.55),
+              width: 1.4,
+            ),
           ),
         ),
       ),
@@ -182,6 +218,16 @@ class IzicardTheme {
         style: TextButton.styleFrom(
           minimumSize: const Size(48, 44),
           foregroundColor: scheme.primary,
+          textStyle: const TextStyle(fontWeight: FontWeight.w700),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
+      iconButtonTheme: IconButtonThemeData(
+        style: IconButton.styleFrom(
+          minimumSize: const Size(48, 48),
+          foregroundColor: scheme.onSurfaceVariant,
         ),
       ),
       switchTheme: SwitchThemeData(

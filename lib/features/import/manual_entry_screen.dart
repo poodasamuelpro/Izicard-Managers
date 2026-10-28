@@ -150,87 +150,95 @@ class _ManualEntryScreenState extends State<ManualEntryScreen> {
   @override
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Saisie manuelle')),
-    body: ListView(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
-      children: [
-        Text(
-          widget.contextData.name,
-          style: Theme.of(context).textTheme.titleLarge,
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          'Une saisie correspond à une carte. Les champs, leurs types et règles viennent du format nfc; la base reste l’autorité de validation.',
-        ),
-        const SizedBox(height: 18),
-        if (_fields.isEmpty)
-          const Text(
-            'Ce format ne contient aucun champ de saisie dans field_schema.',
-          )
-        else ...[
-          ..._fields.map(
-            (field) => Padding(
-              padding: const EdgeInsets.only(bottom: 14),
-              child: TextFormField(
-                controller: _controllers[field.key],
-                keyboardType: switch (field.type) {
-                  'phone' => TextInputType.phone,
-                  'email' => TextInputType.emailAddress,
-                  'url' => TextInputType.url,
-                  'lat' || 'lng' => const TextInputType.numberWithOptions(
-                    decimal: true,
-                    signed: true,
-                  ),
-                  'code' =>
-                    widget.contextData.settings['code_charset'] == 'alnum'
-                        ? TextInputType.text
-                        : TextInputType.number,
-                  _ => TextInputType.text,
-                },
-                textCapitalization:
-                    field.type == 'text'
-                        ? TextCapitalization.sentences
-                        : TextCapitalization.none,
-                maxLines: field.type == 'text' ? 3 : 1,
-                decoration: InputDecoration(
-                  labelText: '${field.label}${field.required ? ' *' : ''}',
-                  helperText:
-                      field.digitsOnly
-                          ? 'Saisir uniquement les chiffres.'
-                          : null,
-                  border: const OutlineInputBorder(),
+    body: SafeArea(
+      child: Column(
+        children: [
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              children: [
+                IziHero(
+                  icon: Icons.edit_note_rounded,
+                  title: widget.contextData.name,
+                  subtitle:
+                      'Une saisie correspond à une carte. Les contrôles finaux sont faits à l’enregistrement.',
                 ),
-              ),
-            ),
-          ),
-          ..._requiredAnyHelp().map(
-            (help) => Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Text(help, style: Theme.of(context).textTheme.bodySmall),
-            ),
-          ),
-        ],
-        if (_error != null) ...[
-          const SizedBox(height: 4),
-          IziNotice(_error!, tone: IziTone.error),
-        ],
-        const SizedBox(height: 12),
-        FilledButton.icon(
-          onPressed:
-              _saving ||
-                      _fields.isEmpty ||
-                      widget.contextData.status == 'archived'
-                  ? null
-                  : _submit,
-          icon:
-              _saving
-                  ? const SizedBox.square(
-                    dimension: 18,
-                    child: CircularProgressIndicator(strokeWidth: 2),
+                const IziSectionTitle('Informations de la carte'),
+        if (_fields.isEmpty)
+                  const IziNotice(
+                    'Ce format ne contient aucun champ de saisie.',
+                    tone: IziTone.warning,
                   )
-                  : const Icon(Icons.save_outlined),
-          label: Text(_saving ? 'Enregistrement…' : 'Ajouter cette carte'),
-        ),
-      ],
+                else ...[
+                  ..._fields.map(
+                    (field) => Padding(
+                      padding: const EdgeInsets.only(bottom: 14),
+                      child: TextFormField(
+                        controller: _controllers[field.key],
+                        keyboardType: switch (field.type) {
+                          'phone' => TextInputType.phone,
+                          'email' => TextInputType.emailAddress,
+                          'url' => TextInputType.url,
+                          'lat' || 'lng' => const TextInputType.numberWithOptions(
+                            decimal: true,
+                            signed: true,
+                          ),
+                          'code' =>
+                            widget.contextData.settings['code_charset'] == 'alnum'
+                                ? TextInputType.text
+                                : TextInputType.number,
+                          _ => TextInputType.text,
+                        },
+                        textCapitalization:
+                            field.type == 'text'
+                                ? TextCapitalization.sentences
+                                : TextCapitalization.none,
+                        maxLines: field.type == 'text' ? 3 : 1,
+                        decoration: InputDecoration(
+                          labelText: '${field.label}${field.required ? ' *' : ''}',
+                          helperText:
+                              field.digitsOnly
+                                  ? 'Saisir uniquement les chiffres.'
+                                  : null,
+                          border: const OutlineInputBorder(),
+                        ),
+                      ),
+                    ),
+                  ),
+                  ..._requiredAnyHelp().map(
+                    (help) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: IziNotice(help),
+                    ),
+                  ),
+                ],
+                if (_error != null) ...[
+                  const SizedBox(height: 4),
+                  IziNotice(_error!, tone: IziTone.error),
+                ],
+              ],
+            ),
+          ),
+          IziBottomBar(
+            child: FilledButton.icon(
+              onPressed:
+                  _saving ||
+                          _fields.isEmpty ||
+                          widget.contextData.status == 'archived'
+                      ? null
+                      : _submit,
+              icon:
+                  _saving
+                      ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : const Icon(Icons.save_outlined),
+              label: Text(_saving ? 'Enregistrement…' : 'Ajouter cette carte'),
+            ),
+          ),
+        ],
+      ),
     ),
   );
 }
