@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../../../core/widgets/izi_ui.dart';
+
 import '../../../data/repositories/client_repository.dart';
 
 class ClientFormScreen extends StatefulWidget {
@@ -74,83 +76,91 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Inviter un client')),
     body: SafeArea(
-      child: Form(
-        key: _formKey,
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(20, 18, 20, 32),
-          children: [
-            const Text(
-              'Créer le client et envoyer l’invitation',
-              style: TextStyle(fontSize: 24, fontWeight: FontWeight.w800),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Le client reçoit un e-mail pour choisir son mot de passe et accéder à son espace.',
-              style: Theme.of(context).textTheme.bodyMedium,
-            ),
-            const SizedBox(height: 24),
-            TextFormField(
-              controller: _fullName,
-              textInputAction: TextInputAction.next,
-              textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(labelText: 'Nom complet'),
-              validator: (value) => _required(value, 'Le nom complet'),
-            ),
-            const SizedBox(height: 14),
-            TextFormField(
-              controller: _email,
-              keyboardType: TextInputType.emailAddress,
-              textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(
-                labelText: 'E-mail de connexion',
-                helperText:
-                    'Utilisé pour l’invitation et la connexion du client.',
+      child: Column(
+        children: [
+          Expanded(
+            child: Form(
+              key: _formKey,
+              child: ListView(
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                children: [
+                  const IziHero(
+                    icon: Icons.person_add_alt_1_rounded,
+                    title: 'Nouveau client',
+                    subtitle:
+                        'Il reçoit un e-mail pour choisir son mot de passe et accéder à son espace.',
+                  ),
+                  const IziSectionTitle('Connexion'),
+                  TextFormField(
+                    controller: _fullName,
+                    textInputAction: TextInputAction.next,
+                    textCapitalization: TextCapitalization.words,
+                    decoration: const InputDecoration(
+                      labelText: 'Nom complet',
+                      prefixIcon: Icon(Icons.person_outline_rounded),
+                    ),
+                    validator: (value) => _required(value, 'Le nom complet'),
+                  ),
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: _email,
+                    keyboardType: TextInputType.emailAddress,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(
+                      labelText: 'E-mail de connexion',
+                      prefixIcon: Icon(Icons.mail_outline_rounded),
+                      helperText:
+                          'Utilisé pour l’invitation et la connexion du client.',
+                    ),
+                    validator: (value) {
+                      final required = _required(value, 'L’email');
+                      if (required != null) return required;
+                      final email = value!.trim();
+                      return RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)
+                          ? null
+                          : 'Adresse email invalide.';
+                    },
+                  ),
+                  const IziSectionTitle('Organisation'),
+                  TextFormField(
+                    controller: _clientName,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(
+                      labelText: 'Nom du client / organisation',
+                      prefixIcon: Icon(Icons.business_outlined),
+                    ),
+                    validator: (value) => _required(value, 'Le nom du client'),
+                  ),
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: _contactName,
+                    textInputAction: TextInputAction.next,
+                    decoration: const InputDecoration(
+                      labelText: 'Contact (facultatif)',
+                      prefixIcon: Icon(Icons.badge_outlined),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  TextFormField(
+                    controller: _phone,
+                    keyboardType: TextInputType.phone,
+                    textInputAction: TextInputAction.done,
+                    decoration: const InputDecoration(
+                      labelText: 'Téléphone (facultatif)',
+                      prefixIcon: Icon(Icons.phone_outlined),
+                    ),
+                    onFieldSubmitted: (_) => _submit(),
+                  ),
+                  if (_error != null) ...[
+                    const SizedBox(height: 16),
+                    IziNotice(_error!, tone: IziTone.error),
+                  ],
+                ],
               ),
-              validator: (value) {
-                final required = _required(value, 'L’email');
-                if (required != null) return required;
-                final email = value!.trim();
-                return RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$').hasMatch(email)
-                    ? null
-                    : 'Adresse email invalide.';
-              },
             ),
-            const SizedBox(height: 14),
-            TextFormField(
-              controller: _clientName,
-              textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(
-                labelText: 'Nom du client / organisation',
-              ),
-              validator: (value) => _required(value, 'Le nom du client'),
-            ),
-            const SizedBox(height: 14),
-            TextFormField(
-              controller: _contactName,
-              textInputAction: TextInputAction.next,
-              decoration: const InputDecoration(
-                labelText: 'Contact (facultatif)',
-              ),
-            ),
-            const SizedBox(height: 14),
-            TextFormField(
-              controller: _phone,
-              keyboardType: TextInputType.phone,
-              textInputAction: TextInputAction.done,
-              decoration: const InputDecoration(
-                labelText: 'Téléphone (facultatif)',
-              ),
-              onFieldSubmitted: (_) => _submit(),
-            ),
-            if (_error != null) ...[
-              const SizedBox(height: 18),
-              Text(
-                _error!,
-                style: TextStyle(color: Theme.of(context).colorScheme.error),
-              ),
-            ],
-            const SizedBox(height: 24),
-            FilledButton.icon(
+          ),
+          IziBottomBar(
+            child: FilledButton.icon(
               onPressed: _submitting ? null : _submit,
               icon:
                   _submitting
@@ -166,8 +176,8 @@ class _ClientFormScreenState extends State<ClientFormScreen> {
                     : 'Créer et envoyer l’invitation',
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     ),
   );

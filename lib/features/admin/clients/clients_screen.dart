@@ -221,21 +221,12 @@ class _ClientsScreenState extends State<ClientsScreen> {
           return RefreshIndicator(
             onRefresh: _refresh,
             child: ListView(
-              padding: const EdgeInsets.fromLTRB(20, 14, 20, 32),
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 100),
               children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary.withOpacity(.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Text(
-                    'Invitez vos clients, suivez leurs accès et créez des dossiers pour eux depuis cette page.',
-                  ),
+                const IziNotice(
+                  'Invitez vos clients, suivez leurs accès et créez des dossiers pour eux depuis cette page.',
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 TextField(
                   onChanged: (value) => setState(() => _search = value.trim()),
                   decoration: const InputDecoration(
@@ -256,63 +247,20 @@ class _ClientsScreenState extends State<ClientsScreen> {
                   )
                 else
                   ...clients.map(
-                    (client) => Card(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        leading: CircleAvatar(
-                          backgroundColor: Theme.of(
-                            context,
-                          ).colorScheme.primary.withOpacity(.14),
-                          child: Icon(
-                            Icons.business_rounded,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
-                        title: Text(
-                          client.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(fontWeight: FontWeight.w700),
-                        ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 5),
-                          child: Text(
-                            [
-                              if (client.email?.isNotEmpty == true)
-                                client.email!,
-                              if (client.contactName?.isNotEmpty == true)
-                                client.contactName!,
-                              'Accès : ${client.accessLabel}',
-                            ].join(' · '),
-                          ),
-                        ),
-                        onTap: () => _edit(client),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (widget.profile != null)
-                              IconButton(
-                                tooltip: 'Créer un dossier',
-                                onPressed: () => _createBatchFor(client),
-                                icon: const Icon(
-                                  Icons.create_new_folder_outlined,
-                                ),
-                              ),
-                            IconButton(
-                              tooltip: 'Modifier le client',
-                              onPressed: () => _edit(client),
-                              icon: const Icon(Icons.edit_outlined),
-                            ),
-                            IconButton.filledTonal(
-                              tooltip: 'Gérer les accès',
-                              onPressed: () => _manageAccess(client),
-                              icon: const Icon(Icons.manage_accounts_rounded),
-                            ),
-                          ],
+                    (client) => Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: _ClientCard(
+                        client: client,
+                        onEdit: () => _edit(client),
+                        onAccess: () => _manageAccess(client),
+                        onCreateBatch:
+                            widget.profile == null
+                                ? null
+                                : () => _createBatchFor(client),
+                      ),
+                    ),
+                  ),
+              ],
                         ),
                       ),
                     ),
@@ -335,4 +283,107 @@ class _ClientError extends StatelessWidget {
     message: 'Impossible de charger les clients. Vérifiez votre connexion.',
     onRetry: onRetry,
   );
+}
+
+class _ClientCard extends StatelessWidget {
+  const _ClientCard({
+    required this.client,
+    required this.onEdit,
+    required this.onAccess,
+    this.onCreateBatch,
+  });
+  final NfcClient client;
+  final VoidCallback onEdit;
+  final VoidCallback onAccess;
+  final VoidCallback? onCreateBatch;
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = Theme.of(context).colorScheme;
+    final ink = context.ink;
+    final Color tone =
+        !client.active
+            ? ink.error
+            : client.isExpired
+            ? ink.pending
+            : ink.verified;
+    final details = [
+      if (client.email?.isNotEmpty == true) client.email!,
+      if (client.contactName?.isNotEmpty == true) client.contactName!,
+    ].join(' · ');
+    return Card(
+      clipBehavior: Clip.antiAlias,
+      child: InkWell(
+        onTap: onEdit,
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(14, 14, 14, 6),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: colors.primary.withOpacity(0.14),
+                      borderRadius: BorderRadius.circular(13),
+                    ),
+                    child: Icon(Icons.business_rounded, color: colors.primary),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          client.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: Theme.of(context).textTheme.titleSmall
+                              ?.copyWith(fontWeight: FontWeight.w800),
+                        ),
+                        if (details.isNotEmpty)
+                          Text(
+                            details,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(color: colors.onSurfaceVariant),
+                          ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  IziPill(client.accessLabel, color: tone),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Wrap(
+                spacing: 4,
+                children: [
+                  if (onCreateBatch != null)
+                    TextButton.icon(
+                      onPressed: onCreateBatch,
+                      icon: const Icon(Icons.create_new_folder_outlined, size: 20),
+                      label: const Text('Dossier'),
+                    ),
+                  TextButton.icon(
+                    onPressed: onEdit,
+                    icon: const Icon(Icons.edit_outlined, size: 20),
+                    label: const Text('Modifier'),
+                  ),
+                  TextButton.icon(
+                    onPressed: onAccess,
+                    icon: const Icon(Icons.manage_accounts_rounded, size: 20),
+                    label: const Text('Accès'),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }

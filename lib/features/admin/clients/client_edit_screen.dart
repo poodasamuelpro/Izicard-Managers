@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../../../core/widgets/izi_ui.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../../../data/models/nfc_client.dart';
@@ -87,14 +89,21 @@ class _ClientEditScreenState extends State<ClientEditScreen> {
   Widget build(BuildContext context) => Scaffold(
     appBar: AppBar(title: const Text('Modifier le client')),
     body: SafeArea(
-      child: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 640),
-          child: Form(
-            key: _form,
-            child: ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
+      child: Column(
+        children: [
+          Expanded(
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 640),
+                child: Form(
+                  key: _form,
+                  child: ListView(
+                    padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+                    children: [
+                      const IziSectionTitle(
+                        'Informations du client',
+                        padding: EdgeInsets.only(top: 6, bottom: 12),
+                      ),
                 TextFormField(
                   controller: _name,
                   textInputAction: TextInputAction.next,
@@ -146,34 +155,30 @@ class _ClientEditScreenState extends State<ClientEditScreen> {
                     border: OutlineInputBorder(),
                   ),
                 ),
-                if (_error != null) ...[
-                  const SizedBox(height: 14),
-                  Text(
-                    _error!,
-                    style: TextStyle(
-                      color: Theme.of(context).colorScheme.error,
-                    ),
+                      if (_error != null) ...[
+                        const SizedBox(height: 14),
+                        IziNotice(_error!, tone: IziTone.error),
+                      ],
+                    ],
                   ),
-                ],
-                const SizedBox(height: 22),
-                FilledButton.icon(
-                  style: FilledButton.styleFrom(
-                    minimumSize: const Size.fromHeight(56),
-                  ),
-                  onPressed: _saving ? null : _save,
-                  icon:
-                      _saving
-                          ? const SizedBox.square(
-                            dimension: 18,
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          )
-                          : const Icon(Icons.save_rounded),
-                  label: const Text('Enregistrer'),
                 ),
-              ],
+              ),
             ),
           ),
-        ),
+          IziBottomBar(
+            child: FilledButton.icon(
+              onPressed: _saving ? null : _save,
+              icon:
+                  _saving
+                      ? const SizedBox.square(
+                        dimension: 18,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      )
+                      : const Icon(Icons.save_rounded),
+              label: const Text('Enregistrer'),
+            ),
+          ),
+        ],
       ),
     ),
   );
