@@ -405,7 +405,7 @@ class _WriteScreenState extends State<WriteScreen> {
       _ => (IzicardColors.statusPending, Icons.nfc_rounded),
     };
     return ListView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
       children: [
         Row(
           children: [
@@ -417,17 +417,30 @@ class _WriteScreenState extends State<WriteScreen> {
             ),
             const SizedBox(width: 16),
             Expanded(
-              child: LinearProgressIndicator(
+              child: IziProgress(
                 value: total == 0 ? 0 : c.index / total,
-                minHeight: 10,
+                height: 10,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 6),
-        Text(
-          'Vérifiées : ${c.verified} · Erreurs : ${c.errors} · Passées : ${c.skipped}'
-          '${c.unsynced > 0 ? ' · À synchroniser : ${c.unsynced}' : ''}',
+        const SizedBox(height: 10),
+        Wrap(
+          spacing: 8,
+          runSpacing: 6,
+          children: [
+            IziPill('${c.verified} vérifiée(s)', color: context.ink.verified),
+            if (c.errors > 0)
+              IziPill('${c.errors} erreur(s)', color: context.ink.error),
+            if (c.skipped > 0)
+              IziPill('${c.skipped} passée(s)', color: context.ink.voided),
+            if (c.unsynced > 0)
+              IziPill(
+                '${c.unsynced} à synchroniser',
+                color: context.ink.pending,
+                icon: Icons.sync_rounded,
+              ),
+          ],
         ),
         const SizedBox(height: 14),
         Container(
@@ -464,7 +477,9 @@ class _WriteScreenState extends State<WriteScreen> {
           const SizedBox(height: 14),
           Text(
             'Carte n° ${tag.sequence} — ${tag.publicId}',
-            style: const TextStyle(fontWeight: FontWeight.w700),
+            style: Theme.of(
+              context,
+            ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w800),
           ),
           const SizedBox(height: 6),
           Card(
@@ -536,93 +551,58 @@ class _WriteScreenState extends State<WriteScreen> {
   Widget _summary(BuildContext context) {
     final c = _controller;
     final remaining = (c.queue.length - c.index).clamp(0, c.queue.length);
-    return ListView(
-      padding: const EdgeInsets.all(20),
+    final ink = context.ink;
+    return Column(
       children: [
-        Icon(
-          Icons.flag_rounded,
-          size: 56,
-          color: Theme.of(context).colorScheme.primary,
-        ),
-        const SizedBox(height: 10),
-        Text(
-          'Série terminée',
-          textAlign: TextAlign.center,
-          style: Theme.of(context).textTheme.headlineSmall,
-        ),
-        const SizedBox(height: 16),
-        Wrap(
-          alignment: WrapAlignment.center,
-          spacing: 10,
-          runSpacing: 10,
-          children: [
-            _Count(
-              label: 'Vérifiées',
-              value: c.verified,
-              color: IzicardColors.statusVerified,
-            ),
-            _Count(
-              label: 'Erreurs',
-              value: c.errors,
-              color: IzicardColors.statusError,
-            ),
-            _Count(
-              label: 'Passées',
-              value: c.skipped,
-              color: IzicardColors.statusVoid,
-            ),
-            _Count(
-              label: 'Restantes',
-              value: remaining,
-              color: IzicardColors.statusPending,
-            ),
-          ],
-        ),
-        if (c.unsynced > 0) ...[
-          const SizedBox(height: 14),
-          Text(
-            '${c.unsynced} résultat(s) seront envoyés à la base dès que la connexion revient (écran Synchronisation).',
-            textAlign: TextAlign.center,
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+            children: [
+              IziHero(
+                icon: Icons.flag_rounded,
+                title: 'Série terminée',
+                subtitle:
+                    '${c.verified} carte(s) vérifiée(s) sur ${c.queue.length}.',
+              ),
+              const IziSectionTitle('Bilan'),
+              LayoutBuilder(
+                builder: (context, constraints) {
+                  final width = (constraints.maxWidth - 8) / 2;
+                  Widget cell(Widget child) =>
+                      SizedBox(width: width, child: child);
+                  return Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      cell(IziStat(value: '${c.verified}', label: 'Vérifiées', icon: Icons.verified_rounded, color: ink.verified)),
+                      cell(IziStat(value: '${c.errors}', label: 'Erreurs', icon: Icons.error_outline_rounded, color: ink.error)),
+                      cell(IziStat(value: '${c.skipped}', label: 'Passées', icon: Icons.skip_next_rounded, color: ink.voided)),
+                      cell(IziStat(value: '$remaining', label: 'Restantes', icon: Icons.pending_actions_rounded, color: ink.pending)),
+                    ],
+                  );
+                },
+              ),
+              if (c.unsynced > 0) ...[
+                const SizedBox(height: 14),
+                IziNotice(
+                  '${c.unsynced} résultat(s) seront envoyés dès que la connexion revient (écran Synchronisation).',
+                  tone: IziTone.warning,
+                  icon: Icons.sync_rounded,
+                ),
+              ],
+            ],
           ),
-        ],
-        const SizedBox(height: 20),
-        FilledButton(
-          onPressed: () => Navigator.of(context).maybePop(),
-          child: const Text('Retour'),
+        ),
+        IziBottomBar(
+          child: FilledButton.icon(
+            onPressed: () => Navigator.of(context).maybePop(),
+            icon: const Icon(Icons.arrow_back_rounded),
+            label: const Text('Retour'),
+          ),
         ),
       ],
     );
   }
-}
-
-class _Count extends StatelessWidget {
-  const _Count({required this.label, required this.value, required this.color});
-  final String label;
-  final int value;
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => Container(
-    width: 140,
-    padding: const EdgeInsets.all(14),
-    decoration: BoxDecoration(
-      color: color,
-      borderRadius: BorderRadius.circular(16),
-    ),
-    child: Column(
-      children: [
-        Text(
-          '$value',
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 26,
-            fontWeight: FontWeight.w800,
-          ),
-        ),
-        Text(label, style: const TextStyle(color: Colors.white)),
-      ],
-    ),
-  );
 }
 
 class _Message extends StatelessWidget {

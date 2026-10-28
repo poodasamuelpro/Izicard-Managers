@@ -208,6 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       body: SafeArea(
         child: ResponsiveContent(
+          padding: EdgeInsets.zero,
           child: LayoutBuilder(
             builder: (context, constraints) {
               final columns = constraints.maxWidth >= 760 ? 3 : 2;
@@ -218,7 +219,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 context,
               ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w800);
               return ListView(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                 children: [
                   _WelcomeCard(
                     name: _profile.displayName,
@@ -290,8 +291,9 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(title: const Text('Menu')),
       body: SafeArea(
         child: ResponsiveContent(
+          padding: EdgeInsets.zero,
           child: ListView(
-            padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
             children: [
               Card(
                 child: ListTile(

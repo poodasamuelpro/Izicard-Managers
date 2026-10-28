@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'core/router/app_router.dart';
 import 'core/settings/app_settings.dart';
 import 'core/theme/izicard_theme.dart';
+import 'core/widgets/izi_ui.dart';
 import 'core/network/connectivity_service.dart';
 import 'data/local/app_database.dart';
 import 'data/models/nfc_profile.dart';
@@ -48,34 +49,15 @@ class ConfigurationErrorScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return const Scaffold(
       body: SafeArea(
-        child: Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Icon(Icons.cloud_off_rounded, size: 44),
-                const SizedBox(height: 16),
-                Text(
-                  'Configuration Supabase manquante',
-                  style: Theme.of(context).textTheme.titleLarge,
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  'Cet APK a été construit sans SUPABASE_URL et '
-                  'SUPABASE_ANON_KEY : ces variables sont obligatoires au '
-                  'build et ne peuvent pas être ajoutées après coup.\n\n'
-                  'Reconstruisez l’APK avec : bash scripts/build_apk.sh debug '
-                  '(voir GUIDE_DEPLOIEMENT.md). Aucun secret serveur ne doit '
-                  'être embarqué dans l’application.',
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
+        child: IziEmptyState(
+          icon: Icons.settings_suggest_rounded,
+          title: 'Application mal configurée',
+          message:
+              'Cet APK a été construit sans les paramètres de connexion (SUPABASE_URL et SUPABASE_ANON_KEY). '
+              'Ils ne peuvent pas être ajoutés après coup : reconstruisez l’APK avec ces variables '
+              '(voir GUIDE_DEPLOIEMENT.md). Aucun secret serveur ne doit être embarqué.',
         ),
       ),
     );
@@ -236,7 +218,7 @@ class _AuthGateState extends State<AuthGate> with WidgetsBindingObserver {
           return AccessRevokedScreen(
             title: 'Profil indisponible',
             message:
-                'Impossible de charger votre profil dans le schéma nfc. '
+                'Impossible de charger votre profil. '
                 'Réessayez lorsque la connexion sera disponible.',
             icon: Icons.cloud_sync_rounded,
             onRetry: _retryProfile,
@@ -277,15 +259,32 @@ class _ProfileLoadingScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
+    return Scaffold(
       body: SafeArea(
         child: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              CircularProgressIndicator(),
-              SizedBox(height: 18),
-              Text('Chargement de votre espace sécurisé…'),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(18),
+                child: Image.asset(
+                  'assets/images/logo.jpg',
+                  height: 72,
+                  fit: BoxFit.contain,
+                ),
+              ),
+              const SizedBox(height: 24),
+              const SizedBox.square(
+                dimension: 28,
+                child: CircularProgressIndicator(strokeWidth: 3),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'Chargement de votre espace…',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+              ),
             ],
           ),
         ),

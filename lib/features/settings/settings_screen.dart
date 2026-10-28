@@ -93,6 +93,7 @@ class SettingsScreen extends StatelessWidget {
           builder:
               (context, settings, _) => ResponsiveContent(
                 maxWidth: 900,
+                padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
                 child: ListView(
                   padding: EdgeInsets.zero,
                   children: [
