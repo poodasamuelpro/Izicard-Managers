@@ -1048,3 +1048,8 @@ Créer les secrets GitHub, lancer le workflow Build APK, installer l'APK et vér
 ## Lot M28 : barre de navigation
 - `home_screen.dart` : coque à 5 onglets (Accueil, Dossiers, Écrire, Vérifier, Menu) avec onglets conservés et retour vers l'Accueil ; thème `navigationBarTheme`.
 - Non vérifié : aucun build ni capture. Écrans secondaires non re-dessinés.
+
+## M29 — Système de design commun + écrans redessinés
+- `lib/core/widgets/izi_ui.dart` : espacements, IziHero, IziSectionTitle, IziPill, IziProgress, IziItemCard, IziEmptyState, IziErrorState, IziNotice, IziStat, IziBottomBar.
+- Redessinés : connexion (bandeau de marque), dossiers, création de dossier (bouton fixe en bas), écriture, vérification de tag, états vides/erreur (import, clients, synchronisation, export).
+- Analyse CI verte (8e03d12). Non testé sur téléphone. Restent à polir : détail de dossier, réglages, tableau de bord admin, détail de tag, formulaires client, import (étapes).
