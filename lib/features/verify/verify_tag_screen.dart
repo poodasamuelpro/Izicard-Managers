@@ -158,7 +158,7 @@ class _VerifyTagScreenState extends State<VerifyTagScreen> {
           dataType: found.dataType,
           payload: found.payload,
         );
-        contentOk = NfcService.sameMessage(message, expected);
+        contentOk = NfcService.sameMessage(message!, expected);
         verdict =
             contentOk
                 ? 'Contenu conforme à ce qui devait être écrit.'
